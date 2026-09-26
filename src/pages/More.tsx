@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
+import { ChevronRight, CircleUserRound, Newspaper, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
 
 const items = [
-  { to: '/results', label: 'Results', icon: '🏆' },
-  { to: '/squad', label: 'Squad', icon: '👥' },
-  { to: '/news', label: 'News', icon: '📰' },
-  { to: '/fanzone', label: 'Fan Zone', icon: '🗣️' },
-  { to: '/membership', label: 'Membership', icon: '🎫' },
-  { to: '/profile', label: 'Fan Profile', icon: '👤' },
+  { to: '/results', label: 'Results', icon: Trophy },
+  { to: '/squad', label: 'Squad', icon: Users },
+  { to: '/news', label: 'News', icon: Newspaper },
+  { to: '/fanzone', label: 'Fan Zone', icon: Vote },
+  { to: '/membership', label: 'Membership', icon: ShieldCheck },
+  { to: '/profile', label: 'Fan Profile', icon: CircleUserRound },
 ]
 
 export default function More() {
@@ -14,9 +15,9 @@ export default function More() {
     <div className="menu-list">
       {items.map((i) => (
         <Link key={i.to} to={i.to} className="menu-item">
-          <span>{i.icon}</span>
+          <i.icon className="menu-icon" size={20} aria-hidden="true" />
           <span>{i.label}</span>
-          <span className="arrow">›</span>
+          <ChevronRight className="arrow" size={18} aria-hidden="true" />
         </Link>
       ))}
     </div>
