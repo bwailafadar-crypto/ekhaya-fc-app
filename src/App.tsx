@@ -1,5 +1,8 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './auth/AuthProvider'
+import { ProtectedRoute } from './auth/ProtectedRoute'
 import Layout from './components/Layout'
+import { ForgotPasswordPage, LoginPage, SignUpPage } from './pages/auth/AuthPages'
 import Home from './pages/Home'
 import Fixtures from './pages/Fixtures'
 import Results from './pages/Results'
@@ -15,21 +18,26 @@ import More from './pages/More'
 export default function App() {
   return (
     <HashRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/fixtures" element={<Fixtures />} />
-          <Route path="/results" element={<Results />} />
-          <Route path="/table" element={<LeagueTable />} />
-          <Route path="/live" element={<LiveMatch />} />
-          <Route path="/squad" element={<Squad />} />
-          <Route path="/news" element={<News />} />
-          <Route path="/fanzone" element={<FanZone />} />
-          <Route path="/membership" element={<Membership />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/more" element={<More />} />
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="/" element={<Home />} />
+            <Route path="/fixtures" element={<Fixtures />} />
+            <Route path="/results" element={<Results />} />
+            <Route path="/table" element={<LeagueTable />} />
+            <Route path="/live" element={<LiveMatch />} />
+            <Route path="/squad" element={<Squad />} />
+            <Route path="/news" element={<News />} />
+            <Route path="/fanzone" element={<FanZone />} />
+            <Route path="/membership" element={<Membership />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/more" element={<More />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
     </HashRouter>
   )
 }

@@ -1,0 +1,151 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function hasRole(expectedRole) {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && get(userPath(request.auth.uid)).data.role == expectedRole;
+    }
+
+    function isAdmin() {
+      return hasRole('admin') || hasRole('superadmin');
+    }
+
+    function isSuperadmin() {
+      return hasRole('superadmin');
+    }
+
+    function validRole(role) {
+      return role in ['fan', 'admin', 'superadmin'];
+    }
+
+    match /users/{uid} {
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'role', 'email', 'fullName', 'phone', 'legacyFanDocId',
+          'legacyFanId', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'role', 'email', 'fullName', 'phone', 'legacyFanDocId',
+          'legacyFanId', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.role == 'fan'
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.fullName is string
+        && (request.resource.data.phone == null || request.resource.data.phone is string)
+        && (request.resource.data.legacyFanDocId == null || request.resource.data.legacyFanDocId is string)
+        && (request.resource.data.legacyFanId == null || request.resource.data.legacyFanId is string)
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+
+      allow get: if signedIn() && (request.auth.uid == uid || isSuperadmin());
+      allow list: if isSuperadmin();
+
+      allow update: if (
+          signedIn()
+          && request.auth.uid == uid
+          && resource.data.role == request.resource.data.role
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'fullName', 'phone', 'photoDataUrl', 'updatedAt'
+          ])
+        ) || (
+          isSuperadmin()
+          && request.auth.uid != uid
+          && validRole(request.resource.data.role)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'role', 'disabled', 'updatedAt'
+          ])
+        );
+
+      allow delete: if isSuperadmin() && request.auth.uid != uid;
+    }
+
+    match /fans/{fanDocId} {
+      allow get, list: if signedIn()
+        && (isSuperadmin() || resource.data.email == request.auth.token.email);
+      allow create, update, delete: if isSuperadmin();
+    }
+
+    match /fixtures/{fixtureId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+
+      match /events/{eventId} {
+        allow read: if signedIn();
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    match /standings/{standingId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /players/{playerId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /news/{newsId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /polls/{pollId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /predictions/{predictionId} {
+      allow read: if signedIn()
+        && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /membershipTiers/{tierId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isSuperadmin();
+    }
+
+    match /memberships/{membershipId} {
+      allow read: if signedIn()
+        && (resource.data.uid == request.auth.uid || isSuperadmin());
+      allow create: if signedIn()
+        && membershipId == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update, delete: if isSuperadmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isSuperadmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isSuperadmin();
+      allow create: if isAdmin()
+        && request.resource.data.actorUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
