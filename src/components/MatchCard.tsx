@@ -4,7 +4,7 @@ import { ekhayaOutcome, formatMalawiDate, formatMalawiTime } from '../utils/foot
 import TeamLogo from './TeamLogo'
 import { Badge, Card } from './UI'
 
-export default function MatchCard({ fixture }: { fixture: Fixture }) {
+export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixture; previousMeeting?: Fixture }) {
   const played = fixture.status === 'finished' || fixture.status === 'live'
   const outcome = ekhayaOutcome(fixture)
   const score = played && fixture.homeScore != null && fixture.awayScore != null
@@ -30,6 +30,11 @@ export default function MatchCard({ fixture }: { fixture: Fixture }) {
           <span>{fixture.away}</span>
         </div>
       </div>
+      {previousMeeting && previousMeeting.homeScore != null && previousMeeting.awayScore != null && <div className="match-previous-result">
+        <span>Previous meeting</span>
+        <strong>{previousMeeting.home} {previousMeeting.homeScore} - {previousMeeting.awayScore} {previousMeeting.away}</strong>
+        <time>{formatMalawiDate(previousMeeting.date)}</time>
+      </div>}
       <div className="match-card-footer">
         <span>{formatMalawiDate(fixture.date)} · CAT</span>
         <span><MapPin size={13} aria-hidden="true" />{fixture.venue || 'Venue TBC'}</span>

@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ChangeEvent } from 'react'
-import { deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore'
-import { CalendarDays, ImagePlus, ShieldCheck, Table2, Users } from 'lucide-react'
+import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
+import { CalendarDays, Download, ImagePlus, ShieldCheck, Table2, Users } from 'lucide-react'
 import { db } from '../firebase'
 import { useToast } from '../components/ToastContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
@@ -19,6 +19,34 @@ const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
 const emptyStats: PlayerStats = {
   appearances: 0, starts: 0, minutes: 0, goals: 0, assists: 0,
   yellowCards: 0, redCards: 0, cleanSheets: 0,
+}
+
+const officialTeams: Record<string, { name: string; image: string; aliases?: string[] }> = {
+  'blue-eagles': { name: 'Blue Eagles', image: '/team-logos/blue-eagles.png' },
+  'big-bullets': { name: 'FCB Nyasa Big Bullets', image: '/team-logos/big-bullets.png', aliases: ['Big Bullets'] },
+  'mighty-wanderers': { name: 'Mighty Wanderers', image: '/team-logos/mighty-wanderers.png' },
+  'silver-strikers': { name: 'Silver Strikers', image: 'https://fam.mw/wp-content/uploads/2022/03/Silver-Strikers.png' },
+  'masters-fc': { name: 'Masters FC', image: '/team-logos/masters-fc.png' },
+  'moyale-barracks': { name: 'Moyale Barracks', image: '/team-logos/moyale-barracks.png' },
+  'chitipa-united': { name: 'Chitipa United', image: '/team-logos/chitipa-united.png' },
+  'red-lions': { name: 'Red Lions', image: 'https://fam.mw/wp-content/uploads/2022/03/Red-Lions.png' },
+  'mitundu-baptist': { name: 'Luanar Mitundu', image: '/team-logos/mitundu-baptist.png', aliases: ['Mitundu Baptist'] },
+  'civo-united': { name: 'Civil Service United', image: 'https://fam.mw/wp-content/uploads/2022/03/Civo.png', aliases: ['Civo United'] },
+  'ekhaya-fc': { name: 'Ekhaya FC', image: '/team-logos/ekhaya-fc.png' },
+  'dedza-dynamos': { name: 'Goshen City Dedza Dynamos', image: '/team-logos/dedza-dynamos.png', aliases: ['Dedza Dynamos'] },
+  'karonga-united': { name: 'Karonga United', image: '/team-logos/karonga-united.png' },
+  mafco: { name: 'MAFCO F.C', image: '/team-logos/mafco.png', aliases: ['MAFCO'] },
+  'kamuzu-barracks': { name: 'Kamuzu Barracks', image: '/team-logos/kamuzu-barracks.png' },
+  'creck-sporting': { name: 'Creck Sporting', image: '/team-logos/creck-sporting.png' },
+}
+
+function teamNameAliases() {
+  const aliases = new Map<string, string>()
+  for (const { name, aliases: oldNames = [] } of Object.values(officialTeams)) {
+    aliases.set(name.toLocaleLowerCase(), name)
+    for (const alias of oldNames) aliases.set(alias.toLocaleLowerCase(), name)
+  }
+  return aliases
 }
 
 function documentId(name: string) {
@@ -65,6 +93,8 @@ export default function AdminPanel() {
   const [playerPhotoDraft, setPlayerPhotoDraft] = useState<{ id: string; dataUrl: string | null } | null>(null)
   const [teamLogoDraft, setTeamLogoDraft] = useState<{ id: string; dataUrl: string | null } | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [importingLogos, setImportingLogos] = useState(false)
+  const [logoImportFailures, setLogoImportFailures] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
   const { showToast } = useToast()
   const players = useFirestoreCollection<Player>('players')
@@ -96,6 +126,72 @@ export default function AdminPanel() {
     } finally {
       setUploading(false)
       input.value = ''
+    }
+  }
+
+  async function importTeamLogos() {
+    setImportingLogos(true)
+    setLogoImportFailures(null)
+    const batch = writeBatch(db)
+    const failed: string[] = []
+    let imported = 0
+    let alreadyPresent = 0
+    try {
+      const [standingSnapshot, fixtureSnapshot] = await Promise.all([
+        getDocs(collection(db, 'standings')),
+        getDocs(collection(db, 'fixtures')),
+      ])
+      for (const [id, team] of Object.entries(officialTeams)) {
+        const existing = teams.items.find((item) => item.id === id)
+        let logoDataUrl = existing?.logoDataUrl ?? null
+        if (logoDataUrl) alreadyPresent += 1
+        else {
+          try {
+            const response = await fetch(team.image)
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
+            const blob = await response.blob()
+            const file = new File([blob], `${id}.png`, { type: blob.type || 'image/png' })
+            logoDataUrl = await compressImage(file)
+            imported += 1
+          } catch {
+            failed.push(team.name)
+          }
+        }
+        batch.set(doc(db, 'teams', id), {
+          id,
+          name: team.name,
+          shortName: team.name,
+          logoDataUrl,
+          updatedAt: serverTimestamp(),
+        }, { merge: true })
+      }
+
+      for (const standing of standingSnapshot.docs) {
+        const official = officialTeams[standing.id]
+        if (official && standing.data().team !== official.name) batch.update(standing.ref, { team: official.name, updatedAt: serverTimestamp() })
+      }
+      const aliases = teamNameAliases()
+      for (const fixture of fixtureSnapshot.docs) {
+        const data = fixture.data()
+        const home = typeof data.home === 'string' ? aliases.get(data.home.toLocaleLowerCase()) : undefined
+        const away = typeof data.away === 'string' ? aliases.get(data.away.toLocaleLowerCase()) : undefined
+        const changes: Record<string, string | ReturnType<typeof serverTimestamp>> = {}
+        if (home && home !== data.home) changes.home = home
+        if (away && away !== data.away) changes.away = away
+        if (Object.keys(changes).length) {
+          changes.updatedAt = serverTimestamp()
+          batch.update(fixture.ref, changes)
+        }
+      }
+      await batch.commit()
+      setLogoImportFailures(failed)
+      showToast(failed.length
+        ? `Imported ${imported} logos. ${failed.length} need manual upload.`
+        : `Team names updated. ${imported} logos imported${alreadyPresent ? `; ${alreadyPresent} existing logos preserved` : ''}.`)
+    } catch (error) {
+      showToast(messageFrom(error), 'error')
+    } finally {
+      setImportingLogos(false)
     }
   }
 
@@ -279,15 +375,26 @@ export default function AdminPanel() {
             <div className="admin-actions"><Button type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : selectedPlayer ? 'Save player' : 'Add player'}</Button>{selectedPlayer && <Button type="button" variant="danger" onClick={() => void deletePlayer()}>Delete player</Button>}</div>
           </form>
         </Card>
-          : section === 'teams' ? <Card className="admin-card">
+          : section === 'teams' ? <>
+            <Card className="admin-card logo-import-card">
+              <div className="admin-card-heading"><h2>Official club badges</h2></div>
+              <p className="live-help">Import the league badges into Firestore once. Existing uploaded logos are kept; unavailable badges stay as initials.</p>
+              <Button type="button" variant="secondary" disabled={importingLogos || saving || uploading} onClick={() => void importTeamLogos()} icon={<Download size={16} />}>{importingLogos ? 'Importing logos...' : 'Import logos'}</Button>
+              {logoImportFailures && <div className={logoImportFailures.length ? 'logo-import-report failed' : 'logo-import-report'} role="status">
+                {logoImportFailures.length
+                  ? <><strong>Upload these logos manually:</strong><span>{logoImportFailures.join(', ')}</span></>
+                  : <strong>All team logos are in Firestore. The app now uses Firestore logos only.</strong>}
+              </div>}
+            </Card>
+            <Card className="admin-card">
             <div className="admin-card-heading"><h2>Team and logo</h2><select aria-label="Choose team" value={selectedTeam?.id ?? ''} onChange={(event) => setSelectedTeamId(event.target.value)}>{teams.items.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></div>
             {selectedTeam && <form className="admin-form" key={selectedTeam.id} onSubmit={saveTeam}>
               <div className="admin-form-grid"><Field label="Team name" name="name" defaultValue={selectedTeam.name} required /><Field label="Short name" name="shortName" defaultValue={selectedTeam.shortName} required /><Field label="Home ground" name="homeGround" defaultValue={selectedTeam.homeGround} /></div>
               <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, setTeamLogo)} /><ImagePlus size={17} />Upload team logo <small>Compressed under 200 KB</small></label>
               {teamLogo && <img className="admin-image-preview" src={teamLogo} alt={`${selectedTeam.name} logo preview`} />}
-              <div className="admin-actions"><Button type="submit" disabled={saving || uploading}>Save team</Button><Button type="button" variant="ghost" onClick={() => setTeamLogo(null)}>Remove logo</Button></div>
+              <div className="admin-actions"><Button type="submit" disabled={saving || uploading || importingLogos}>Save team</Button><Button type="button" variant="ghost" disabled={importingLogos} onClick={() => setTeamLogo(null)}>Remove logo</Button></div>
             </form>}
-          </Card>
+          </Card></>
             : section === 'standings' ? <Card className="admin-card">
               <div className="admin-card-heading"><h2>League table row</h2><select aria-label="Choose team row" value={selectedStandingId} onChange={(event) => setSelectedStandingId(event.target.value)}><option value="">Select team</option>{standings.items.map((row) => <option key={row.id} value={row.id}>{row.position}. {row.team}</option>)}</select></div>
               {selectedStanding && <form className="admin-form" key={selectedStanding.id} onSubmit={saveStanding}>

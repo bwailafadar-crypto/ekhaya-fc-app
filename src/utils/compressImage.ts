@@ -31,6 +31,8 @@ export async function compressImage(file: File) {
   canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
   const context = canvas.getContext('2d')
   if (!context) throw new Error('Image compression is not available on this device.')
+  context.fillStyle = '#fff'
+  context.fillRect(0, 0, canvas.width, canvas.height)
   context.drawImage(image, 0, 0, canvas.width, canvas.height)
 
   for (let quality = 0.88; quality >= 0.35; quality -= 0.08) {

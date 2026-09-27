@@ -65,7 +65,9 @@ async function seed() {
     const batch = writeBatch(db)
     for (const [collectionName, documents] of collections) {
       for (const item of documents) {
-        batch.set(doc(db, collectionName, item.id), item, { merge: true })
+        const seedData: SeedDocument = { ...item }
+        if (collectionName === 'teams' && seedData.logoDataUrl === null) delete seedData.logoDataUrl
+        batch.set(doc(db, collectionName, item.id), seedData, { merge: true })
       }
     }
     await batch.commit()
