@@ -124,7 +124,7 @@ export default function LiveMatch() {
   const benchPlayers = selectedFixture
     ? benchDraft?.fixtureId === selectedFixture.id ? benchDraft.playerIds : selectedFixture.benchPlayerIds ?? []
     : []
-  const events = eventState?.fixtureId === selectedFixture?.id ? eventState.items : []
+  const events = eventState?.fixtureId === selectedFixture?.id ? (eventState?.items ?? []) : []
   const eventsLoading = Boolean(selectedFixture && eventState?.fixtureId !== selectedFixture.id)
   const eventsError = eventState?.fixtureId === selectedFixture?.id ? eventState.error : null
   const selectedFixtureId = selectedFixture?.id
