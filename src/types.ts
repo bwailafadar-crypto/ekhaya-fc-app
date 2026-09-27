@@ -20,6 +20,27 @@ export interface Fixture {
   homeScore?: number | null
   awayScore?: number | null
   minute?: number
+  eventCount?: number
+  startingPlayerIds?: string[]
+  statsApplied?: boolean
+}
+
+export type MatchEventKind = 'goal' | 'card' | 'substitution'
+
+export interface MatchEvent {
+  id: string
+  kind: MatchEventKind
+  minute: number
+  team: string
+  playerId?: string
+  playerName?: string
+  assistPlayerId?: string
+  assistPlayerName?: string
+  card?: 'yellow' | 'red'
+  subbedInPlayerId?: string
+  subbedInPlayerName?: string
+  subbedOutPlayerId?: string
+  subbedOutPlayerName?: string
 }
 
 export interface NewsItem {
