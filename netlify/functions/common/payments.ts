@@ -62,7 +62,38 @@ export function checkoutUrls(event: HandlerEvent, txRef: string) {
   }
 }
 
-async function verifiedProviderPayment(txRef: string) {
+function mobileMoneyFailureReason(message: string, status: string) {
+  const detail = `${status} ${message}`.toLowerCase()
+  if (/pin|passcode|authentication/.test(detail)) return 'wrong_pin' as const
+  if (/cancel|declin/.test(detail)) return 'cancelled' as const
+  if (/time.?out|expired|timeout/.test(detail)) return 'timeout' as const
+  return 'failed' as const
+}
+
+async function verifiedProviderPayment(txRef: string, paymentData: Record<string, unknown>) {
+  if (paymentData.method === 'airtel_money' || paymentData.method === 'tnm_mpamba') {
+    const chargeId = String(paymentData.chargeId ?? '')
+    if (!chargeId) throw new Error('Direct charge reference is missing.')
+    const response = await fetch(`${PAYCHANGU_API}/mobile-money/payments/${encodeURIComponent(chargeId)}/verify`, {
+      method: 'GET',
+      headers: providerHeaders(),
+    })
+    if (!response.ok) throw new Error('Could not verify payment with PayChangu.')
+    const payload = await response.json() as { status?: unknown; message?: unknown; data?: Record<string, unknown> | null }
+    const details = payload.data ?? {}
+    const status = String(details.status ?? payload.status ?? '').toLowerCase()
+    const message = String(payload.message ?? details.message ?? '')
+    if (['failed', 'cancelled', 'canceled', 'rejected', 'expired', 'timeout', 'timed_out'].includes(status)) {
+      return { status: 'failed' as const, failureReason: mobileMoneyFailureReason(message, status) }
+    }
+    if (!['success', 'successful', 'paid', 'completed'].includes(status)) return { status: 'pending' as const }
+    return {
+      status: 'paid' as const,
+      amount: Number(details.amount ?? details.charge ?? details.total_amount),
+      currency: String(details.currency ?? '').toUpperCase(),
+    }
+  }
+
   const response = await fetch(`${PAYCHANGU_API}/verify-payment/${encodeURIComponent(txRef)}`, {
     method: 'GET',
     headers: providerHeaders(),
@@ -108,7 +139,7 @@ export async function verifyAndActivate(txRef: string, expectedUid?: string) {
   if (expectedUid && initialData.uid !== expectedUid) throw new Error('This payment does not belong to your account.')
   if (initialData.status === 'paid') return { status: 'paid' as const }
 
-  const provider = await verifiedProviderPayment(txRef)
+  const provider = await verifiedProviderPayment(txRef, initialData)
   if (provider.status !== 'paid') {
     if (provider.status === 'failed') {
       await firestore.runTransaction(async (transaction) => {
@@ -120,7 +151,7 @@ export async function verifyAndActivate(txRef: string, expectedUid?: string) {
     }
     return provider
   }
-  if (provider.currency !== 'MWK' || provider.amount !== Number(initialData.amount)) {
+  if (!['MWK', 'MK'].includes(provider.currency) || provider.amount !== Number(initialData.amount)) {
     throw new Error('Verified payment amount or currency does not match.')
   }
 

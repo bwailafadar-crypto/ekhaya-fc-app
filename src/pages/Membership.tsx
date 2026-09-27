@@ -16,6 +16,8 @@ type MembershipState = {
   error: string | null
 }
 
+type PaymentMethod = 'card' | 'bank_transfer' | 'airtel_money' | 'tnm_mpamba'
+
 const tierOrder = ['basic', 'silver', 'gold', 'premium']
 
 async function paymentRequest(user: User, path: string, body: Record<string, string>) {
@@ -27,19 +29,20 @@ async function paymentRequest(user: User, path: string, body: Record<string, str
     },
     body: JSON.stringify(body),
   })
-  const result = await response.json() as { error?: unknown; checkoutUrl?: unknown; status?: unknown }
+  const result = await response.json() as { error?: unknown; checkoutUrl?: unknown; status?: unknown; txRef?: unknown }
   if (!response.ok) throw new Error(typeof result.error === 'string' ? result.error : 'Payment request failed.')
   return result
 }
 
 export default function Membership() {
   const { user, profile } = useAuth()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const tiersResult = useFirestoreCollection<MembershipTier>('membershipTiers')
   const [selectedTierId, setSelectedTierId] = useState('')
   const [fullName, setFullName] = useState(profile?.fullName ?? user?.displayName ?? '')
   const [phone, setPhone] = useState(profile?.phone ?? '')
   const [email, setEmail] = useState(profile?.email ?? user?.email ?? '')
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('card')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [formError, setFormError] = useState('')
@@ -69,27 +72,54 @@ export default function Membership() {
   const isLoadingMembership = membershipState.uid !== (uid ?? null) || membershipState.loading
   const currentMembership = membershipState.uid === uid ? membershipState.membership : null
   const txRef = searchParams.get('tx_ref')
+  const paymentMethodParam = searchParams.get('method')
 
   useEffect(() => {
     if (!user || !txRef) return
+    const activeUser = user
+    const activeTxRef = txRef
     let cancelled = false
-    void paymentRequest(user, 'pay-verify', { txRef })
-      .then((result) => {
+    let timer: number | undefined
+    let attempts = 0
+    const isMobileMoney = paymentMethodParam === 'airtel_money' || paymentMethodParam === 'tnm_mpamba'
+
+    async function checkPayment() {
+      try {
+        const result = await paymentRequest(activeUser, 'pay-verify', { txRef: activeTxRef })
         if (cancelled) return
-        setPaymentMessage(result.status === 'paid'
-          ? 'Payment confirmed. Your membership is active.'
-          : result.status === 'failed'
-            ? 'Payment was not completed. You can try again below.'
-            : 'Payment is still processing. Check again shortly.')
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) setPaymentMessage(error instanceof Error ? error.message : 'Could not verify payment status.')
-      })
-      .finally(() => {
-        if (!cancelled) setPaymentBusy(false)
-      })
-    return () => { cancelled = true }
-  }, [user, txRef])
+        if (result.status === 'paid') {
+          setPaymentMessage('Payment confirmed. Your membership is active.')
+          setPaymentBusy(false)
+        } else if (result.status === 'failed') {
+          setPaymentMessage('Payment was not completed. You can try again below.')
+          setPaymentBusy(false)
+        } else if (isMobileMoney && attempts < 20) {
+          attempts += 1
+          setPaymentMessage('Approve the payment request on your phone. Checking status...')
+          timer = window.setTimeout(() => void checkPayment(), 3000)
+        } else {
+          setPaymentMessage('Payment is still processing. Check again shortly.')
+          setPaymentBusy(false)
+        }
+      } catch (error) {
+        if (cancelled) return
+        if (isMobileMoney && attempts < 20) {
+          attempts += 1
+          setPaymentMessage('Could not confirm the payment yet. Checking again...')
+          timer = window.setTimeout(() => void checkPayment(), 3000)
+        } else {
+          setPaymentMessage(error instanceof Error ? error.message : 'Could not verify payment status.')
+          setPaymentBusy(false)
+        }
+      }
+    }
+
+    void checkPayment()
+    return () => {
+      cancelled = true
+      if (timer !== undefined) window.clearTimeout(timer)
+    }
+  }, [user, txRef, paymentMethodParam])
 
   async function joinMembership(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -98,12 +128,19 @@ export default function Membership() {
     setFormError('')
     setMessage('')
     try {
-      const result = await paymentRequest(user, 'pay-initiate', {
+      const isMobileMoney = selectedPaymentMethod === 'airtel_money' || selectedPaymentMethod === 'tnm_mpamba'
+      const result = await paymentRequest(user, isMobileMoney ? 'pay-momo-initiate' : 'pay-initiate', {
         tierId: selectedTier.id,
         fullName: fullName.trim(),
         phone: phone.trim(),
         email: email.trim(),
+        method: selectedPaymentMethod,
       })
+      if (isMobileMoney) {
+        if (typeof result.txRef !== 'string') throw new Error('PayChangu did not return a payment reference.')
+        setSearchParams({ tx_ref: result.txRef, method: selectedPaymentMethod })
+        return
+      }
       if (typeof result.checkoutUrl !== 'string' || !result.checkoutUrl.startsWith('https://')) {
         throw new Error('PayChangu returned an invalid checkout link.')
       }
@@ -125,6 +162,7 @@ export default function Membership() {
         fullName: currentMembership.fullName,
         phone: currentMembership.phone,
         email: currentMembership.email,
+        method: 'card',
       })
       if (typeof result.checkoutUrl !== 'string' || !result.checkoutUrl.startsWith('https://')) {
         throw new Error('PayChangu returned an invalid checkout link.')
@@ -166,6 +204,18 @@ export default function Membership() {
         <label className="admin-field"><span>Full name</span><input name="fullName" autoComplete="name" required value={fullName} onChange={(event) => setFullName(event.target.value)} /></label>
         <label className="admin-field"><span>Phone</span><input name="phone" type="tel" autoComplete="tel" required value={phone} onChange={(event) => setPhone(event.target.value)} /></label>
         <label className="admin-field"><span>Email</span><input name="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+        <fieldset className="membership-payment-methods">
+          <legend>Payment method</legend>
+          {([
+            ['card', 'Card'],
+            ['bank_transfer', 'Bank transfer'],
+            ['airtel_money', 'Airtel Money'],
+            ['tnm_mpamba', 'TNM Mpamba'],
+          ] as const).map(([value, label]) => <label key={value}>
+            <input type="radio" name="paymentMethod" value={value} checked={selectedPaymentMethod === value} onChange={() => setSelectedPaymentMethod(value)} />
+            <span>{label}</span>
+          </label>)}
+        </fieldset>
         {formError && <p className="live-error" role="alert">{formError}</p>}
         <div className="admin-actions"><Button type="submit" disabled={submitting || isLoadingMembership}>{submitting ? 'Submitting...' : 'Submit membership request'}</Button><Button type="button" variant="ghost" disabled={submitting} onClick={() => setSelectedTierId('')}>Cancel</Button></div>
       </form>

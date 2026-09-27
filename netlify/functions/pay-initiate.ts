@@ -12,7 +12,8 @@ export const handler: Handler = async (event) => {
     const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : ''
     const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
     const contactEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
-    if (!tierId || !fullName || !phone || contactEmail !== email.toLowerCase()) {
+    const method = body.method === 'bank_transfer' ? 'bank_transfer' : body.method === 'card' ? 'card' : ''
+    if (!tierId || !fullName || !phone || !method || contactEmail !== email.toLowerCase()) {
       return jsonResponse(400, { error: 'Complete your contact details using your verified account email.' })
     }
 
@@ -39,6 +40,7 @@ export const handler: Handler = async (event) => {
       tierId,
       amount,
       currency: 'MWK',
+      method,
       tx_ref: txRef,
       status: 'pending',
       fullName,

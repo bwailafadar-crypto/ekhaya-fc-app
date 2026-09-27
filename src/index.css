@@ -346,6 +346,10 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 .membership-benefits { min-height: 52px; margin: 0 0 12px; padding-left: 16px; color: var(--muted); font-size: 10px; line-height: 1.6; }
 .membership-tier-card .button { width: 100%; padding: 0 8px; font-size: 11px; }
 .membership-join-card, .membership-status-card { margin-top: 12px; }
+.membership-payment-methods { margin: 0; padding: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; border: 1px solid var(--line); border-radius: 9px; }
+.membership-payment-methods legend { padding: 0 5px; color: var(--muted); font-size: 10px; font-weight: 700; }
+.membership-payment-methods label { min-width: 0; display: flex; align-items: center; gap: 7px; font-size: 11px; }
+.membership-payment-methods input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--gold-dark); }
 .membership-benefits-input { width: 100%; min-height: 100px; padding: 10px; color: var(--ink); background: #FCFBF8; border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 12px; resize: vertical; }
 .membership-active-field { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
 .membership-active-field input { width: 18px; height: 18px; accent-color: var(--gold-dark); }
