@@ -89,6 +89,15 @@ service cloud.firestore {
         allow read: if signedIn();
         allow create, update, delete: if isAdmin();
       }
+
+      match /reactions/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['emoji', 'updatedAt'])
+          && request.resource.data.emoji in ['⚽', '🔥', '👏', '😱'];
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
     }
 
     match /standings/{standingId} {

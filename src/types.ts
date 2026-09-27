@@ -1,4 +1,15 @@
+import type { Timestamp } from 'firebase/firestore'
+
 export type MatchStatus = 'upcoming' | 'live' | 'finished'
+export type MatchPeriod = 'first-half' | 'half-time' | 'second-half' | 'full-time'
+
+export interface MatchStats {
+  shots: number
+  shotsOnTarget: number
+  corners: number
+  fouls: number
+  offsides: number
+}
 
 export interface Team {
   id: string
@@ -22,9 +33,18 @@ export interface Fixture {
   minute?: number
   eventCount?: number
   isTest?: boolean
+  period?: MatchPeriod
+  kickoffAt?: Timestamp
+  periodStartedAt?: Timestamp
+  clockElapsedSeconds?: number
+  firstHalfSeconds?: number
+  addedTime?: number
+  matchStats?: { home: MatchStats; away: MatchStats }
   statsSkipped?: boolean
   statsAppliedChanges?: AppliedMatchChanges
   startingPlayerIds?: string[]
+  benchPlayerIds?: string[]
+  lineupConfirmed?: boolean
   statsApplied?: boolean
 }
 
@@ -45,13 +65,16 @@ export interface AppliedMatchChanges {
   players: Record<string, Partial<PlayerStats>>
 }
 
-export type MatchEventKind = 'goal' | 'card' | 'substitution'
+export type MatchEventKind = 'goal' | 'card' | 'substitution' | 'commentary'
 
 export interface MatchEvent {
   id: string
   kind: MatchEventKind
   minute: number
   team: string
+  text?: string
+  createdAt?: Timestamp
+  updatedAt?: Timestamp
   playerId?: string
   playerName?: string
   assistPlayerId?: string

@@ -1,11 +1,14 @@
+import { useEffect, useState } from 'react'
 import { ArrowRight, CalendarDays, Newspaper, ShieldCheck, Trophy, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import MatchCard from '../components/MatchCard'
 import { Badge, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
+import TeamLogo from '../components/TeamLogo'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture, NewsItem } from '../types'
 import { sortByDate } from '../utils/football'
+import { matchMinute } from '../utils/matchClock'
 
 export default function Home() {
   const { user, profile } = useAuth()
@@ -14,9 +17,18 @@ export default function Home() {
     || 'Fan'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const newsResult = useFirestoreCollection<NewsItem>('news')
+  const [clockNow, setClockNow] = useState(0)
+  const liveMatch = fixturesResult.items.find((fixture) => fixture.status === 'live' && !fixture.isTest)
   const upcoming = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')[0]
   const lastResult = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'finished' && !fixture.isTest), 'desc')[0]
   const latestNews = [...newsResult.items].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
+
+  const liveMatchId = liveMatch?.id
+  useEffect(() => {
+    if (!liveMatchId) return
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [liveMatchId])
 
   return (
     <>
@@ -26,6 +38,11 @@ export default function Home() {
         <p>One club. One community. Ekhaya FC.</p>
         <div className="home-hero-footer"><ShieldCheck size={15} /> Chiwembe Stadium · Blantyre</div>
       </section>
+      {liveMatch && <Link className="home-live-banner" to="/live" aria-label={`Live match: ${liveMatch.home} ${liveMatch.homeScore ?? 0}, ${liveMatch.awayScore ?? 0} ${liveMatch.away}. Open match centre.`}>
+        <span className="home-live-label"><i className="live-pulse-dot" />LIVE NOW</span>
+        <span className="home-live-teams"><span><TeamLogo name={liveMatch.home} />{liveMatch.home}</span><strong>{liveMatch.homeScore ?? 0} – {liveMatch.awayScore ?? 0}</strong><span><TeamLogo name={liveMatch.away} />{liveMatch.away}</span></span>
+        <span className="home-live-clock">{matchMinute(liveMatch, clockNow)} <ArrowRight size={15} /></span>
+      </Link>}
       <section className="home-section">
         <PageHeader eyebrow="Next up" title="Next match" action={<Link className="text-link" to="/fixtures">All fixtures <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
