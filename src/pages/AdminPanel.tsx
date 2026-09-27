@@ -1,11 +1,14 @@
-import { useState, type FormEvent, type ChangeEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react'
 import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
-import { CalendarDays, Download, ImagePlus, ShieldCheck, Table2, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Download, ImagePlus, ShieldCheck, Table2, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { db } from '../firebase'
 import { useToast } from '../components/ToastContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
+import TeamLogo from '../components/TeamLogo'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage } from '../utils/compressImage'
+import { matchMinute } from '../utils/matchClock'
 import type { Fixture, Player, PlayerStats, Standing, Team } from '../types'
 
 type Section = 'players' | 'teams' | 'standings' | 'fixtures'
@@ -96,16 +99,23 @@ export default function AdminPanel() {
   const [importingLogos, setImportingLogos] = useState(false)
   const [logoImportFailures, setLogoImportFailures] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
+  const [clockNow, setClockNow] = useState(0)
   const { showToast } = useToast()
   const players = useFirestoreCollection<Player>('players')
   const teams = useFirestoreCollection<Team>('teams')
   const standings = useFirestoreCollection<Standing>('standings')
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
+  const liveFixtures = fixtures.items.filter((fixture) => fixture.status === 'live')
   const selectedPlayer = players.items.find((item) => item.id === selectedPlayerId)
   const selectedTeam = teams.items.find((item) => item.id === selectedTeamId)
     ?? (selectedTeamId ? undefined : teams.items[0])
   const selectedStanding = standings.items.find((item) => item.id === selectedStandingId)
   const selectedFixture = fixtures.items.find((item) => item.id === selectedFixtureId)
+  useEffect(() => {
+    if (!liveFixtures.length) return
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [liveFixtures.length])
   const playerPhotoId = selectedPlayer?.id ?? ''
   const teamLogoId = selectedTeam?.id ?? ''
   const playerPhoto = playerPhotoDraft?.id === playerPhotoId ? playerPhotoDraft.dataUrl : selectedPlayer?.photoDataUrl ?? null
@@ -349,6 +359,12 @@ export default function AdminPanel() {
 
   return <>
     <PageHeader eyebrow="Club operations" title="Admin panel" description="Changes are shared with fans as soon as they are saved." />
+    {liveFixtures.map((fixture) => <section className="home-live-banner admin-live-banner" key={fixture.id}>
+      <span className="home-live-label"><i className="live-pulse-dot" />{fixture.isTest ? 'TEST MATCH' : 'LIVE NOW'}</span>
+      <span className="home-live-teams"><span><TeamLogo name={fixture.home} />{fixture.home}</span><strong>{fixture.homeScore ?? 0} – {fixture.awayScore ?? 0}</strong><span><TeamLogo name={fixture.away} />{fixture.away}</span></span>
+      <span className="home-live-clock">{matchMinute(fixture, clockNow)}</span>
+      <Link className="button button-secondary admin-live-manage" to="/live">Manage match <ArrowRight size={15} /></Link>
+    </section>)}
     <div className="admin-tabs" role="tablist" aria-label="Admin sections">
       {sections.map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={section === key} className={section === key ? 'admin-tab active' : 'admin-tab'} onClick={() => setSection(key)}><Icon size={16} />{label}</button>)}
     </div>

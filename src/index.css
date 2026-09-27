@@ -408,6 +408,8 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 .home-live-teams .team-logo { width: 23px; height: 23px; flex-basis: 23px; }
 .home-live-teams > strong { color: var(--gold-light); font-family: 'Oswald', sans-serif; font-size: 18px; white-space: nowrap; }
 .home-live-clock { display: inline-flex; align-items: center; gap: 5px; color: var(--gold-light); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.admin-live-banner { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.admin-live-manage { min-height: 36px; padding: 0 10px; gap: 5px; font-size: 10px; white-space: nowrap; }
 .matchday-scoreboard { margin-bottom: 14px; padding: 14px 15px 12px; color: #fff; background: linear-gradient(135deg, #11120F, #242116); border: 1px solid #4A3D18; border-bottom: 3px solid var(--gold); border-radius: 12px; box-shadow: 0 7px 19px rgb(14 14 14 / 11%); }
 .matchday-scoreboard-top, .matchday-scoreboard-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .matchday-scoreboard-top { color: rgb(255 255 255 / 62%); font-size: 9px; font-weight: 700; text-transform: uppercase; }
@@ -500,6 +502,7 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 @media (max-width: 400px) {
   .home-live-banner { grid-template-columns: 1fr auto; gap: 6px; }
   .home-live-label { grid-column: 1 / -1; }
+  .admin-live-manage { grid-column: 1 / -1; width: 100%; }
   .home-live-teams > span { font-size: 9px; }
   .matchday-teams { gap: 5px; }
   .matchday-score { min-width: 90px; }

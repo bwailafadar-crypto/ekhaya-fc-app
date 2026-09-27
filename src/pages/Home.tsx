@@ -32,17 +32,17 @@ export default function Home() {
 
   return (
     <>
+      {liveMatch && <Link className="home-live-banner" to="/live" aria-label={`Live match: ${liveMatch.home} ${liveMatch.homeScore ?? 0}, ${liveMatch.awayScore ?? 0} ${liveMatch.away}. Open match centre.`}>
+        <span className="home-live-label"><i className="live-pulse-dot" />LIVE NOW</span>
+        <span className="home-live-teams"><span><TeamLogo name={liveMatch.home} />{liveMatch.home}</span><strong>{liveMatch.homeScore ?? 0} – {liveMatch.awayScore ?? 0}</strong><span><TeamLogo name={liveMatch.away} />{liveMatch.away}</span></span>
+        <span className="home-live-clock">{matchMinute(liveMatch, clockNow)} <ArrowRight size={15} /></span>
+      </Link>}
       <section className="home-hero">
         <span className="page-eyebrow">The heart of the home</span>
         <h1>Welcome home, {firstName}</h1>
         <p>One club. One community. Ekhaya FC.</p>
         <div className="home-hero-footer"><ShieldCheck size={15} /> Chiwembe Stadium · Blantyre</div>
       </section>
-      {liveMatch && <Link className="home-live-banner" to="/live" aria-label={`Live match: ${liveMatch.home} ${liveMatch.homeScore ?? 0}, ${liveMatch.awayScore ?? 0} ${liveMatch.away}. Open match centre.`}>
-        <span className="home-live-label"><i className="live-pulse-dot" />LIVE NOW</span>
-        <span className="home-live-teams"><span><TeamLogo name={liveMatch.home} />{liveMatch.home}</span><strong>{liveMatch.homeScore ?? 0} – {liveMatch.awayScore ?? 0}</strong><span><TeamLogo name={liveMatch.away} />{liveMatch.away}</span></span>
-        <span className="home-live-clock">{matchMinute(liveMatch, clockNow)} <ArrowRight size={15} /></span>
-      </Link>}
       <section className="home-section">
         <PageHeader eyebrow="Next up" title="Next match" action={<Link className="text-link" to="/fixtures">All fixtures <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
