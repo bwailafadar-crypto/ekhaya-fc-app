@@ -466,6 +466,14 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 .quick-stat-row > div { display: flex; align-items: center; justify-content: center; gap: 4px; }
 .quick-stat-row > div strong { min-width: 14px; font-family: 'Oswald', sans-serif; font-size: 13px; text-align: center; }
 .quick-stat-row button { width: 23px; height: 23px; display: grid; place-items: center; color: var(--ink-2); background: #F5F3ED; border: 1px solid var(--line); border-radius: 6px; font-size: 15px; line-height: 1; }
+.opponent-score-control { margin: 12px 0; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 9px; }
+.opponent-score-value { display: flex; flex-direction: column; gap: 2px; }
+.opponent-score-value span { color: var(--muted); font-size: 10px; font-weight: 700; }
+.opponent-score-value strong { font-family: 'Oswald', sans-serif; font-size: 23px; line-height: 1; }
+.opponent-score-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.opponent-score-buttons button { min-width: 30px; height: 30px; padding: 0 6px; color: var(--ink-2); background: #F5F3ED; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.opponent-score-buttons button.selected { color: #fff; background: var(--gold-dark); border-color: var(--gold-dark); }
+.opponent-score-buttons button:disabled { opacity: .5; cursor: not-allowed; }
 .matchday-tabs { margin: 16px 0 12px; display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
 .matchday-tabs button { min-height: 39px; color: var(--muted); background: transparent; border: 0; border-bottom: 3px solid transparent; font-size: 11px; font-weight: 800; cursor: pointer; }
 .matchday-tabs button.active { color: var(--ink); border-bottom-color: var(--gold-dark); }

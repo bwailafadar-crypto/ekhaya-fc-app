@@ -338,6 +338,75 @@ export default function LiveMatch() {
     }
   }
 
+  async function setOpponentScore(nextScore: number) {
+    if (!selectedFixture || selectedFixture.status !== 'live') return
+    const targetScore = Math.max(0, Math.trunc(nextScore))
+    const currentScore = sameTeam(selectedFixture.home, CLUB_NAME)
+      ? Number(selectedFixture.awayScore ?? 0)
+      : Number(selectedFixture.homeScore ?? 0)
+    if (targetScore < currentScore && !window.confirm('Lower the opponent score and remove the latest opponent goal events?')) return
+
+    const opponentTeam = sameTeam(selectedFixture.home, CLUB_NAME) ? selectedFixture.away : selectedFixture.home
+    const scoreField = sameTeam(selectedFixture.home, CLUB_NAME) ? 'awayScore' : 'homeScore'
+    setBusy(true)
+    setProblem('')
+    try {
+      const eventCollection = collection(db, 'fixtures', selectedFixture.id, 'events')
+      const eventSnapshot = await getDocs(eventCollection)
+      const opponentGoals = eventSnapshot.docs
+        .filter((item) => {
+          const event = item.data() as MatchEvent
+          return event.kind === 'goal' && sameTeam(event.team, opponentTeam)
+        })
+        .sort((left, right) => {
+          const leftEvent = left.data() as MatchEvent
+          const rightEvent = right.data() as MatchEvent
+          return rightEvent.minute - leftEvent.minute
+            || (rightEvent.createdAt?.toMillis?.() ?? 0) - (leftEvent.createdAt?.toMillis?.() ?? 0)
+        })
+
+      await runTransaction(db, async (transaction) => {
+        const fixtureRef = doc(db, 'fixtures', selectedFixture.id)
+        const fixtureSnapshot = await transaction.get(fixtureRef)
+        if (!fixtureSnapshot.exists() || fixtureSnapshot.data().status !== 'live') throw new Error('This match is no longer live.')
+        const fixture = fixtureSnapshot.data()
+        if (fixture.eventCount != null && Number(fixture.eventCount) !== eventSnapshot.size) throw new Error('A match update arrived. Please set the score again.')
+        const score = Number(fixture[scoreField] ?? 0)
+        const difference = targetScore - score
+        if (difference === 0) return
+
+        if (difference > 0) {
+          for (let index = 0; index < difference; index += 1) {
+            transaction.set(doc(eventCollection), {
+              kind: 'goal', team: opponentTeam, minute: currentEventMinute(selectedFixture, clockNow), createdAt: serverTimestamp(),
+            })
+          }
+          transaction.update(fixtureRef, {
+            [scoreField]: targetScore,
+            eventCount: Number(fixture.eventCount ?? eventSnapshot.size) + difference,
+            updatedAt: serverTimestamp(),
+          })
+          return
+        }
+
+        const removalRefs = opponentGoals.slice(0, -difference).map((item) => item.ref)
+        const removalSnapshots = await Promise.all(removalRefs.map((ref) => transaction.get(ref)))
+        const removedCount = removalSnapshots.filter((item) => item.exists()).length
+        removalSnapshots.forEach((item) => { if (item.exists()) transaction.delete(item.ref) })
+        transaction.update(fixtureRef, {
+          [scoreField]: targetScore,
+          eventCount: Math.max(0, Number(fixture.eventCount ?? eventSnapshot.size) - removedCount),
+          updatedAt: serverTimestamp(),
+        })
+      })
+      setMessage('Opponent score updated with matching goal events.')
+    } catch (error) {
+      reportError(error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function reactToMatch(emoji: string) {
     if (!selectedFixture || !user) return
     const reactionRef = doc(db, 'fixtures', selectedFixture.id, 'reactions', user.uid)
@@ -780,6 +849,7 @@ export default function LiveMatch() {
   const isFinished = selectedFixture.status === 'finished'
   const homeScore = selectedFixture.homeScore ?? 0
   const awayScore = selectedFixture.awayScore ?? 0
+  const opponentScore = sameTeam(selectedFixture.home, CLUB_NAME) ? awayScore : homeScore
   const clubPlayers = players.filter((player) => player.team === 'senior')
   const homeSide: 'home' | 'away' = sameTeam(selectedFixture.home, CLUB_NAME) ? 'home' : 'away'
   const actionKind: MatchEventKind | null = quickAction === 'yellow' || quickAction === 'red' ? 'card'
@@ -834,6 +904,14 @@ export default function LiveMatch() {
       </div>
       <div className="matchpad-actions">{QUICK_ACTIONS.map(({ action, label, icon: Icon }) => <button type="button" key={action} className={`matchpad-action${quickAction === action ? ' active' : ''} matchpad-${action}`} onClick={() => setQuickAction((current) => current === action ? null : action)}><Icon size={20} /><span>{label}</span></button>)}<button type="button" className="matchpad-action matchpad-undo" disabled={busy || !events.length} onClick={() => void undoLastEvent()}><CornerUpLeft size={20} /><span>Undo last</span></button></div>
       {actionKind && <div className="matchpad-form"><EventForm fixture={selectedFixture} players={players} minute={currentEventMinute(selectedFixture, clockNow)} kind={actionKind} defaultSide={actionSide} defaultCard={cardColor} busy={busy} onSubmit={(event) => void addEvent(event)} />{quickAction === 'opponent-goal' && <p className="matchpad-hint">Adds a goal to {selectedFixture.home === CLUB_NAME ? selectedFixture.away : selectedFixture.home}.</p>}</div>}
+      <section className="opponent-score-control" aria-label="Opponent score controls">
+        <div className="opponent-score-value"><span>Opponent score</span><strong>{opponentScore}</strong></div>
+        <div className="opponent-score-buttons" role="group" aria-label="Set opponent score">
+          <button type="button" aria-label="Decrease opponent score" disabled={busy || opponentScore === 0} onClick={() => void setOpponentScore(opponentScore - 1)}>−</button>
+          {[0, 1, 2, 3, 4, 5].map((score) => <button type="button" key={score} className={opponentScore === score ? 'selected' : ''} disabled={busy} onClick={() => void setOpponentScore(score)}>{score}</button>)}
+          <button type="button" aria-label="Increase opponent score" disabled={busy} onClick={() => void setOpponentScore(opponentScore + 1)}>+</button>
+        </div>
+      </section>
       <div className="matchday-quick-stats"><div className="matchday-stats-heading"><h2>Match stats</h2><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div>{(['shots', 'shotsOnTarget', 'corners', 'fouls', 'offsides'] as Array<keyof MatchStats>).map((key) => <div className="quick-stat-row" key={key}><span>{key === 'shotsOnTarget' ? 'On target' : key[0].toUpperCase() + key.slice(1)}</span>{(['home', 'away'] as const).map((side) => <div key={side}><button type="button" aria-label={`Remove ${key} for ${side}`} onClick={() => void changeQuickStat(side, key, -1)}>−</button><strong>{(side === 'home' ? homeStats : awayStats)[key]}</strong><button type="button" aria-label={`Add ${key} for ${side}`} onClick={() => void changeQuickStat(side, key, 1)}>+</button></div>)}</div>)}</div>
       <Button type="button" variant="ghost" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button>
     </section>}
