@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { ProtectedRoute } from './auth/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import TeamProvider from './data/TeamProvider'
 import { ForgotPasswordPage, LoginPage, SignUpPage } from './pages/auth/AuthPages'
@@ -23,7 +24,8 @@ export default function App() {
     <HashRouter>
       <AuthProvider>
         <TeamProvider>
-          <Routes>
+          <ErrorBoundary>
+            <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -44,7 +46,8 @@ export default function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/more" element={<More />} />
             </Route>
-          </Routes>
+            </Routes>
+          </ErrorBoundary>
         </TeamProvider>
       </AuthProvider>
     </HashRouter>
