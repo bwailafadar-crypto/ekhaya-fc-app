@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { doc, onSnapshot, runTransaction, serverTimestamp } from 'firebase/firestore'
+import { doc, onSnapshot } from 'firebase/firestore'
+import type { User } from 'firebase/auth'
 import { ShieldCheck } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
@@ -16,8 +18,23 @@ type MembershipState = {
 
 const tierOrder = ['basic', 'silver', 'gold', 'premium']
 
+async function paymentRequest(user: User, path: string, body: Record<string, string>) {
+  const response = await fetch(`/.netlify/functions/${path}`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${await user.getIdToken()}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  const result = await response.json() as { error?: unknown; checkoutUrl?: unknown; status?: unknown }
+  if (!response.ok) throw new Error(typeof result.error === 'string' ? result.error : 'Payment request failed.')
+  return result
+}
+
 export default function Membership() {
   const { user, profile } = useAuth()
+  const [searchParams] = useSearchParams()
   const tiersResult = useFirestoreCollection<MembershipTier>('membershipTiers')
   const [selectedTierId, setSelectedTierId] = useState('')
   const [fullName, setFullName] = useState(profile?.fullName ?? user?.displayName ?? '')
@@ -26,6 +43,8 @@ export default function Membership() {
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [formError, setFormError] = useState('')
+  const [paymentMessage, setPaymentMessage] = useState('')
+  const [paymentBusy, setPaymentBusy] = useState(false)
   const [membershipState, setMembershipState] = useState<MembershipState>({
     uid: null, membership: null, loading: true, error: null,
   })
@@ -49,35 +68,72 @@ export default function Membership() {
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId)
   const isLoadingMembership = membershipState.uid !== (uid ?? null) || membershipState.loading
   const currentMembership = membershipState.uid === uid ? membershipState.membership : null
+  const txRef = searchParams.get('tx_ref')
+
+  useEffect(() => {
+    if (!user || !txRef) return
+    let cancelled = false
+    void paymentRequest(user, 'pay-verify', { txRef })
+      .then((result) => {
+        if (cancelled) return
+        setPaymentMessage(result.status === 'paid'
+          ? 'Payment confirmed. Your membership is active.'
+          : result.status === 'failed'
+            ? 'Payment was not completed. You can try again below.'
+            : 'Payment is still processing. Check again shortly.')
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setPaymentMessage(error instanceof Error ? error.message : 'Could not verify payment status.')
+      })
+      .finally(() => {
+        if (!cancelled) setPaymentBusy(false)
+      })
+    return () => { cancelled = true }
+  }, [user, txRef])
 
   async function joinMembership(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!uid || !selectedTier) return
+    if (!user || !selectedTier) return
     setSubmitting(true)
     setFormError('')
     setMessage('')
-    const membership = {
-      uid,
-      tierId: selectedTier.id,
-      fullName: fullName.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      status: 'pending',
-      createdAt: serverTimestamp(),
-    }
     try {
-      await runTransaction(db, async (transaction) => {
-        const membershipRef = doc(db, 'memberships', uid)
-        const snapshot = await transaction.get(membershipRef)
-        if (snapshot.exists()) throw new Error('A membership request already exists for this account.')
-        transaction.set(membershipRef, membership)
+      const result = await paymentRequest(user, 'pay-initiate', {
+        tierId: selectedTier.id,
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
       })
-      setMessage('Your membership request is pending. Payment is not available yet; Paychangu will be added later.')
-      setSelectedTierId('')
+      if (typeof result.checkoutUrl !== 'string' || !result.checkoutUrl.startsWith('https://')) {
+        throw new Error('PayChangu returned an invalid checkout link.')
+      }
+      window.location.assign(result.checkoutUrl)
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Could not submit your membership request.')
+      setFormError(error instanceof Error ? error.message : 'Could not start membership checkout.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function retryMembershipPayment() {
+    if (!user || !currentMembership) return
+    setPaymentBusy(true)
+    setFormError('')
+    try {
+      const result = await paymentRequest(user, 'pay-initiate', {
+        tierId: currentMembership.tierId,
+        fullName: currentMembership.fullName,
+        phone: currentMembership.phone,
+        email: currentMembership.email,
+      })
+      if (typeof result.checkoutUrl !== 'string' || !result.checkoutUrl.startsWith('https://')) {
+        throw new Error('PayChangu returned an invalid checkout link.')
+      }
+      window.location.assign(result.checkoutUrl)
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Could not start membership checkout.')
+    } finally {
+      setPaymentBusy(false)
     }
   }
 
@@ -96,15 +152,16 @@ export default function Membership() {
           : <EmptyState icon={ShieldCheck} title="Membership unavailable" description="No active membership tiers are available right now." />}
 
     {membershipState.error && <p className="live-error" role="alert">{membershipState.error}</p>}
+    {(paymentMessage || (txRef ? 'Checking payment status...' : '')) && <p className="membership-message" role="status">{paymentMessage || 'Checking payment status...'}</p>}
     {currentMembership && <Card className="membership-status-card">
       <h2>Membership request</h2>
       <p>Your {currentMembership.tierId} membership request is <strong>{currentMembership.status}</strong>.</p>
-      <p>Payment is not available yet. Paychangu will be added later.</p>
+      {currentMembership.status === 'pending' && <Button type="button" disabled={paymentBusy} onClick={() => void retryMembershipPayment()}>{paymentBusy ? 'Checking payment...' : 'Continue to payment'}</Button>}
     </Card>}
     {message && <p className="membership-message" role="status">{message}</p>}
     {selectedTier && !currentMembership && <Card className="membership-join-card">
       <h2>Join {selectedTier.name}</h2>
-      <p>MWK {Number(selectedTier.priceMWK ?? 0).toLocaleString()} for {selectedTier.durationMonths} months. Payment is a placeholder for now.</p>
+      <p>MWK {Number(selectedTier.priceMWK ?? 0).toLocaleString()} for {selectedTier.durationMonths} months.</p>
       <form className="admin-form" onSubmit={(event) => void joinMembership(event)}>
         <label className="admin-field"><span>Full name</span><input name="fullName" autoComplete="name" required value={fullName} onChange={(event) => setFullName(event.target.value)} /></label>
         <label className="admin-field"><span>Phone</span><input name="phone" type="tel" autoComplete="tel" required value={phone} onChange={(event) => setPhone(event.target.value)} /></label>

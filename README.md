@@ -1,4 +1,18 @@
-# React + TypeScript + Vite
+# Ekhaya FC App
+
+## Membership Payments
+
+Membership checkout runs through Netlify Functions. For local Netlify development, set `PAYCHANGU_SECRET_KEY` in `.env` using your PayChangu secret key. Do not add a `VITE_` prefix; this variable must only be available to server-side functions. Configure `FIREBASE_SERVICE_ACCOUNT_JSON` with the Firebase Admin service account JSON for local functions and in the Netlify site environment settings. `.env.example` lists the required server variables. Never commit `.env` or expose either value to the browser.
+
+Deploy with Netlify using the included `netlify.toml`. The membership flow redirects to PayChangu and only activates a membership after the server verifies the transaction with PayChangu.
+
+## Development
+
+```sh
+npm install
+npm run build
+npm run lint
+```
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
