@@ -355,10 +355,18 @@ export default function AdminPanel() {
   }
 
   const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : fixtures.loading
+  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : fixtures.error
+  const collectionErrors = [
+    { name: 'Players', error: players.error },
+    { name: 'Teams', error: teams.error },
+    { name: 'Standings', error: standings.error },
+    { name: 'Fixtures', error: fixtures.error },
+  ].filter(({ error }) => error)
   const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : fixtures.items.length > 0
 
   return <>
     <PageHeader eyebrow="Club operations" title="Admin panel" description="Changes are shared with fans as soon as they are saved." />
+    {collectionErrors.map(({ name, error }) => <p className="live-error" role="alert" key={name}>{name} could not be loaded: {error}</p>)}
     {liveFixtures.map((fixture) => <section className="home-live-banner admin-live-banner" key={fixture.id}>
       <span className="home-live-label"><i className="live-pulse-dot" />{fixture.isTest ? 'TEST MATCH' : 'LIVE NOW'}</span>
       <span className="home-live-teams"><span><TeamLogo name={fixture.home} />{fixture.home}</span><strong>{fixture.homeScore ?? 0} – {fixture.awayScore ?? 0}</strong><span><TeamLogo name={fixture.away} />{fixture.away}</span></span>
@@ -369,6 +377,7 @@ export default function AdminPanel() {
       {sections.map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={section === key} className={section === key ? 'admin-tab active' : 'admin-tab'} onClick={() => setSection(key)}><Icon size={16} />{label}</button>)}
     </div>
     {isLoading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
+      : sectionError ? null
       : !hasItems && section !== 'players' && section !== 'fixtures' ? <EmptyState icon={ImagePlus} title="No records loaded" description="Seed the club data before editing this section." />
         : section === 'players' ? <Card className="admin-card">
           <div className="admin-card-heading"><h2>Player details</h2><select aria-label="Choose player" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}><option value="">Add a player</option>{players.items.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
@@ -412,9 +421,9 @@ export default function AdminPanel() {
             </form>}
           </Card></>
             : section === 'standings' ? <Card className="admin-card">
-              <div className="admin-card-heading"><h2>League table row</h2><select aria-label="Choose team row" value={selectedStandingId} onChange={(event) => setSelectedStandingId(event.target.value)}><option value="">Select team</option>{standings.items.map((row) => <option key={row.id} value={row.id}>{row.position}. {row.team}</option>)}</select></div>
+              <div className="admin-card-heading"><h2>League table row</h2><select aria-label="Choose team row" value={selectedStandingId} onChange={(event) => setSelectedStandingId(event.target.value)}><option value="">Select team</option>{standings.items.map((row) => <option key={row.id} value={row.id}>{row.position ?? 0}. {row.team}</option>)}</select></div>
               {selectedStanding && <form className="admin-form" key={selectedStanding.id} onSubmit={saveStanding}>
-                <div className="admin-form-grid"><Field label="Position" name="position" type="number" min={1} defaultValue={selectedStanding.position} required /><Field label="Team" name="team" defaultValue={selectedStanding.team} required /><Field label="Played" name="played" type="number" min={0} defaultValue={selectedStanding.played} /><Field label="Won" name="won" type="number" min={0} defaultValue={selectedStanding.won} /><Field label="Drawn" name="drawn" type="number" min={0} defaultValue={selectedStanding.drawn} /><Field label="Lost" name="lost" type="number" min={0} defaultValue={selectedStanding.lost} /><Field label="Goals for" name="goalsFor" type="number" defaultValue={selectedStanding.goalsFor} /><Field label="Goals against" name="goalsAgainst" type="number" defaultValue={selectedStanding.goalsAgainst} /><Field label="Points" name="points" type="number" min={0} defaultValue={selectedStanding.points} /><Field label="Last five form (e.g. WDLWW)" name="form" defaultValue={selectedStanding.form.join('')} /></div>
+                <div className="admin-form-grid"><Field label="Position" name="position" type="number" min={1} defaultValue={selectedStanding.position ?? 0} required /><Field label="Team" name="team" defaultValue={selectedStanding.team} required /><Field label="Played" name="played" type="number" min={0} defaultValue={selectedStanding.played ?? 0} /><Field label="Won" name="won" type="number" min={0} defaultValue={selectedStanding.won ?? 0} /><Field label="Drawn" name="drawn" type="number" min={0} defaultValue={selectedStanding.drawn ?? 0} /><Field label="Lost" name="lost" type="number" min={0} defaultValue={selectedStanding.lost ?? 0} /><Field label="Goals for" name="goalsFor" type="number" defaultValue={selectedStanding.goalsFor ?? 0} /><Field label="Goals against" name="goalsAgainst" type="number" defaultValue={selectedStanding.goalsAgainst ?? 0} /><Field label="Points" name="points" type="number" min={0} defaultValue={selectedStanding.points ?? 0} /><Field label="Last five form (e.g. WDLWW)" name="form" defaultValue={(selectedStanding.form ?? []).join('')} /></div>
                 <div className="admin-actions"><Button type="submit" disabled={saving}>Save table row</Button></div>
               </form>}
             </Card>

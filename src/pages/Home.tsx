@@ -46,12 +46,14 @@ export default function Home() {
       <section className="home-section">
         <PageHeader eyebrow="Next up" title="Next match" action={<Link className="text-link" to="/fixtures">All fixtures <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
+          : fixturesResult.error ? <p className="live-error" role="alert">Fixtures could not be loaded: {fixturesResult.error}</p>
           : upcoming ? <MatchCard fixture={upcoming} />
             : <Card><EmptyState icon={CalendarDays} title="No upcoming match" description="Check back when the next fixture is announced." /></Card>}
       </section>
       <section className="home-section">
         <PageHeader eyebrow="Full time" title="Last result" action={<Link className="text-link" to="/results">Results <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
+          : fixturesResult.error ? null
           : lastResult ? <MatchCard fixture={lastResult} />
             : <Card><EmptyState icon={Trophy} title="No results yet" /></Card>}
       </section>
@@ -63,6 +65,7 @@ export default function Home() {
       <section className="home-section">
         <PageHeader eyebrow="From the club" title="Latest news" action={<Link className="text-link" to="/news">All news <ArrowRight size={15} /></Link>} />
         {newsResult.loading ? <div className="loading-list"><Skeleton /><Skeleton /></div>
+          : newsResult.error ? <p className="live-error" role="alert">News could not be loaded: {newsResult.error}</p>
           : latestNews.length ? latestNews.map((item) => <Card key={item.id} className="home-news-item">
             <div><Badge variant="gold">{item.category}</Badge><time>{item.date}</time></div>
             <h3>{item.title}</h3><p>{item.summary}</p>

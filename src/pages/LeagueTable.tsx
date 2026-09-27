@@ -6,7 +6,7 @@ import type { Standing } from '../types'
 
 export default function LeagueTable() {
   const { items, loading, error } = useFirestoreCollection<Standing>('standings')
-  const rows = [...items].sort((a, b) => a.position - b.position)
+  const rows = [...items].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 
   return <>
     <PageHeader eyebrow="2026 season" title="League table" description="TNM Super League standings" />
@@ -21,14 +21,15 @@ export default function LeagueTable() {
               <tbody>
                 {rows.map((row) => {
                   const isEkhaya = row.id === 'ekhaya-fc' || row.team.toLowerCase() === 'ekhaya fc'
+                  const form = row.form ?? []
                   return <tr key={row.id} className={isEkhaya ? 'standings-ekhaya' : ''}>
-                    <td className="standings-position">{row.position}</td>
+                    <td className="standings-position">{row.position ?? 0}</td>
                     <th scope="row" className="standings-team"><TeamLogo name={row.team} /><span>{row.team}</span></th>
-                    <td>{row.played}</td><td>{row.won}</td><td>{row.drawn}</td><td>{row.lost}</td>
-                    <td>{row.goalsFor}</td><td>{row.goalsAgainst}</td><td>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
-                    <td className="standings-points">{row.points}</td>
-                    <td><div className="table-form" aria-label={`Form ${row.form.join(' ')}`}>
-                      {row.form.slice(-5).map((result, index) => <span key={`${result}-${index}`} className={`table-form-dot form-dot-${result.toLowerCase()}`} title={result} />)}
+                    <td>{row.played ?? 0}</td><td>{row.won ?? 0}</td><td>{row.drawn ?? 0}</td><td>{row.lost ?? 0}</td>
+                    <td>{row.goalsFor ?? 0}</td><td>{row.goalsAgainst ?? 0}</td><td>{(row.goalDifference ?? 0) > 0 ? `+${row.goalDifference}` : row.goalDifference ?? 0}</td>
+                    <td className="standings-points">{row.points ?? 0}</td>
+                    <td><div className="table-form" aria-label={`Form ${form.join(' ')}`}>
+                      {form.slice(-5).map((result, index) => <span key={`${result}-${index}`} className={`table-form-dot form-dot-${result.toLowerCase()}`} title={result} />)}
                     </div></td>
                   </tr>
                 })}
