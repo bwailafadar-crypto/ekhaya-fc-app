@@ -76,6 +76,11 @@ service cloud.firestore {
       allow create, update, delete: if isSuperadmin();
     }
 
+    match /teams/{teamId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /fixtures/{fixtureId} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();
