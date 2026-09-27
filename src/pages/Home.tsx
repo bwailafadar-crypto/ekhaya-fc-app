@@ -14,8 +14,8 @@ export default function Home() {
     || 'Fan'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const newsResult = useFirestoreCollection<NewsItem>('news')
-  const upcoming = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'upcoming'), 'asc')[0]
-  const lastResult = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'finished'), 'desc')[0]
+  const upcoming = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')[0]
+  const lastResult = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'finished' && !fixture.isTest), 'desc')[0]
   const latestNews = [...newsResult.items].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
 
   return (

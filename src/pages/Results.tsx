@@ -7,7 +7,7 @@ import { ekhayaOutcome, sortByDate } from '../utils/football'
 
 export default function Results() {
   const { items, loading, error } = useFirestoreCollection<Fixture>('fixtures')
-  const results = sortByDate(items.filter((fixture) => fixture.status === 'finished'), 'desc')
+  const results = sortByDate(items.filter((fixture) => fixture.status === 'finished' && !fixture.isTest), 'desc')
   const form = results
     .filter((fixture) => fixture.home.toLowerCase() === 'ekhaya fc' || fixture.away.toLowerCase() === 'ekhaya fc')
     .slice(0, 5)

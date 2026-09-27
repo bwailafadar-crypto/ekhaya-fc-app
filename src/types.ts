@@ -21,8 +21,28 @@ export interface Fixture {
   awayScore?: number | null
   minute?: number
   eventCount?: number
+  isTest?: boolean
+  statsSkipped?: boolean
+  statsAppliedChanges?: AppliedMatchChanges
   startingPlayerIds?: string[]
   statsApplied?: boolean
+}
+
+export interface AppliedStandingChange {
+  standingId: string
+  played: 1
+  won: 0 | 1
+  drawn: 0 | 1
+  lost: 0 | 1
+  goalsFor: number
+  goalsAgainst: number
+  points: number
+  result: 'W' | 'D' | 'L'
+}
+
+export interface AppliedMatchChanges {
+  standings: AppliedStandingChange[]
+  players: Record<string, Partial<PlayerStats>>
 }
 
 export type MatchEventKind = 'goal' | 'card' | 'substitution'
@@ -89,6 +109,7 @@ export interface Standing {
   goalDifference: number
   points: number
   form: Array<'W' | 'D' | 'L'>
+  formHistory?: Array<{ fixtureId: string; result: 'W' | 'D' | 'L' }>
 }
 
 export type TableRow = Standing

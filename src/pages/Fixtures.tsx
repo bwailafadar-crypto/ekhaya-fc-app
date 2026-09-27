@@ -7,7 +7,7 @@ import { sortByDate } from '../utils/football'
 
 export default function Fixtures() {
   const { items, loading, error } = useFirestoreCollection<Fixture>('fixtures')
-  const fixtures = sortByDate(items.filter((fixture) => fixture.status === 'upcoming'), 'asc')
+  const fixtures = sortByDate(items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')
 
   return <>
     <PageHeader eyebrow="TNM Super League" title="Fixtures" description="Upcoming matches · Malawi time (CAT)" />
