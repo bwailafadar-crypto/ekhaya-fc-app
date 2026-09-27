@@ -337,6 +337,19 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 .admin-image-preview { width: 80px; height: 80px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
 .admin-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-actions .button { min-height: 42px; }
+.membership-tier-grid { margin-bottom: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.membership-tier-card { min-width: 0; margin: 0; padding: 14px; }
+.membership-tier-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; }
+.membership-tier-heading h2 { font-size: 19px; }
+.membership-tier-heading span { color: var(--muted); font-size: 9px; white-space: nowrap; }
+.membership-price { display: block; margin: 8px 0; font-family: 'Oswald', sans-serif; font-size: 20px; }
+.membership-benefits { min-height: 52px; margin: 0 0 12px; padding-left: 16px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.membership-tier-card .button { width: 100%; padding: 0 8px; font-size: 11px; }
+.membership-join-card, .membership-status-card { margin-top: 12px; }
+.membership-benefits-input { width: 100%; min-height: 100px; padding: 10px; color: var(--ink); background: #FCFBF8; border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 12px; resize: vertical; }
+.membership-active-field { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
+.membership-active-field input { width: 18px; height: 18px; accent-color: var(--gold-dark); }
+.membership-message { margin: 0 0 12px; padding: 10px 12px; color: #176832; background: #E5F4E9; border-radius: 9px; font-size: 12px; line-height: 1.5; }
 .admin-error { color: var(--loss); font-size: 11px; }
 .logo-import-card > p { margin: -4px 0 12px; font-size: 11px !important; }
 .logo-import-report { margin-top: 11px; padding: 10px 11px; display: flex; flex-direction: column; gap: 3px; color: #176832; background: #E5F4E9; border-radius: 9px; font-size: 11px; line-height: 1.4; }

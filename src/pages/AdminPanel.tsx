@@ -5,18 +5,27 @@ import { Link } from 'react-router-dom'
 import { db } from '../firebase'
 import { useToast } from '../components/ToastContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
+import { useAuth } from '../auth/AuthContext'
 import TeamLogo from '../components/TeamLogo'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
-import type { Fixture, Player, PlayerStats, Standing, Team } from '../types'
+import type { Fixture, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
 
-type Section = 'players' | 'teams' | 'standings' | 'fixtures'
+type Section = 'players' | 'teams' | 'standings' | 'fixtures' | 'membershipTiers'
 const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
   { key: 'players', label: 'Players', icon: Users },
   { key: 'teams', label: 'Teams', icon: ShieldCheck },
   { key: 'standings', label: 'Table', icon: Table2 },
   { key: 'fixtures', label: 'Fixtures', icon: CalendarDays },
+  { key: 'membershipTiers', label: 'Membership Tiers', icon: ShieldCheck },
+]
+
+const defaultMembershipTiers: MembershipTier[] = [
+  { id: 'basic', name: 'Basic', priceMWK: 5000, durationMonths: 12, benefits: ['Digital membership card', 'Club news and updates'], colour: '#28764B', active: true },
+  { id: 'silver', name: 'Silver', priceMWK: 10000, durationMonths: 12, benefits: ['Basic benefits', 'Priority ticket access'], colour: '#8B9299', active: true },
+  { id: 'gold', name: 'Gold', priceMWK: 20000, durationMonths: 12, benefits: ['Silver benefits', 'Exclusive matchday offers'], colour: '#C9A227', active: true },
+  { id: 'premium', name: 'Premium', priceMWK: 50000, durationMonths: 12, benefits: ['Gold benefits', 'Invitations to club events'], colour: '#242424', active: true },
 ]
 
 const emptyStats: PlayerStats = {
@@ -88,6 +97,8 @@ function messageFrom(error: unknown) {
 }
 
 export default function AdminPanel() {
+  const { role } = useAuth()
+  const isSuperadmin = role === 'superadmin'
   const [section, setSection] = useState<Section>('players')
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
@@ -99,18 +110,23 @@ export default function AdminPanel() {
   const [importingLogos, setImportingLogos] = useState(false)
   const [logoImportFailures, setLogoImportFailures] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
+  const [seedingTiers, setSeedingTiers] = useState(false)
+  const [selectedTierId, setSelectedTierId] = useState('')
   const [clockNow, setClockNow] = useState(0)
   const { showToast } = useToast()
   const players = useFirestoreCollection<Player>('players')
   const teams = useFirestoreCollection<Team>('teams')
   const standings = useFirestoreCollection<Standing>('standings')
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
+  const membershipTiers = useFirestoreCollection<MembershipTier>('membershipTiers')
   const liveFixtures = fixtures.items.filter((fixture) => fixture.status === 'live')
   const selectedPlayer = players.items.find((item) => item.id === selectedPlayerId)
   const selectedTeam = teams.items.find((item) => item.id === selectedTeamId)
     ?? (selectedTeamId ? undefined : teams.items[0])
   const selectedStanding = standings.items.find((item) => item.id === selectedStandingId)
   const selectedFixture = fixtures.items.find((item) => item.id === selectedFixtureId)
+  const selectedTier = membershipTiers.items.find((item) => item.id === selectedTierId)
+    ?? (selectedTierId ? undefined : membershipTiers.items[0])
   useEffect(() => {
     if (!liveFixtures.length) return
     const timer = window.setInterval(() => setClockNow(Date.now()), 1000)
@@ -136,6 +152,47 @@ export default function AdminPanel() {
     } finally {
       setUploading(false)
       input.value = ''
+    }
+  }
+
+  async function seedMembershipTiers() {
+    setSeedingTiers(true)
+    try {
+      const existing = await getDocs(collection(db, 'membershipTiers'))
+      const existingIds = new Set(existing.docs.map((item) => item.id))
+      const missing = defaultMembershipTiers.filter((tier) => !existingIds.has(tier.id))
+      const batch = writeBatch(db)
+      missing.forEach(({ id, ...tier }) => batch.set(doc(db, 'membershipTiers', id), tier))
+      if (missing.length) await batch.commit()
+      showToast(missing.length ? 'Default membership tiers created with placeholder prices.' : 'All default tiers already exist.')
+    } catch (error) {
+      showToast(messageFrom(error), 'error')
+    } finally {
+      setSeedingTiers(false)
+    }
+  }
+
+  async function saveMembershipTier(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selectedTier) return
+    setSaving(true)
+    const form = new FormData(event.currentTarget)
+    const benefits = String(form.get('benefits') ?? '').split('\n').map((benefit) => benefit.trim()).filter(Boolean)
+    try {
+      const { id } = selectedTier
+      await setDoc(doc(db, 'membershipTiers', id), {
+        name: String(form.get('name') ?? '').trim(),
+        priceMWK: numberValue(form.get('priceMWK')) ?? 0,
+        durationMonths: numberValue(form.get('durationMonths')) ?? 0,
+        benefits,
+        colour: String(form.get('colour') ?? '#C9A227'),
+        active: form.get('active') === 'on',
+      }, { merge: true })
+      showToast('Membership tier updated.')
+    } catch (error) {
+      showToast(messageFrom(error), 'error')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -354,15 +411,16 @@ export default function AdminPanel() {
     }
   }
 
-  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : fixtures.loading
-  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : fixtures.error
+  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : membershipTiers.loading
+  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : membershipTiers.error
   const collectionErrors = [
     { name: 'Players', error: players.error },
     { name: 'Teams', error: teams.error },
     { name: 'Standings', error: standings.error },
     { name: 'Fixtures', error: fixtures.error },
+    ...(isSuperadmin ? [{ name: 'Membership tiers', error: membershipTiers.error }] : []),
   ].filter(({ error }) => error)
-  const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : fixtures.items.length > 0
+  const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : section === 'fixtures' ? fixtures.items.length > 0 : membershipTiers.items.length > 0
 
   return <>
     <PageHeader eyebrow="Club operations" title="Admin panel" description="Changes are shared with fans as soon as they are saved." />
@@ -374,10 +432,22 @@ export default function AdminPanel() {
       <Link className="button button-secondary admin-live-manage" to="/live">Manage match <ArrowRight size={15} /></Link>
     </section>)}
     <div className="admin-tabs" role="tablist" aria-label="Admin sections">
-      {sections.map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={section === key} className={section === key ? 'admin-tab active' : 'admin-tab'} onClick={() => setSection(key)}><Icon size={16} />{label}</button>)}
+      {sections.filter(({ key }) => key !== 'membershipTiers' || isSuperadmin).map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={section === key} className={section === key ? 'admin-tab active' : 'admin-tab'} onClick={() => setSection(key)}><Icon size={16} />{label}</button>)}
     </div>
     {isLoading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : sectionError ? null
+      : section === 'membershipTiers' ? <>
+          {!hasItems && <Card className="admin-card"><h2>No membership tiers yet</h2><p>Create the four placeholder tiers to start, then set their prices and benefits.</p><Button type="button" disabled={seedingTiers} onClick={() => void seedMembershipTiers()}>{seedingTiers ? 'Creating tiers...' : 'Create default tiers'}</Button></Card>}
+          {hasItems && <Card className="admin-card">
+            <div className="admin-card-heading"><h2>Membership tier</h2><select aria-label="Choose membership tier" value={selectedTier?.id ?? ''} onChange={(event) => setSelectedTierId(event.target.value)}>{membershipTiers.items.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select></div>
+            {selectedTier && <form className="admin-form" key={selectedTier.id} onSubmit={saveMembershipTier}>
+              <div className="admin-form-grid"><Field label="Name" name="name" defaultValue={selectedTier.name} required /><Field label="Price (MWK)" name="priceMWK" type="number" min={0} defaultValue={selectedTier.priceMWK} required /><Field label="Duration (months)" name="durationMonths" type="number" min={1} defaultValue={selectedTier.durationMonths} required /><Field label="Colour" name="colour" type="color" defaultValue={selectedTier.colour} /></div>
+              <label className="admin-field"><span>Benefits (one per line)</span><textarea className="membership-benefits-input" name="benefits" rows={5} defaultValue={(selectedTier.benefits ?? []).join('\n')} /></label>
+              <label className="membership-active-field"><input type="checkbox" name="active" defaultChecked={selectedTier.active} /><span>Available to fans</span></label>
+              <div className="admin-actions"><Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save tier'}</Button><Button type="button" variant="secondary" disabled={seedingTiers} onClick={() => void seedMembershipTiers()}>{seedingTiers ? 'Creating...' : 'Add missing defaults'}</Button></div>
+            </form>}
+          </Card>}
+        </>
       : !hasItems && section !== 'players' && section !== 'fixtures' ? <EmptyState icon={ImagePlus} title="No records loaded" description="Seed the club data before editing this section." />
         : section === 'players' ? <Card className="admin-card">
           <div className="admin-card-heading"><h2>Player details</h2><select aria-label="Choose player" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}><option value="">Add a player</option>{players.items.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>

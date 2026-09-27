@@ -94,6 +94,26 @@ export interface NewsItem {
   category: 'Match' | 'Club' | 'Transfer' | 'Community'
 }
 
+export interface MembershipTier {
+  id: string
+  name: string
+  priceMWK: number
+  durationMonths: number
+  benefits: string[]
+  colour: string
+  active: boolean
+}
+
+export interface MembershipRecord {
+  uid: string
+  tierId: string
+  fullName: string
+  phone: string
+  email: string
+  status: 'pending'
+  createdAt?: Timestamp
+}
+
 export interface Player {
   id: string
   name: string
