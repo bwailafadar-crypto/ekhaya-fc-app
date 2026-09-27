@@ -110,8 +110,23 @@ export interface MembershipRecord {
   fullName: string
   phone: string
   email: string
-  status: 'pending'
+  status: 'pending' | 'active' | 'suspended'
+  fanId?: string
+  startDate?: Timestamp
+  expiryDate?: Timestamp
   createdAt?: Timestamp
+}
+
+export interface LegacyFan {
+  id: string
+  fullName: string
+  email: string
+  phone: string | null
+  tier: string
+  status: string
+  fanId: string | null
+  memberSince: string | Timestamp | null
+  expiryDate?: string | Timestamp | null
 }
 
 export interface Player {

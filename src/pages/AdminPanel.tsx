@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react'
-import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, Timestamp, writeBatch } from 'firebase/firestore'
 import { ArrowRight, CalendarDays, Download, ImagePlus, ShieldCheck, Table2, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { db } from '../firebase'
@@ -10,16 +10,70 @@ import TeamLogo from '../components/TeamLogo'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
-import type { Fixture, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
+import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
 
-type Section = 'players' | 'teams' | 'standings' | 'fixtures' | 'membershipTiers'
+type Section = 'players' | 'teams' | 'standings' | 'fixtures' | 'membershipTiers' | 'members'
 const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
   { key: 'players', label: 'Players', icon: Users },
   { key: 'teams', label: 'Teams', icon: ShieldCheck },
   { key: 'standings', label: 'Table', icon: Table2 },
   { key: 'fixtures', label: 'Fixtures', icon: CalendarDays },
   { key: 'membershipTiers', label: 'Membership Tiers', icon: ShieldCheck },
+  { key: 'members', label: 'Members', icon: Users },
 ]
+
+type AdminCollectionState<T> = { items: T[]; loading: boolean; error: string | null }
+type StoredMembership = { id: string; data: MembershipRecord }
+type MemberRow = {
+  id: string
+  uid: string | null
+  legacyFanId: string | null
+  email: string
+  fullName: string
+  phone: string
+  tierId: string
+  status: 'pending' | 'active' | 'suspended'
+  fanId: string | null
+  startDate: Timestamp | string | null
+  expiryDate: Timestamp | string | null
+}
+
+function emailKey(email: string) {
+  return email.trim().toLocaleLowerCase()
+}
+
+function memberStatus(status: string | undefined): MemberRow['status'] {
+  return status === 'active' || status === 'suspended' ? status : 'pending'
+}
+
+function memberDate(value: unknown) {
+  if (value instanceof Timestamp) return value.toDate()
+  if (typeof value === 'string') {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? null : date
+  }
+  return null
+}
+
+function addMonths(date: Date, months: number) {
+  const result = new Date(date)
+  const day = result.getDate()
+  result.setDate(1)
+  result.setMonth(result.getMonth() + months)
+  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate()
+  result.setDate(Math.min(day, lastDay))
+  return result
+}
+
+function fanNumber(fanId: string | null | undefined) {
+  const match = fanId?.match(/^EKH-FAN-(\d+)$/)
+  return match ? Number(match[1]) : 0
+}
+
+function tierIdFor(label: string | undefined, tiers: MembershipTier[]) {
+  const key = (label ?? '').trim().toLocaleLowerCase()
+  return tiers.find((tier) => tier.id.toLocaleLowerCase() === key || tier.name.toLocaleLowerCase() === key)?.id ?? ''
+}
 
 const defaultMembershipTiers: MembershipTier[] = [
   { id: 'basic', name: 'Basic', priceMWK: 5000, durationMonths: 12, benefits: ['Digital membership card', 'Club news and updates'], colour: '#28764B', active: true },
@@ -112,6 +166,11 @@ export default function AdminPanel() {
   const [saving, setSaving] = useState(false)
   const [seedingTiers, setSeedingTiers] = useState(false)
   const [selectedTierId, setSelectedTierId] = useState('')
+  const [tierFilter, setTierFilter] = useState('all')
+  const [memberStatusFilter, setMemberStatusFilter] = useState('all')
+  const [memberActionBusy, setMemberActionBusy] = useState('')
+  const [membershipRecords, setMembershipRecords] = useState<AdminCollectionState<StoredMembership>>({ items: [], loading: true, error: null })
+  const [legacyFans, setLegacyFans] = useState<AdminCollectionState<LegacyFan>>({ items: [], loading: true, error: null })
   const [clockNow, setClockNow] = useState(0)
   const { showToast } = useToast()
   const players = useFirestoreCollection<Player>('players')
@@ -127,6 +186,56 @@ export default function AdminPanel() {
   const selectedFixture = fixtures.items.find((item) => item.id === selectedFixtureId)
   const selectedTier = membershipTiers.items.find((item) => item.id === selectedTierId)
     ?? (selectedTierId ? undefined : membershipTiers.items[0])
+  useEffect(() => {
+    if (!isSuperadmin) return
+    const membershipsUnsubscribe = onSnapshot(collection(db, 'memberships'), (snapshot) => {
+      setMembershipRecords({ items: snapshot.docs.map((item) => ({ id: item.id, data: item.data() as MembershipRecord })), loading: false, error: null })
+    }, () => setMembershipRecords({ items: [], loading: false, error: 'Membership requests could not be loaded.' }))
+    const fansUnsubscribe = onSnapshot(collection(db, 'fans'), (snapshot) => {
+      setLegacyFans({ items: snapshot.docs.map((item) => ({ ...item.data(), id: item.id }) as LegacyFan), loading: false, error: null })
+    }, () => setLegacyFans({ items: [], loading: false, error: 'Legacy fan records could not be loaded.' }))
+    return () => {
+      membershipsUnsubscribe()
+      fansUnsubscribe()
+    }
+  }, [isSuperadmin])
+  const legacyByEmail = new Map(legacyFans.items.filter((fan) => fan.email).map((fan) => [emailKey(fan.email), fan]))
+  const linkedLegacyIds = new Set<string>()
+  const accountMembers: MemberRow[] = membershipRecords.items.map(({ id, data }) => {
+    const legacy = data.email ? legacyByEmail.get(emailKey(data.email)) : undefined
+    if (legacy) linkedLegacyIds.add(legacy.id)
+    return {
+      id,
+      uid: id,
+      legacyFanId: legacy?.id ?? null,
+      email: data.email || legacy?.email || '',
+      fullName: data.fullName || legacy?.fullName || '',
+      phone: data.phone || legacy?.phone || '',
+      tierId: data.tierId || tierIdFor(legacy?.tier, membershipTiers.items),
+      status: memberStatus(data.status || legacy?.status),
+      fanId: data.fanId || legacy?.fanId || null,
+      startDate: data.startDate ?? legacy?.memberSince ?? null,
+      expiryDate: data.expiryDate ?? legacy?.expiryDate ?? null,
+    }
+  })
+  const legacyMembers: MemberRow[] = legacyFans.items.filter((fan) => !linkedLegacyIds.has(fan.id)).map((fan) => ({
+    id: `legacy-${fan.id}`,
+    uid: null,
+    legacyFanId: fan.id,
+    email: fan.email || '',
+    fullName: fan.fullName || '',
+    phone: fan.phone || '',
+    tierId: tierIdFor(fan.tier, membershipTiers.items),
+    status: memberStatus(fan.status),
+    fanId: fan.fanId,
+    startDate: fan.memberSince ?? null,
+    expiryDate: fan.expiryDate ?? null,
+  }))
+  const memberRows = [...accountMembers, ...legacyMembers].sort((left, right) => left.fullName.localeCompare(right.fullName))
+  const visibleMembers = memberRows.filter((member) => (tierFilter === 'all' || member.tierId === tierFilter)
+    && (memberStatusFilter === 'all' || member.status === memberStatusFilter))
+  const membersLoading = membershipRecords.loading || legacyFans.loading || membershipTiers.loading
+  const membersError = [membershipRecords.error, legacyFans.error, membershipTiers.error].filter(Boolean).join(' ')
   useEffect(() => {
     if (!liveFixtures.length) return
     const timer = window.setInterval(() => setClockNow(Date.now()), 1000)
@@ -193,6 +302,73 @@ export default function AdminPanel() {
       showToast(messageFrom(error), 'error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function updateMember(member: MemberRow, action: 'approve' | 'suspend' | 'renew') {
+    const tier = membershipTiers.items.find((item) => item.id === member.tierId)
+    if (action !== 'suspend' && !tier) {
+      showToast('Select a valid membership tier before approval or renewal.', 'error')
+      return
+    }
+    setMemberActionBusy(member.id)
+    try {
+      const membershipRef = member.uid ? doc(db, 'memberships', member.uid) : null
+      const legacyRef = member.legacyFanId ? doc(db, 'fans', member.legacyFanId) : null
+      const counterRef = doc(db, 'settings', 'fanIdCounter')
+      const usedFanNumber = Math.max(
+        0,
+        ...membershipRecords.items.map(({ data }) => fanNumber(data.fanId)),
+        ...legacyFans.items.map((fan) => fanNumber(fan.fanId)),
+      )
+
+      await runTransaction(db, async (transaction) => {
+        const refs = [membershipRef, legacyRef].filter((ref): ref is NonNullable<typeof ref> => ref !== null)
+        const snapshots = await Promise.all(refs.map((ref) => transaction.get(ref)))
+        const counterSnapshot = action === 'suspend' ? null : await transaction.get(counterRef)
+        const membershipSnapshot = membershipRef ? snapshots[refs.indexOf(membershipRef)] : null
+        const legacySnapshot = legacyRef ? snapshots[refs.indexOf(legacyRef)] : null
+        if (membershipRef && !membershipSnapshot?.exists()) throw new Error('This membership request no longer exists.')
+        if (legacyRef && !legacySnapshot?.exists()) throw new Error('This legacy fan record no longer exists.')
+
+        const update: Record<string, unknown> = { status: action === 'suspend' ? 'suspended' : 'active', updatedAt: serverTimestamp() }
+        let fanId = member.fanId
+        if (action !== 'suspend') {
+          const now = new Date()
+          const priorExpiry = memberDate(member.expiryDate)
+          const expiryBase = action === 'renew' && priorExpiry && priorExpiry > now ? priorExpiry : now
+          const duration = Math.max(1, Number(tier?.durationMonths ?? 12))
+          update.startDate = Timestamp.fromDate(now)
+          update.expiryDate = Timestamp.fromDate(addMonths(expiryBase, duration))
+          if (!fanId) {
+            const counterValue = Number(counterSnapshot?.data()?.lastNumber ?? 0)
+            const nextNumber = Math.max(counterValue, usedFanNumber) + 1
+            fanId = `EKH-FAN-${String(nextNumber).padStart(6, '0')}`
+            transaction.set(counterRef, { lastNumber: nextNumber, updatedAt: serverTimestamp() }, { merge: true })
+          }
+          update.fanId = fanId
+          if (tier) update.tierId = tier.id
+        }
+        if (membershipRef) transaction.update(membershipRef, update)
+        if (legacyRef) {
+          const legacyUpdate: Record<string, unknown> = {
+            status: update.status,
+            updatedAt: serverTimestamp(),
+            ...(fanId ? { fanId } : {}),
+          }
+          if (action !== 'suspend') {
+            legacyUpdate.memberSince = memberDate(update.startDate)?.toISOString().slice(0, 10)
+            legacyUpdate.expiryDate = memberDate(update.expiryDate)?.toISOString().slice(0, 10)
+            if (tier) legacyUpdate.tier = tier.name
+          }
+          transaction.update(legacyRef, legacyUpdate)
+        }
+      })
+      showToast(action === 'approve' ? 'Membership approved.' : action === 'renew' ? 'Membership renewed.' : 'Membership suspended.')
+    } catch (error) {
+      showToast(messageFrom(error), 'error')
+    } finally {
+      setMemberActionBusy('')
     }
   }
 
@@ -411,16 +587,16 @@ export default function AdminPanel() {
     }
   }
 
-  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : membershipTiers.loading
-  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : membershipTiers.error
+  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : membersLoading
+  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : membersError
   const collectionErrors = [
     { name: 'Players', error: players.error },
     { name: 'Teams', error: teams.error },
     { name: 'Standings', error: standings.error },
     { name: 'Fixtures', error: fixtures.error },
-    ...(isSuperadmin ? [{ name: 'Membership tiers', error: membershipTiers.error }] : []),
+    ...(isSuperadmin ? [{ name: 'Membership tiers', error: membershipTiers.error }, { name: 'Members', error: membersError }] : []),
   ].filter(({ error }) => error)
-  const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : section === 'fixtures' ? fixtures.items.length > 0 : membershipTiers.items.length > 0
+  const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : section === 'fixtures' ? fixtures.items.length > 0 : section === 'membershipTiers' ? membershipTiers.items.length > 0 : visibleMembers.length > 0
 
   return <>
     <PageHeader eyebrow="Club operations" title="Admin panel" description="Changes are shared with fans as soon as they are saved." />
@@ -432,10 +608,30 @@ export default function AdminPanel() {
       <Link className="button button-secondary admin-live-manage" to="/live">Manage match <ArrowRight size={15} /></Link>
     </section>)}
     <div className="admin-tabs" role="tablist" aria-label="Admin sections">
-      {sections.filter(({ key }) => key !== 'membershipTiers' || isSuperadmin).map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={section === key} className={section === key ? 'admin-tab active' : 'admin-tab'} onClick={() => setSection(key)}><Icon size={16} />{label}</button>)}
+      {sections.filter(({ key }) => (key !== 'membershipTiers' && key !== 'members') || isSuperadmin).map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={section === key} className={section === key ? 'admin-tab active' : 'admin-tab'} onClick={() => setSection(key)}><Icon size={16} />{label}</button>)}
     </div>
     {isLoading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : sectionError ? null
+      : section === 'members' ? <section className="admin-members">
+          <div className="member-filters">
+            <label className="admin-field"><span>Tier</span><select value={tierFilter} onChange={(event) => setTierFilter(event.target.value)}><option value="all">All tiers</option>{membershipTiers.items.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select></label>
+            <label className="admin-field"><span>Status</span><select value={memberStatusFilter} onChange={(event) => setMemberStatusFilter(event.target.value)}><option value="all">All statuses</option><option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
+          </div>
+          {visibleMembers.length ? <div className="member-list">{visibleMembers.map((member) => {
+            const tier = membershipTiers.items.find((item) => item.id === member.tierId)
+            const expiry = memberDate(member.expiryDate)
+            return <Card className="member-row" key={member.id}>
+              <div className="member-row-heading"><div><h2>{member.fullName || 'Unnamed member'}</h2><span>{member.email || 'No email'}</span></div><span className={`member-status member-status-${member.status}`}>{member.status}</span></div>
+              <dl className="member-details"><div><dt>Tier</dt><dd>{tier?.name ?? member.tierId ?? 'Unassigned'}</dd></div><div><dt>Phone</dt><dd>{member.phone || 'Not provided'}</dd></div><div><dt>Fan ID</dt><dd>{member.fanId ?? 'Pending approval'}</dd></div><div><dt>Expiry</dt><dd>{expiry ? expiry.toLocaleDateString() : 'Not set'}</dd></div></dl>
+              {!member.uid && <p className="member-legacy-note">Legacy fan record; no app account linked.</p>}
+              <div className="admin-actions">
+                {member.status !== 'active' && <Button type="button" disabled={memberActionBusy === member.id} onClick={() => void updateMember(member, 'approve')}>{member.status === 'pending' ? 'Approve' : 'Reactivate'}</Button>}
+                {member.status === 'active' && <Button type="button" variant="secondary" disabled={memberActionBusy === member.id} onClick={() => void updateMember(member, 'suspend')}>Suspend</Button>}
+                {member.status === 'active' && <Button type="button" variant="secondary" disabled={memberActionBusy === member.id} onClick={() => void updateMember(member, 'renew')}>Renew</Button>}
+              </div>
+            </Card>
+          })}</div> : <EmptyState icon={Users} title="No members match these filters" />}
+        </section>
       : section === 'membershipTiers' ? <>
           {!hasItems && <Card className="admin-card"><h2>No membership tiers yet</h2><p>Create the four placeholder tiers to start, then set their prices and benefits.</p><Button type="button" disabled={seedingTiers} onClick={() => void seedMembershipTiers()}>{seedingTiers ? 'Creating tiers...' : 'Create default tiers'}</Button></Card>}
           {hasItems && <Card className="admin-card">

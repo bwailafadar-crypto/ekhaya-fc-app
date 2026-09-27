@@ -350,6 +350,45 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 .membership-active-field { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
 .membership-active-field input { width: 18px; height: 18px; accent-color: var(--gold-dark); }
 .membership-message { margin: 0 0 12px; padding: 10px 12px; color: #176832; background: #E5F4E9; border-radius: 9px; font-size: 12px; line-height: 1.5; }
+.member-filters { margin-bottom: 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.member-list { display: flex; flex-direction: column; gap: 9px; }
+.member-row { margin: 0; padding: 13px; }
+.member-row-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.member-row-heading h2 { margin-bottom: 2px; font-size: 17px; }
+.member-row-heading > div > span { color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+.member-status { padding: 4px 7px; border-radius: 999px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.member-status-pending { color: #795B00; background: #FFF3CD; }
+.member-status-active { color: #176832; background: #E5F4E9; }
+.member-status-suspended { color: #A41F1F; background: #FCE8E7; }
+.member-details { margin: 11px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.member-details > div { min-width: 0; }
+.member-details dt, .digital-membership-details span, .digital-membership-name span { color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.member-details dd { margin-top: 2px; overflow-wrap: anywhere; font-size: 11px; font-weight: 600; }
+.member-legacy-note { margin-bottom: 9px; color: var(--muted); font-size: 10px; }
+.digital-membership-card { position: relative; min-height: 310px; margin-bottom: 14px; padding: 17px; overflow: hidden; color: #fff; background: linear-gradient(135deg, #151711, #263B2B 68%, #314834); border: 1px solid #385642; border-bottom: 4px solid var(--gold); border-radius: 12px; box-shadow: 0 10px 24px rgb(14 14 14 / 14%); }
+.digital-membership-header { display: flex; align-items: center; gap: 9px; }
+.digital-membership-header .team-logo { width: 42px; height: 42px; flex-basis: 42px; }
+.digital-membership-header > div { display: flex; flex: 1; flex-direction: column; gap: 2px; }
+.digital-membership-header > div span { color: var(--gold-light); font-family: 'Oswald', sans-serif; font-size: 14px; font-weight: 700; }
+.digital-membership-header > div strong { color: rgb(255 255 255 / 66%); font-size: 8px; letter-spacing: 1px; }
+.digital-membership-status { padding: 5px 7px; color: #F8EDC5; background: rgb(255 255 255 / 10%); border-radius: 999px; font-size: 8px; font-weight: 800; }
+.digital-membership-active { color: #D5F2DB; background: rgb(30 142 62 / 35%); }
+.digital-membership-name { margin-top: 22px; display: flex; flex-direction: column; gap: 3px; }
+.digital-membership-name span, .digital-membership-details span { color: rgb(255 255 255 / 60%); }
+.digital-membership-name strong { overflow-wrap: anywhere; font-family: 'Oswald', sans-serif; font-size: 22px; }
+.digital-membership-details { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.digital-membership-details > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.digital-membership-details strong { overflow-wrap: anywhere; font-size: 10px; }
+.digital-membership-qr { position: absolute; right: 14px; bottom: 14px; min-width: 116px; min-height: 116px; padding: 6px; display: grid; place-items: center; color: var(--ink); background: #fff; border-radius: 8px; }
+.digital-membership-qr p { max-width: 100px; color: var(--muted); font-size: 9px; text-align: center; }
+.digital-membership-loading { margin-top: 28px; display: flex; flex-direction: column; gap: 12px; }
+.digital-membership-loading .skeleton { width: 70%; height: 20px; }
+@media (max-width: 380px) {
+  .digital-membership-card { min-height: 330px; padding: 13px; }
+  .digital-membership-qr { right: 10px; bottom: 10px; min-width: 96px; min-height: 96px; }
+  .digital-membership-qr svg { width: 84px; height: 84px; }
+  .member-row .admin-actions .button { flex: 1; padding: 0 8px; font-size: 11px; }
+}
 .admin-error { color: var(--loss); font-size: 11px; }
 .logo-import-card > p { margin: -4px 0 12px; font-size: 11px !important; }
 .logo-import-report { margin-top: 11px; padding: 10px 11px; display: flex; flex-direction: column; gap: 3px; color: #176832; background: #E5F4E9; border-radius: 9px; font-size: 11px; line-height: 1.4; }
