@@ -1,8 +1,16 @@
 import 'dotenv/config'
+import { readFile } from 'node:fs/promises'
 import { deleteApp, initializeApp } from 'firebase/app'
 import { inMemoryPersistence, initializeAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth'
-import { doc, getDoc, getFirestore, writeBatch } from 'firebase/firestore'
-import { fixtures, news } from '../src/sample.ts'
+import { doc, getDocFromServer, getFirestore, writeBatch } from 'firebase/firestore'
+
+type SeedDocument = { id: string; [key: string]: unknown }
+type ClubData = {
+  teams: SeedDocument[]
+  standings: SeedDocument[]
+  fixtures: SeedDocument[]
+  players: SeedDocument[]
+}
 
 const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
@@ -28,22 +36,41 @@ async function seed() {
   const db = getFirestore(app)
 
   try {
+    const rawData = await readFile(new URL('../ekhaya-data.json', import.meta.url), 'utf8')
+    const clubData = JSON.parse(rawData) as ClubData
+    const collections: Array<[keyof ClubData, SeedDocument[]]> = [
+      ['teams', clubData.teams],
+      ['standings', clubData.standings],
+      ['fixtures', clubData.fixtures],
+      ['players', clubData.players],
+    ]
+
+    for (const [collectionName, documents] of collections) {
+      if (!Array.isArray(documents) || documents.some((item) => !item || typeof item.id !== 'string' || !item.id.trim())) {
+        throw new Error(`The ${collectionName} data must be an array of documents with non-empty string ids.`)
+      }
+      if (new Set(documents.map((item) => item.id)).size !== documents.length) {
+        throw new Error(`The ${collectionName} data contains duplicate document ids.`)
+      }
+    }
+
     const credential = await signInWithEmailAndPassword(auth, email, password)
-    const userSnapshot = await getDoc(doc(db, 'users', credential.user.uid))
-    const role = userSnapshot.data()?.role
+    const userSnapshot = await getDocFromServer(doc(db, 'users', credential.user.uid))
+    const role = userSnapshot.get('role')
+    console.log(`[seed:debug] uid=${credential.user.uid} projectId=${firebaseConfig.projectId} userDocumentExists=${userSnapshot.exists()} role=${role === undefined ? '<missing>' : JSON.stringify(role)}`)
     if (role !== 'admin' && role !== 'superadmin') {
       throw new Error('This account does not have admin or superadmin role. No sample data was written.')
     }
 
     const batch = writeBatch(db)
-    for (const fixture of fixtures) {
-      batch.set(doc(db, 'fixtures', fixture.id), fixture, { merge: true })
-    }
-    for (const item of news) {
-      batch.set(doc(db, 'news', item.id), item, { merge: true })
+    for (const [collectionName, documents] of collections) {
+      for (const item of documents) {
+        batch.set(doc(db, collectionName, item.id), item, { merge: true })
+      }
     }
     await batch.commit()
-    console.log(`Seeded ${fixtures.length} fixtures and ${news.length} news items.`)
+    const totals = collections.map(([name, documents]) => `${documents.length} ${name}`).join(', ')
+    console.log(`Seeded ${totals}. Existing documents were merged by id; users and fans were not changed.`)
   } finally {
     await signOut(auth).catch(() => undefined)
     await deleteApp(app)

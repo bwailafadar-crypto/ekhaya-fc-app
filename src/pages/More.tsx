@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, CircleUserRound, Newspaper, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
+import { ChevronRight, CircleUserRound, ClipboardList, Newspaper, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
+import { useAuth } from '../auth/AuthContext'
+import LogoutButton from '../components/LogoutButton'
 
 const items = [
   { to: '/results', label: 'Results', icon: Trophy },
@@ -11,6 +13,9 @@ const items = [
 ]
 
 export default function More() {
+  const { role } = useAuth()
+  const canManage = role === 'admin' || role === 'superadmin'
+
   return (
     <div className="menu-list">
       {items.map((i) => (
@@ -20,6 +25,14 @@ export default function More() {
           <ChevronRight className="arrow" size={18} aria-hidden="true" />
         </Link>
       ))}
+      {canManage && (
+        <Link to="/admin" className="menu-item">
+          <ClipboardList className="menu-icon" size={20} aria-hidden="true" />
+          <span>Admin</span>
+          <ChevronRight className="arrow" size={18} aria-hidden="true" />
+        </Link>
+      )}
+      <LogoutButton />
     </div>
   )
 }

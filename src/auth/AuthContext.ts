@@ -23,10 +23,13 @@ export type AuthContextValue = {
   user: User | null
   profile: UserProfile | null
   role: AppRole | null
+  emailVerified: boolean
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (details: SignUpDetails) => Promise<void>
+  signUp: (details: SignUpDetails) => Promise<boolean>
   sendPasswordReset: (email: string) => Promise<void>
+  sendVerificationEmail: () => Promise<void>
+  refreshEmailVerification: () => Promise<boolean>
   signOut: () => Promise<void>
 }
 

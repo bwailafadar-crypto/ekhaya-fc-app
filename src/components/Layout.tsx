@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { CalendarDays, Home, Menu, Radio, Trophy } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ToastProvider } from './Toast'
+import VerificationBanner from './VerificationBanner'
+import TeamLogo from './TeamLogo'
 
 const tabs = [
   { to: '/', label: 'Home', icon: Home },
@@ -17,7 +19,7 @@ const titles: Record<string, string> = {
   '/': 'Home', '/fixtures': 'Fixtures', '/results': 'Results',
   '/table': 'League Table', '/live': 'Live Match', '/squad': 'Squad',
   '/news': 'News', '/fanzone': 'Fan Zone', '/membership': 'Membership',
-  '/profile': 'Fan Profile', '/more': 'More',
+  '/profile': 'Fan Profile', '/more': 'More', '/admin': 'Admin',
 }
 
 export default function Layout() {
@@ -27,13 +29,15 @@ export default function Layout() {
     <ToastProvider>
       <div className="app">
         <header className="topbar">
-          <span className="club-crest" aria-label="Ekhaya FC crest">EFC</span>
+          <TeamLogo name="Ekhaya FC" crest />
           <div className="topbar-brand">
             <span className="brand">EKHAYA FC</span>
             <span className="page-title">{titles[pathname] ?? ''}</span>
           </div>
           <span className="topbar-season">EST. 2015</span>
         </header>
+
+        <VerificationBanner />
 
         <main className="content">
           <AnimatePresence mode="wait" initial={false}>

@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signOut as firebaseSignOut, deleteUser } from 'firebase/auth'
+import { browserLocalPersistence, createUserWithEmailAndPassword, deleteUser, onAuthStateChanged, reload, sendEmailVerification, sendPasswordResetEmail, setPersistence, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
 import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { auth, db } from '../firebase'
@@ -23,37 +23,48 @@ function readProfile(data: Record<string, unknown> | undefined): UserProfile | n
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthContextValue['user']>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [emailVerified, setEmailVerified] = useState(false)
   const [loading, setLoading] = useState(true)
   const profileRequest = useRef(0)
 
   useEffect(() => {
     let mounted = true
-    const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
-      const requestId = ++profileRequest.current
-      if (!mounted) return
-      setUser(nextUser)
-      if (!nextUser) {
-        setProfile(null)
-        setLoading(false)
-        return
-      }
+    let unsubscribe: (() => void) | undefined
 
-      setLoading(true)
-      try {
-        const snapshot = await getDoc(doc(db, 'users', nextUser.uid))
-        if (mounted && requestId === profileRequest.current) {
-          setProfile(readProfile(snapshot.data()))
-        }
-      } catch {
-        if (mounted && requestId === profileRequest.current) setProfile(null)
-      } finally {
-        if (mounted && requestId === profileRequest.current) setLoading(false)
-      }
-    })
+    void setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        if (!mounted) return
+        unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
+          const requestId = ++profileRequest.current
+          if (!mounted) return
+          setUser(nextUser)
+          setEmailVerified(Boolean(nextUser?.emailVerified))
+          if (!nextUser) {
+            setProfile(null)
+            setLoading(false)
+            return
+          }
+
+          setLoading(true)
+          try {
+            const snapshot = await getDoc(doc(db, 'users', nextUser.uid))
+            if (mounted && requestId === profileRequest.current) {
+              setProfile(readProfile(snapshot.data()))
+            }
+          } catch {
+            if (mounted && requestId === profileRequest.current) setProfile(null)
+          } finally {
+            if (mounted && requestId === profileRequest.current) setLoading(false)
+          }
+        })
+      })
+      .catch(() => {
+        if (mounted) setLoading(false)
+      })
 
     return () => {
       mounted = false
-      unsubscribe()
+      unsubscribe?.()
     }
   }, [])
 
@@ -65,12 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const email = rawEmail.trim().toLowerCase()
     const credential = await createUserWithEmailAndPassword(auth, email, password)
 
+    let nextProfile: UserProfile
     try {
       await credential.user.getIdToken(true)
       const matchingFans = await getDocs(query(collection(db, 'fans'), where('email', '==', email)))
       const legacyFan = matchingFans.docs[0]
       const legacyData = legacyFan?.data()
-      const nextProfile: UserProfile = {
+      nextProfile = {
         role: 'fan',
         email,
         fullName: fullName.trim() || (typeof legacyData?.fullName === 'string' ? legacyData.fullName : ''),
@@ -84,18 +96,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
-      profileRequest.current += 1
-      setUser(credential.user)
-      setProfile(nextProfile)
-      setLoading(false)
     } catch (error) {
       await deleteUser(credential.user).catch(() => undefined)
       throw error
     }
+
+    let verificationSent = true
+    try {
+      await sendEmailVerification(credential.user)
+    } catch {
+      verificationSent = false
+    }
+
+    profileRequest.current += 1
+    setUser(credential.user)
+    setProfile(nextProfile)
+    setEmailVerified(credential.user.emailVerified)
+    setLoading(false)
+    return verificationSent
   }, [])
 
   const sendPasswordReset = useCallback(async (email: string) => {
     await sendPasswordResetEmail(auth, email.trim().toLowerCase())
+  }, [])
+
+  const sendVerificationEmail = useCallback(async () => {
+    const currentUser = auth.currentUser
+    if (!currentUser) throw new Error('Please sign in again to resend the verification email.')
+    await sendEmailVerification(currentUser)
+  }, [])
+
+  const refreshEmailVerification = useCallback(async () => {
+    const currentUser = auth.currentUser
+    if (!currentUser) return false
+    await reload(currentUser)
+    setEmailVerified(currentUser.emailVerified)
+    setUser(currentUser)
+    return currentUser.emailVerified
   }, [])
 
   const signOut = useCallback(async () => {
@@ -107,12 +144,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     profile,
     role,
+    emailVerified,
     loading,
     signIn,
     signUp,
     sendPasswordReset,
+    sendVerificationEmail,
+    refreshEmailVerification,
     signOut,
-  }), [user, profile, role, loading, signIn, signUp, sendPasswordReset, signOut])
+  }), [user, profile, role, emailVerified, loading, signIn, signUp, sendPasswordReset, sendVerificationEmail, refreshEmailVerification, signOut])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

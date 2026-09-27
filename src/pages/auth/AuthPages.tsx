@@ -1,21 +1,78 @@
 import { FirebaseError } from 'firebase/app'
-import { ArrowLeft, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, LoaderCircle, ShieldCheck } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/UI'
 import { useAuth } from '../../auth/AuthContext'
 
 function getErrorMessage(error: unknown) {
+  if (error instanceof TypeError) return 'Connection failed. Check your internet and try again.'
   if (!(error instanceof FirebaseError)) return 'Something went wrong. Please try again.'
   const messages: Record<string, string> = {
     'auth/email-already-in-use': 'An account with this email already exists. Try signing in instead.',
     'auth/invalid-credential': 'The email or password is incorrect.',
+    'auth/wrong-password': 'The email or password is incorrect.',
+    'auth/user-not-found': 'The email or password is incorrect.',
     'auth/invalid-email': 'Enter a valid email address.',
     'auth/weak-password': 'Choose a password with at least 6 characters.',
     'auth/network-request-failed': 'Connection failed. Check your internet and try again.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a little and try again.',
     'permission-denied': 'Your account was created, but the Firestore rules blocked profile setup. Deploy firestore.rules, then try again.',
   }
   return messages[error.code] ?? 'Something went wrong. Please try again.'
+}
+
+function PasswordField({
+  id,
+  label,
+  autoComplete,
+  value,
+  onChange,
+  minLength,
+}: {
+  id: string
+  label: string
+  autoComplete: string
+  value: string
+  onChange: (value: string) => void
+  minLength?: number
+}) {
+  const [visible, setVisible] = useState(false)
+
+  return (
+    <div className="auth-field">
+      <label htmlFor={id}>{label}</label>
+      <div className="password-input-wrap">
+        <input
+          id={id}
+          className="auth-input"
+          type={visible ? 'text' : 'password'}
+          autoComplete={autoComplete}
+          minLength={minLength}
+          required
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <button
+          className="password-visibility"
+          type="button"
+          aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+          onClick={() => setVisible((current) => !current)}
+        >
+          {visible ? <EyeOff size={19} /> : <Eye size={19} />}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function SubmitButton({ busy, idleLabel, busyLabel }: { busy: boolean; idleLabel: string; busyLabel: string }) {
+  return (
+    <Button type="submit" disabled={busy} aria-busy={busy}>
+      {busy && <LoaderCircle className="button-spinner" size={17} aria-hidden="true" />}
+      {busy ? busyLabel : idleLabel}
+    </Button>
+  )
 }
 
 function AuthShell({
@@ -87,12 +144,9 @@ export function LoginPage() {
           <label htmlFor="login-email">Email address</label>
           <input id="login-email" className="auth-input" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
         </div>
-        <div className="auth-field">
-          <label htmlFor="login-password">Password</label>
-          <input id="login-password" className="auth-input" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
-        </div>
+        <PasswordField id="login-password" label="Password" autoComplete="current-password" value={password} onChange={setPassword} />
         {error && <p className="auth-error" role="alert">{error}</p>}
-        <Button type="submit" disabled={submitting}>{submitting ? 'Signing in...' : 'Sign in'}</Button>
+        <SubmitButton busy={submitting} idleLabel="Sign in" busyLabel="Signing in..." />
       </form>
       <div className="auth-links">
         <Link className="auth-link" to="/forgot-password">Forgot password?</Link>
@@ -146,16 +200,10 @@ export function SignUpPage() {
           <label htmlFor="signup-email">Email address</label>
           <input id="signup-email" className="auth-input" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
         </div>
-        <div className="auth-field">
-          <label htmlFor="signup-password">Password</label>
-          <input id="signup-password" className="auth-input" type="password" autoComplete="new-password" minLength={6} required value={password} onChange={(event) => setPassword(event.target.value)} />
-        </div>
-        <div className="auth-field">
-          <label htmlFor="signup-confirm">Confirm password</label>
-          <input id="signup-confirm" className="auth-input" type="password" autoComplete="new-password" minLength={6} required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} />
-        </div>
+        <PasswordField id="signup-password" label="Password" autoComplete="new-password" minLength={6} value={password} onChange={setPassword} />
+        <PasswordField id="signup-confirm" label="Confirm password" autoComplete="new-password" minLength={6} value={confirmPassword} onChange={setConfirmPassword} />
         {error && <p className="auth-error" role="alert">{error}</p>}
-        <Button type="submit" disabled={submitting}>{submitting ? 'Creating account...' : 'Create fan account'}</Button>
+        <SubmitButton busy={submitting} idleLabel="Create fan account" busyLabel="Creating account..." />
       </form>
       <div className="auth-links"><span>Already have an account? <Link className="auth-link" to="/login">Sign in</Link></span></div>
     </AuthShell>
@@ -193,7 +241,7 @@ export function ForgotPasswordPage() {
         </div>
         {error && <p className="auth-error" role="alert">{error}</p>}
         {success && <p className="auth-success" role="status">{success}</p>}
-        <Button type="submit" disabled={submitting}>{submitting ? 'Sending...' : 'Send reset link'}</Button>
+        <SubmitButton busy={submitting} idleLabel="Send reset link" busyLabel="Sending..." />
       </form>
       <div className="auth-links"><Link className="auth-link" to="/login"><ArrowLeft size={14} aria-hidden="true" /> Back to sign in</Link></div>
     </AuthShell>
