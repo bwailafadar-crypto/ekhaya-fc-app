@@ -119,17 +119,17 @@ export default function LiveMatch() {
     ?? fixtures[0]
   const players = [...playersResult.items].sort((a, b) => a.name.localeCompare(b.name))
   const startingPlayers = selectedFixture
-    ? lineupDraft?.fixtureId === selectedFixture.id ? lineupDraft.playerIds : selectedFixture.startingPlayerIds ?? []
+    ? lineupDraft && lineupDraft.fixtureId === selectedFixture.id ? lineupDraft.playerIds : selectedFixture.startingPlayerIds ?? []
     : []
   const benchPlayers = selectedFixture
-    ? benchDraft?.fixtureId === selectedFixture.id ? benchDraft.playerIds : selectedFixture.benchPlayerIds ?? []
+    ? benchDraft && benchDraft.fixtureId === selectedFixture.id ? benchDraft.playerIds : selectedFixture.benchPlayerIds ?? []
     : []
-  const events = eventState?.fixtureId === selectedFixture?.id ? (eventState?.items ?? []) : []
+  const events = selectedFixture && eventState?.fixtureId === selectedFixture.id ? (eventState?.items ?? []) : []
   const eventsLoading = Boolean(selectedFixture && eventState?.fixtureId !== selectedFixture.id)
-  const eventsError = eventState?.fixtureId === selectedFixture?.id ? eventState.error : null
+  const eventsError = selectedFixture && eventState?.fixtureId === selectedFixture.id ? eventState?.error ?? null : null
   const selectedFixtureId = selectedFixture?.id
   const hasClubTeam = Boolean(selectedFixture && [selectedFixture.home, selectedFixture.away].some((team) => sameTeam(team, CLUB_NAME)))
-  const reactions = reactionState?.fixtureId === selectedFixtureId ? reactionState.items : []
+  const reactions = selectedFixtureId && reactionState?.fixtureId === selectedFixtureId ? (reactionState?.items ?? []) : []
 
   useEffect(() => {
     if (!selectedFixtureId) return
