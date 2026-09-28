@@ -96,13 +96,14 @@ function AuthShell({
   return (
     <main className="auth-page">
       <div className="auth-brand">
-        <span className="club-crest" aria-hidden="true">EFC</span>
+        <img className="club-crest" src="./team-logos/ekhaya-fc.png" alt="Ekhaya FC crest" />
         <span className="auth-brand-copy">
           <span className="auth-brand-title">EKHAYA FC</span>
           <span className="auth-brand-caption">Together, we are home.</span>
         </span>
       </div>
       <section className="auth-card" aria-labelledby="auth-heading">
+        <img className="auth-crest" src="./team-logos/ekhaya-fc.png" alt="Ekhaya FC crest" />
         <span className="page-eyebrow">Official supporters app</span>
         <h1 id="auth-heading">{title}</h1>
         <p className="auth-intro">{intro}</p>

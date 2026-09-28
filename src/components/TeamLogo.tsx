@@ -27,6 +27,10 @@ export default function TeamLogo({
     return <img className={classes} style={style} src={team.logoDataUrl} alt={`${name} logo`} />
   }
 
+  if (crest && normalizedName === 'ekhaya fc') {
+    return <img className={classes} style={style} src="./team-logos/ekhaya-fc.png" alt={`${name} logo`} />
+  }
+
   return <span className={`${classes} team-logo-fallback`} style={style} aria-label={`${name} initials`}>
     {crest ? 'EFC' : initials(name)}
   </span>

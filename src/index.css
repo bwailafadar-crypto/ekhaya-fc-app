@@ -50,9 +50,7 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 }
 .club-crest {
   width: 43px; height: 43px; flex: 0 0 43px;
-  display: grid; place-items: center; border: 1px solid var(--gold-light);
-  border-radius: 50%; color: var(--ink); background: linear-gradient(145deg, var(--gold-light), var(--gold));
-  font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 700;
+  display: block; object-fit: contain;
 }
 .topbar-brand { display: flex; flex-direction: column; gap: 1px; }
 .brand { color: #fff; font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 600; line-height: 1.1; }
@@ -157,6 +155,7 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
   background: var(--card); border: 1px solid rgb(232 201 90 / 42%); border-radius: 18px;
   box-shadow: 0 22px 70px rgb(0 0 0 / 28%);
 }
+.auth-crest { width: 116px; height: 116px; margin: 0 auto 15px; display: block; object-fit: contain; filter: drop-shadow(0 0 12px rgb(201 162 39 / 38%)); }
 .auth-card h1 { margin-bottom: 5px; font-size: 28px; font-weight: 600; }
 .auth-intro { margin-bottom: 21px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .auth-form { display: flex; flex-direction: column; gap: 14px; }
