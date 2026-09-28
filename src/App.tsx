@@ -18,6 +18,7 @@ import Membership from './pages/Membership'
 import Profile from './pages/Profile'
 import More from './pages/More'
 import AdminPanel from './pages/AdminPanel'
+import InstallBanner from './components/InstallBanner'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
       <AuthProvider>
         <TeamProvider>
           <ErrorBoundary>
+            <>
             <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
@@ -47,6 +49,8 @@ export default function App() {
               <Route path="/more" element={<More />} />
             </Route>
             </Routes>
+            <InstallBanner />
+            </>
           </ErrorBoundary>
         </TeamProvider>
       </AuthProvider>
