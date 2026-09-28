@@ -111,7 +111,8 @@ service cloud.firestore {
     }
 
     match /news/{newsId} {
-      allow read: if signedIn();
+      allow get, list: if isAdmin()
+        || (signedIn() && resource.data.status == 'published');
       allow create, update, delete: if isAdmin();
     }
 

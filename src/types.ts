@@ -86,12 +86,19 @@ export interface MatchEvent {
   subbedOutPlayerName?: string
 }
 
+export type NewsCategory = 'Match' | 'Club' | 'Transfer' | 'Community'
+export type NewsStatus = 'draft' | 'published'
+
 export interface NewsItem {
   id: string
   title: string
+  category: NewsCategory
   summary: string
-  date: string
-  category: 'Match' | 'Club' | 'Transfer' | 'Community'
+  body: string
+  coverImage: string
+  publishedDate: string
+  featured: boolean
+  status: NewsStatus
 }
 
 export interface MembershipTier {

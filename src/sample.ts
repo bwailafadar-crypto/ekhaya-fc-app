@@ -28,18 +28,21 @@ export const fixtures: Fixture[] = [
 
 export const news: NewsItem[] = [
   {
-    id: 'n1', category: 'Match', date: '2026-09-21',
+    id: 'n1', category: 'Match', publishedDate: '2026-09-21',
     title: 'Hard-earned point on the road',
     summary: 'The team battled to a 1-1 draw away from home.',
+    body: 'The team battled to a 1-1 draw away from home.', coverImage: '', featured: false, status: 'published',
   },
   {
-    id: 'n2', category: 'Club', date: '2026-09-18',
+    id: 'n2', category: 'Club', publishedDate: '2026-09-18',
     title: 'Fan membership registration now open',
     summary: 'Sign up to get your digital membership card and exclusive benefits.',
+    body: 'Sign up to get your digital membership card and exclusive benefits.', coverImage: '', featured: false, status: 'published',
   },
   {
-    id: 'n3', category: 'Community', date: '2026-09-15',
+    id: 'n3', category: 'Community', publishedDate: '2026-09-15',
     title: 'Players visit local schools',
     summary: 'Squad members spent the afternoon coaching young players in Blantyre.',
+    body: 'Squad members spent the afternoon coaching young players in Blantyre.', coverImage: '', featured: false, status: 'published',
   },
 ]

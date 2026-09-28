@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react'
 import { collection, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, Timestamp, writeBatch } from 'firebase/firestore'
-import { ArrowRight, CalendarDays, Download, ImagePlus, ShieldCheck, Table2, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { db } from '../firebase'
 import { useToast } from '../components/ToastContext'
@@ -10,14 +10,15 @@ import TeamLogo from '../components/TeamLogo'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
-import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
+import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, NewsCategory, NewsItem, NewsStatus, Player, PlayerStats, Standing, Team } from '../types'
 
-type Section = 'players' | 'teams' | 'standings' | 'fixtures' | 'membershipTiers' | 'members'
+type Section = 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
 const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
   { key: 'players', label: 'Players', icon: Users },
   { key: 'teams', label: 'Teams', icon: ShieldCheck },
   { key: 'standings', label: 'Table', icon: Table2 },
   { key: 'fixtures', label: 'Fixtures', icon: CalendarDays },
+  { key: 'news', label: 'News', icon: Newspaper },
   { key: 'membershipTiers', label: 'Membership Tiers', icon: ShieldCheck },
   { key: 'members', label: 'Members', icon: Users },
 ]
@@ -158,8 +159,10 @@ export default function AdminPanel() {
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [selectedStandingId, setSelectedStandingId] = useState('')
   const [selectedFixtureId, setSelectedFixtureId] = useState('')
+  const [selectedNewsId, setSelectedNewsId] = useState('')
   const [playerPhotoDraft, setPlayerPhotoDraft] = useState<{ id: string; dataUrl: string | null } | null>(null)
   const [teamLogoDraft, setTeamLogoDraft] = useState<{ id: string; dataUrl: string | null } | null>(null)
+  const [newsCoverDraft, setNewsCoverDraft] = useState<{ id: string; dataUrl: string | null } | null>(null)
   const [uploading, setUploading] = useState(false)
   const [importingLogos, setImportingLogos] = useState(false)
   const [logoImportFailures, setLogoImportFailures] = useState<string[] | null>(null)
@@ -177,6 +180,7 @@ export default function AdminPanel() {
   const teams = useFirestoreCollection<Team>('teams')
   const standings = useFirestoreCollection<Standing>('standings')
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
+  const news = useFirestoreCollection<NewsItem>('news')
   const membershipTiers = useFirestoreCollection<MembershipTier>('membershipTiers')
   const liveFixtures = fixtures.items.filter((fixture) => fixture.status === 'live')
   const selectedPlayer = players.items.find((item) => item.id === selectedPlayerId)
@@ -184,6 +188,7 @@ export default function AdminPanel() {
     ?? (selectedTeamId ? undefined : teams.items[0])
   const selectedStanding = standings.items.find((item) => item.id === selectedStandingId)
   const selectedFixture = fixtures.items.find((item) => item.id === selectedFixtureId)
+  const selectedNews = news.items.find((item) => item.id === selectedNewsId)
   const selectedTier = membershipTiers.items.find((item) => item.id === selectedTierId)
     ?? (selectedTierId ? undefined : membershipTiers.items[0])
   useEffect(() => {
@@ -245,6 +250,7 @@ export default function AdminPanel() {
   const teamLogoId = selectedTeam?.id ?? ''
   const playerPhoto = playerPhotoDraft?.id === playerPhotoId ? playerPhotoDraft.dataUrl : selectedPlayer?.photoDataUrl ?? null
   const teamLogo = teamLogoDraft?.id === teamLogoId ? teamLogoDraft.dataUrl : selectedTeam?.logoDataUrl ?? null
+  const newsCover = newsCoverDraft?.id === selectedNewsId ? newsCoverDraft.dataUrl : selectedNews?.coverImage ?? null
   const setPlayerPhoto = (dataUrl: string | null) => setPlayerPhotoDraft({ id: playerPhotoId, dataUrl })
   const setTeamLogo = (dataUrl: string | null) => setTeamLogoDraft({ id: teamLogoId, dataUrl })
 
@@ -587,16 +593,56 @@ export default function AdminPanel() {
     }
   }
 
-  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : membersLoading
-  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : membersError
+  async function saveNewsArticle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSaving(true)
+    const form = new FormData(event.currentTarget)
+    const id = selectedNews?.id ?? doc(collection(db, 'news')).id
+    try {
+      await setDoc(doc(db, 'news', id), {
+        title: String(form.get('title') ?? '').trim(),
+        category: String(form.get('category') ?? 'Club') as NewsCategory,
+        summary: String(form.get('summary') ?? '').trim(),
+        body: String(form.get('body') ?? '').trim(),
+        coverImage: newsCover ?? '',
+        publishedDate: String(form.get('publishedDate') ?? ''),
+        featured: form.get('featured') === 'on',
+        status: String(form.get('status') ?? 'draft') as NewsStatus,
+        updatedAt: serverTimestamp(),
+        ...(selectedNews ? {} : { createdAt: serverTimestamp() }),
+      }, { merge: true })
+      setSelectedNewsId(id)
+      showToast(selectedNews ? 'News article updated.' : 'News article created.')
+    } catch (error) {
+      showToast(messageFrom(error), 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function deleteNewsArticle() {
+    if (!selectedNews || !window.confirm(`Delete "${selectedNews.title}"?`)) return
+    try {
+      await deleteDoc(doc(db, 'news', selectedNews.id))
+      setSelectedNewsId('')
+      setNewsCoverDraft(null)
+      showToast('News article deleted.')
+    } catch (error) {
+      showToast(messageFrom(error), 'error')
+    }
+  }
+
+  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'news' ? news.loading : section === 'membershipTiers' ? membershipTiers.loading : membersLoading
+  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'news' ? news.error : section === 'membershipTiers' ? membershipTiers.error : membersError
   const collectionErrors = [
     { name: 'Players', error: players.error },
     { name: 'Teams', error: teams.error },
     { name: 'Standings', error: standings.error },
     { name: 'Fixtures', error: fixtures.error },
+    { name: 'News', error: news.error },
     ...(isSuperadmin ? [{ name: 'Membership tiers', error: membershipTiers.error }, { name: 'Members', error: membersError }] : []),
   ].filter(({ error }) => error)
-  const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : section === 'fixtures' ? fixtures.items.length > 0 : section === 'membershipTiers' ? membershipTiers.items.length > 0 : visibleMembers.length > 0
+  const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : section === 'fixtures' ? fixtures.items.length > 0 : section === 'news' ? news.items.length > 0 : section === 'membershipTiers' ? membershipTiers.items.length > 0 : visibleMembers.length > 0
 
   return <>
     <PageHeader eyebrow="Club operations" title="Admin panel" description="Changes are shared with fans as soon as they are saved." />
@@ -644,6 +690,23 @@ export default function AdminPanel() {
             </form>}
           </Card>}
         </>
+      : section === 'news' ? <Card className="admin-card">
+          <div className="admin-card-heading"><h2>News article</h2><select aria-label="Choose news article" value={selectedNewsId} onChange={(event) => { setSelectedNewsId(event.target.value); setNewsCoverDraft(null) }}><option value="">Create an article</option>{news.items.map((item) => <option key={item.id} value={item.id}>{item.title || 'Untitled article'} · {item.status || 'draft'}</option>)}</select></div>
+          <form className="admin-form" key={selectedNews?.id ?? 'new-news'} onSubmit={saveNewsArticle}>
+            <Field label="Title" name="title" defaultValue={selectedNews?.title} required />
+            <div className="admin-form-grid">
+              <label className="admin-field"><span>Category</span><select name="category" defaultValue={selectedNews?.category ?? 'Club'}>{(['Match', 'Club', 'Transfer', 'Community'] as const).map((category) => <option key={category}>{category}</option>)}</select></label>
+              <Field label="Published date" name="publishedDate" type="date" defaultValue={selectedNews?.publishedDate ?? new Date().toISOString().slice(0, 10)} required />
+              <label className="admin-field"><span>Status</span><select name="status" defaultValue={selectedNews?.status ?? 'draft'}><option value="draft">Draft</option><option value="published">Published</option></select></label>
+            </div>
+            <label className="admin-field"><span>Summary</span><textarea className="news-editor-textarea" name="summary" rows={3} maxLength={280} defaultValue={selectedNews?.summary ?? ''} required /></label>
+            <label className="admin-field"><span>Article body</span><textarea className="news-editor-textarea news-editor-body" name="body" rows={10} defaultValue={selectedNews?.body ?? ''} required /></label>
+            <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, (dataUrl) => setNewsCoverDraft({ id: selectedNewsId, dataUrl }))} /><ImagePlus size={17} />Upload cover image <small>Compressed under 200 KB</small></label>
+            {newsCover && <img className="news-admin-cover-preview" src={newsCover} alt="Article cover preview" />}
+            <label className="membership-active-field"><input type="checkbox" name="featured" defaultChecked={selectedNews?.featured ?? false} /><span>Featured article</span></label>
+            <div className="admin-actions"><Button type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : selectedNews ? 'Save article' : 'Create article'}</Button>{selectedNews && <Button type="button" variant="danger" onClick={() => void deleteNewsArticle()}>Delete article</Button>}</div>
+          </form>
+        </Card>
       : !hasItems && section !== 'players' && section !== 'fixtures' ? <EmptyState icon={ImagePlus} title="No records loaded" description="Seed the club data before editing this section." />
         : section === 'players' ? <Card className="admin-card">
           <div className="admin-card-heading"><h2>Player details</h2><select aria-label="Choose player" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}><option value="">Add a player</option>{players.items.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>

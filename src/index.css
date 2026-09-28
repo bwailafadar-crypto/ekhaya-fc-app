@@ -364,6 +364,43 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 .membership-active-field { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
 .membership-active-field input { width: 18px; height: 18px; accent-color: var(--gold-dark); }
 .membership-message { margin: 0 0 12px; padding: 10px 12px; color: #176832; background: #E5F4E9; border-radius: 9px; font-size: 12px; line-height: 1.5; }
+.news-editor-textarea { width: 100%; min-height: 76px; padding: 10px; color: var(--ink); background: #FCFBF8; border: 1px solid var(--line); border-radius: 9px; font: inherit; font-size: 12px; line-height: 1.5; resize: vertical; }
+.news-editor-textarea:focus { outline: 2px solid rgb(201 162 39 / 45%); outline-offset: 1px; }
+.news-editor-body { min-height: 190px; }
+.news-admin-cover-preview { width: min(100%, 420px); max-height: 230px; object-fit: cover; border: 1px solid var(--line); border-radius: 8px; }
+.news-featured-link, .news-list-link, .home-news-link { display: block; }
+.news-featured-card { margin: 0 0 15px; padding: 0; overflow: hidden; }
+.news-featured-cover { width: 100%; max-height: 270px; display: block; object-fit: cover; background: var(--ink-2); }
+.news-featured-copy { padding: 15px; }
+.news-meta { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 7px; color: var(--muted); font-size: 10px; }
+.news-meta time { margin-left: auto; }
+.news-meta > span:last-of-type:not(.badge) { color: var(--gold-dark); font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.news-featured-copy h2 { margin: 11px 0 5px; font-size: 23px; line-height: 1.15; }
+.news-featured-copy p, .news-list-copy p { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.news-read-link { margin-top: 12px; display: inline-flex; align-items: center; gap: 4px; color: var(--gold-dark); font-size: 11px; font-weight: 700; }
+.news-list { display: flex; flex-direction: column; gap: 9px; }
+.news-list-card { min-width: 0; margin: 0; padding: 10px; display: flex; align-items: center; gap: 11px; }
+.news-list-cover { width: 88px; height: 82px; flex: 0 0 88px; object-fit: cover; background: #E9E6DD; border-radius: 7px; }
+.news-list-copy { min-width: 0; flex: 1; }
+.news-list-copy h2 { margin: 7px 0 3px; overflow-wrap: anywhere; font-size: 17px; line-height: 1.2; }
+.news-list-copy p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.news-list-arrow { flex: 0 0 auto; color: var(--gold-dark); }
+.news-back-link { margin: 0 0 13px; display: inline-flex; align-items: center; gap: 5px; color: var(--gold-dark); font-size: 11px; font-weight: 700; }
+.news-article { padding-bottom: 20px; }
+.news-article-cover { width: 100%; max-height: 340px; margin-bottom: 15px; display: block; object-fit: cover; background: #E9E6DD; border-radius: 9px; }
+.news-article-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 10px; }
+.news-article h1 { margin: 11px 0 6px; font-size: 30px; line-height: 1.12; overflow-wrap: anywhere; }
+.news-article-summary { margin-bottom: 18px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.news-article-body { color: var(--ink-2); font-size: 13px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.news-share-button { min-height: 40px; margin-top: 22px; padding: 0 13px; display: inline-flex; align-items: center; gap: 7px; color: #fff; background: var(--ink-2); border: 1px solid var(--gold); border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.news-share-button:focus-visible { outline: 2px solid var(--gold-dark); outline-offset: 2px; }
+.home-news-link + .home-news-link { margin-top: 8px; }
+.home-news-item { margin: 0; padding: 0; overflow: hidden; }
+.home-news-cover { width: 100%; max-height: 170px; display: block; object-fit: cover; background: #E9E6DD; }
+.home-news-item > div, .home-news-item > h3, .home-news-item > p { margin-left: 12px; margin-right: 12px; }
+.home-news-item > div { margin-top: 11px; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; }
+.home-news-item > h3 { margin-top: 7px; font-size: 17px; }
+.home-news-item > p { margin-top: 3px; margin-bottom: 12px; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .member-filters { margin-bottom: 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .member-list { display: flex; flex-direction: column; gap: 9px; }
 .member-row { margin: 0; padding: 13px; }

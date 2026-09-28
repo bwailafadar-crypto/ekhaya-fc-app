@@ -44,6 +44,7 @@ export default function App() {
               <Route path="/squad" element={<Squad />} />
               <Route path="/squad/:id" element={<PlayerDetailPage />} />
               <Route path="/news" element={<News />} />
+              <Route path="/news/:id" element={<News />} />
               <Route path="/fanzone" element={<FanZone />} />
               <Route path="/membership" element={<Membership />} />
               <Route path="/profile" element={<Profile />} />

@@ -6,7 +6,8 @@ import MatchCard from '../components/MatchCard'
 import { Badge, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import TeamLogo from '../components/TeamLogo'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import type { Fixture, NewsItem } from '../types'
+import { usePublishedNews } from '../hooks/usePublishedNews'
+import type { Fixture } from '../types'
 import { sortByDate } from '../utils/football'
 import { matchMinute } from '../utils/matchClock'
 
@@ -16,12 +17,12 @@ export default function Home() {
     || user?.displayName?.trim().split(/\s+/)[0]
     || 'Fan'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
-  const newsResult = useFirestoreCollection<NewsItem>('news')
+  const newsResult = usePublishedNews()
   const [clockNow, setClockNow] = useState(0)
   const liveMatch = fixturesResult.items.find((fixture) => fixture.status === 'live' && !fixture.isTest)
   const upcoming = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')[0]
   const lastResult = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'finished' && !fixture.isTest), 'desc')[0]
-  const latestNews = [...newsResult.items].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3)
+  const latestNews = newsResult.items.slice(0, 3)
 
   const liveMatchId = liveMatch?.id
   useEffect(() => {
@@ -66,10 +67,11 @@ export default function Home() {
         <PageHeader eyebrow="From the club" title="Latest news" action={<Link className="text-link" to="/news">All news <ArrowRight size={15} /></Link>} />
         {newsResult.loading ? <div className="loading-list"><Skeleton /><Skeleton /></div>
           : newsResult.error ? <p className="live-error" role="alert">News could not be loaded: {newsResult.error}</p>
-          : latestNews.length ? latestNews.map((item) => <Card key={item.id} className="home-news-item">
-            <div><Badge variant="gold">{item.category}</Badge><time>{item.date}</time></div>
+          : latestNews.length ? latestNews.map((item) => <Link className="home-news-link" key={item.id} to={`/news/${item.id}`}><Card className="home-news-item">
+            {item.coverImage && <img className="home-news-cover" src={item.coverImage} alt="" />}
+            <div><Badge variant="gold">{item.category}</Badge><time>{item.publishedDate}</time></div>
             <h3>{item.title}</h3><p>{item.summary}</p>
-          </Card>) : <Card><EmptyState icon={Newspaper} title="No news yet" description="Club updates will appear here." /></Card>}
+          </Card></Link>) : <Card><EmptyState icon={Newspaper} title="No news yet" description="Club updates will appear here." /></Card>}
       </section>
     </>
   )
