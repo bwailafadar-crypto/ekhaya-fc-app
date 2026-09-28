@@ -18,10 +18,46 @@ type MembershipState = {
 
 type PaymentMethod = 'card' | 'bank_transfer' | 'airtel_money' | 'tnm_mpamba'
 
+type InAppBrowserWindow = Window & {
+  cordova?: {
+    InAppBrowser?: {
+      open: (url: string, target?: string, options?: string) => {
+        addEventListener: (type: string, callback: (event: { url: string }) => void) => void
+        close: () => void
+      }
+    }
+  }
+}
+
 const tierOrder = ['basic', 'silver', 'gold', 'premium']
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '')
+
+function openCheckout(checkoutUrl: string, onReturn: (txRef: string) => void) {
+  const inAppBrowser = (window as InAppBrowserWindow).cordova?.InAppBrowser
+  if (!inAppBrowser) {
+    window.location.assign(checkoutUrl)
+    return
+  }
+
+  const browser = inAppBrowser.open(checkoutUrl, '_blank', 'location=yes')
+  const appOrigin = new URL(apiBaseUrl || window.location.origin, window.location.href).origin
+  browser.addEventListener('loadstart', ({ url }) => {
+    try {
+      const destination = new URL(url)
+      if (destination.origin !== appOrigin) return
+      const hashQuery = destination.hash.includes('?') ? destination.hash.slice(destination.hash.indexOf('?') + 1) : ''
+      const txRef = new URLSearchParams(hashQuery).get('tx_ref') ?? destination.searchParams.get('tx_ref')
+      if (!txRef) return
+      browser.close()
+      onReturn(txRef)
+    } catch {
+      return
+    }
+  })
+}
 
 async function paymentRequest(user: User, path: string, body: Record<string, string>) {
-  const response = await fetch(`/.netlify/functions/${path}`, {
+  const response = await fetch(`${apiBaseUrl}/.netlify/functions/${path}`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${await user.getIdToken()}`,
@@ -144,7 +180,7 @@ export default function Membership() {
       if (typeof result.checkoutUrl !== 'string' || !result.checkoutUrl.startsWith('https://')) {
         throw new Error('PayChangu returned an invalid checkout link.')
       }
-      window.location.assign(result.checkoutUrl)
+      openCheckout(result.checkoutUrl, (returnedTxRef) => setSearchParams({ tx_ref: returnedTxRef, method: selectedPaymentMethod }))
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Could not start membership checkout.')
     } finally {
@@ -167,7 +203,7 @@ export default function Membership() {
       if (typeof result.checkoutUrl !== 'string' || !result.checkoutUrl.startsWith('https://')) {
         throw new Error('PayChangu returned an invalid checkout link.')
       }
-      window.location.assign(result.checkoutUrl)
+      openCheckout(result.checkoutUrl, (returnedTxRef) => setSearchParams({ tx_ref: returnedTxRef, method: 'card' }))
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Could not start membership checkout.')
     } finally {

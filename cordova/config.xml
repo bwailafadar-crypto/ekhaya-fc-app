@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="mw.ekhayafc.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>Ekhaya FC</name>
+    <description>Ekhaya FC official app</description>
+    <author>Ekhaya FC</author>
+    <content src="index.html" />
+    <preference name="Orientation" value="portrait" />
+    <preference name="GradleVersion" value="8.10.2" />
+    <preference name="AndroidGradlePluginVersion" value="8.7.3" />
+    <preference name="android-buildToolsVersion" value="35.0.0" />
+    <preference name="android-targetSdkVersion" value="35" />
+    <preference name="android-compileSdkVersion" value="35" />
+    <preference name="AndroidWindowSplashScreenBackground" value="#11140F" />
+    <preference name="AndroidWindowSplashScreenAnimatedIcon" value="resources/icon.png" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <hook type="after_prepare" src="hooks/after_prepare/010-android-gradle-properties.js" />
+    <platform name="android">
+        <icon density="ldpi" src="resources/android/icon/drawable-ldpi-icon.png" />
+        <icon density="mdpi" src="resources/android/icon/drawable-mdpi-icon.png" />
+        <icon density="hdpi" src="resources/android/icon/drawable-hdpi-icon.png" />
+        <icon density="xhdpi" src="resources/android/icon/drawable-xhdpi-icon.png" />
+        <icon density="xxhdpi" src="resources/android/icon/drawable-xxhdpi-icon.png" />
+        <icon density="xxxhdpi" src="resources/android/icon/drawable-xxxhdpi-icon.png" />
+    </platform>
+</widget>

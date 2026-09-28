@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:android": "npm run build && node scripts/copy-android-www.mjs && cd cordova && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 CORDOVA_JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 PATH=\"$HOME/.local/gradle/8.10.2/gradle-8.10.2/bin:/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH\" cordova build android",
     "lint": "eslint .",
     "preview": "vite preview",
     "seed": "tsx scripts/seed.ts"
