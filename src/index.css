@@ -149,6 +149,8 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 .install-banner-action:disabled { opacity: .65; cursor: wait; }
 .install-banner-dismiss { width: 28px; height: 28px; flex: 0 0 auto; display: grid; place-items: center; color: rgb(255 255 255 / 70%); background: transparent; border: 0; border-radius: 6px; cursor: pointer; }
 .install-banner-action:focus-visible, .install-banner-dismiss:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+.pwa-update-toast { position: fixed; z-index: 50; top: calc(12px + env(safe-area-inset-top)); left: 50%; width: min(calc(100% - 24px), 430px); min-height: 46px; padding: 9px 13px; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 8px; color: #17140A; background: var(--gold-light); border: 1px solid var(--gold); border-radius: 9px; box-shadow: 0 6px 20px rgb(0 0 0 / 20%); font-size: 12px; font-weight: 700; text-align: center; cursor: pointer; }
+.pwa-update-toast:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 .auth-page {
   min-height: 100vh; min-height: 100dvh; padding: env(safe-area-inset-top) 18px env(safe-area-inset-bottom);

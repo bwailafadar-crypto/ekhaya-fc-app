@@ -5,6 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   plugins: [react(), VitePWA({
     registerType: 'autoUpdate',
+    injectRegister: false,
     includeAssets: ['apple-touch-icon.png'],
     manifest: {
       name: 'Ekhaya FC',

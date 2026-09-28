@@ -19,6 +19,7 @@ import Profile from './pages/Profile'
 import More from './pages/More'
 import AdminPanel from './pages/AdminPanel'
 import InstallBanner from './components/InstallBanner'
+import PwaUpdateNotice from './components/PwaUpdateNotice'
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
             </Route>
             </Routes>
             <InstallBanner />
+            <PwaUpdateNotice />
             </>
           </ErrorBoundary>
         </TeamProvider>
