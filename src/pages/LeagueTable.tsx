@@ -24,7 +24,7 @@ export default function LeagueTable() {
                   const form = row.form ?? []
                   return <tr key={row.id} className={isEkhaya ? 'standings-ekhaya' : ''}>
                     <td className="standings-position">{row.position ?? 0}</td>
-                    <th scope="row" className="standings-team"><TeamLogo name={row.team} /><span>{row.team}</span></th>
+                    <th scope="row" className="standings-team"><span className="standings-team-content"><TeamLogo name={row.team} /><span>{row.team}</span></span></th>
                     <td>{row.played ?? 0}</td><td>{row.won ?? 0}</td><td>{row.drawn ?? 0}</td><td>{row.lost ?? 0}</td>
                     <td>{row.goalsFor ?? 0}</td><td>{row.goalsAgainst ?? 0}</td><td>{(row.goalDifference ?? 0) > 0 ? `+${row.goalDifference}` : row.goalDifference ?? 0}</td>
                     <td className="standings-points">{row.points ?? 0}</td>

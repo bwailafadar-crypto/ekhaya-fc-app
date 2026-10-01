@@ -216,8 +216,8 @@ export default function Membership() {
     {tiersResult.loading ? <div className="loading-list"><Skeleton /><Skeleton /></div>
       : tiersResult.error ? <p className="live-error" role="alert">Membership tiers could not be loaded: {tiersResult.error}</p>
         : tiers.length ? <section className="membership-tier-grid" aria-label="Membership tiers">
-          {tiers.map((tier) => <Card className="membership-tier-card" key={tier.id} style={{ borderTop: `4px solid ${tier.colour || '#C9A227'}` }}>
-            <div className="membership-tier-heading"><h2>{tier.name}</h2><span>{tier.durationMonths} months</span></div>
+          {tiers.map((tier) => <Card className={`membership-tier-card${selectedTierId === tier.id ? ' selected' : ''}${tier.id === 'gold' ? ' recommended' : ''}`} key={tier.id} style={{ borderTop: `4px solid ${tier.colour || '#C9A227'}` }}>
+            <div className="membership-tier-heading"><h2>{tier.name}</h2>{tier.id === 'gold' && <span className="membership-tier-badge">Most popular</span>}<span>{tier.durationMonths} months</span></div>
             <strong className="membership-price">MWK {Number(tier.priceMWK ?? 0).toLocaleString()}</strong>
             <ul className="membership-benefits">{(tier.benefits ?? []).map((benefit, index) => <li key={`${tier.id}-${index}`}>{benefit}</li>)}</ul>
             <Button type="button" disabled={isLoadingMembership || Boolean(currentMembership)} onClick={() => { setSelectedTierId(tier.id); setMessage(''); setFormError('') }}>Join {tier.name}</Button>
@@ -237,8 +237,8 @@ export default function Membership() {
       <h2>Join {selectedTier.name}</h2>
       <p>MWK {Number(selectedTier.priceMWK ?? 0).toLocaleString()} for {selectedTier.durationMonths} months.</p>
       <form className="admin-form" onSubmit={(event) => void joinMembership(event)}>
-        <label className="admin-field"><span>Full name</span><input name="fullName" autoComplete="name" required value={fullName} onChange={(event) => setFullName(event.target.value)} /></label>
-        <label className="admin-field"><span>Phone</span><input name="phone" type="tel" autoComplete="tel" required value={phone} onChange={(event) => setPhone(event.target.value)} /></label>
+        <label className="admin-field"><span>Full name</span><input name="fullName" autoComplete="name" maxLength={120} required value={fullName} onChange={(event) => setFullName(event.target.value)} /></label>
+        <label className="admin-field"><span>Phone</span><input name="phone" type="tel" autoComplete="tel" maxLength={32} required value={phone} onChange={(event) => setPhone(event.target.value)} /></label>
         <label className="admin-field"><span>Email</span><input name="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
         <fieldset className="membership-payment-methods">
           <legend>Payment method</legend>

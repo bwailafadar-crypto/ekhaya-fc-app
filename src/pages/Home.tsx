@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import MatchCard from '../components/MatchCard'
 import { Badge, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import TeamLogo from '../components/TeamLogo'
+import NewsCoverImage from '../components/NewsCoverImage'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { usePublishedNews } from '../hooks/usePublishedNews'
 import type { Fixture } from '../types'
@@ -68,7 +69,7 @@ export default function Home() {
         {newsResult.loading ? <div className="loading-list"><Skeleton /><Skeleton /></div>
           : newsResult.error ? <p className="live-error" role="alert">News could not be loaded: {newsResult.error}</p>
           : latestNews.length ? latestNews.map((item) => <Link className="home-news-link" key={item.id} to={`/news/${item.id}`}><Card className="home-news-item">
-            {item.coverImage && <img className="home-news-cover" src={item.coverImage} alt="" />}
+            <NewsCoverImage article={item} className="home-news-cover" alt="" />
             <div><Badge variant="gold">{item.category}</Badge><time>{item.publishedDate}</time></div>
             <h3>{item.title}</h3><p>{item.summary}</p>
           </Card></Link>) : <Card><EmptyState icon={Newspaper} title="No news yet" description="Club updates will appear here." /></Card>}

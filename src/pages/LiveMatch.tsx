@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { addDoc, collection, deleteField, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, deleteField, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
 import { Activity, Clock3, CornerUpLeft, Goal, MessageSquareText, Radio, ShieldAlert, Square, SquareArrowOutUpRight, Trash2, Users, Zap } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useAuth } from '../auth/AuthContext'
@@ -95,7 +95,6 @@ export default function LiveMatch() {
   const playersResult = useFirestoreCollection<Player>('players')
   const standingsResult = useFirestoreCollection<Standing>('standings')
   const [selectedId, setSelectedId] = useState('')
-  const [testOpponent, setTestOpponent] = useState('Test XI')
   const [lineupDraft, setLineupDraft] = useState<{ fixtureId: string; playerIds: string[] } | null>(null)
   const [benchDraft, setBenchDraft] = useState<{ fixtureId: string; playerIds: string[] } | null>(null)
   const [eventState, setEventState] = useState<{ fixtureId: string; items: MatchEvent[]; error: string | null } | null>(null)
@@ -107,7 +106,7 @@ export default function LiveMatch() {
   const [message, setMessage] = useState('')
   const [problem, setProblem] = useState('')
 
-  const availableFixtures = fixturesResult.items.filter((fixture) => isAdmin || !fixture.isTest)
+  const availableFixtures = fixturesResult.items.filter((fixture) => !fixture.isTest)
   const fixtures = [
     ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'live'), 'asc'),
     ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'upcoming'), 'asc'),
@@ -239,38 +238,6 @@ export default function LiveMatch() {
       })
       setQuickAction(null)
       setMessage('Kick-off. Fans can follow the live match now.')
-    } catch (error) {
-      reportError(error)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function createTestMatch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const opponent = testOpponent.trim()
-    if (!opponent) return
-    setBusy(true)
-    setProblem('')
-    try {
-      const fixture = await addDoc(collection(db, 'fixtures'), {
-        competition: 'Internal test',
-        season: new Date().getFullYear().toString(),
-        date: new Date().toISOString(),
-        home: 'Ekhaya FC',
-        away: opponent,
-        venue: 'Training ground',
-        status: 'upcoming',
-        homeScore: null,
-        awayScore: null,
-        isTest: true,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      })
-      setLineupDraft(null)
-      setBenchDraft(null)
-      setSelectedId(fixture.id)
-      setMessage('Test match created. It is visible to admins only.')
     } catch (error) {
       reportError(error)
     } finally {
@@ -595,7 +562,7 @@ export default function LiveMatch() {
     setProblem('')
     try {
       const eventSnapshot = await getDocs(collection(db, 'fixtures', selectedFixture.id, 'events'))
-      const standingsSnapshot = selectedFixture.isTest ? null : await getDocs(collection(db, 'standings'))
+      const standingsSnapshot = await getDocs(collection(db, 'standings'))
       await runTransaction(db, async (transaction) => {
         const fixtureRef = doc(db, 'fixtures', selectedFixture.id)
         const fixtureSnapshot = await transaction.get(fixtureRef)
@@ -608,15 +575,6 @@ export default function LiveMatch() {
         const finalMinute = Math.max(90, Math.ceil(clockSeconds / 60))
 
         if (fixture.eventCount != null && Number(fixture.eventCount) !== eventSnapshot.size) throw new Error('A match update arrived while ending the game. Please press End match again.')
-        if (fixture.isTest) {
-          transaction.update(fixtureRef, {
-            status: 'finished', period: 'full-time', minute: finalMinute,
-            clockElapsedSeconds: clockSeconds, periodStartedAt: deleteField(),
-            statsApplied: false, statsSkipped: true, finishedAt: serverTimestamp(), updatedAt: serverTimestamp(),
-          })
-          return
-        }
-        if (!standingsSnapshot) throw new Error('Could not load standings for this real match.')
         const standingsSnapshots = await Promise.all(standingsSnapshot.docs.map((item) => transaction.get(item.ref)))
         const matchEvents = eventSnapshot.docs.map((item) => item.data() as MatchEvent)
         const lineup = Array.isArray(fixture.startingPlayerIds) ? fixture.startingPlayerIds : []
@@ -718,9 +676,7 @@ export default function LiveMatch() {
         })
         for (const [id, stats] of playerUpdates) transaction.update(doc(db, 'players', id), { stats, updatedAt: serverTimestamp() })
       })
-      setMessage(selectedFixture.isTest
-        ? 'TEST match ended. Standings and player statistics were not changed.'
-        : 'Match ended. The result, standings and player statistics have been updated.')
+      setMessage('Match ended. The result, standings and player statistics have been updated.')
     } catch (error) {
       reportError(error)
     } finally {
@@ -739,7 +695,7 @@ export default function LiveMatch() {
     try {
       const eventSnapshot = await getDocs(collection(db, 'fixtures', selectedFixture.id, 'events'))
       const eventRefs = eventSnapshot.docs.map((item) => item.ref)
-      const standingsSnapshot = selectedFixture.isTest ? null : await getDocs(collection(db, 'standings'))
+      const standingsSnapshot = await getDocs(collection(db, 'standings'))
       await runTransaction(db, async (transaction) => {
         const fixtureRef = doc(db, 'fixtures', selectedFixture.id)
         const fixtureSnapshot = await transaction.get(fixtureRef)
@@ -834,14 +790,6 @@ export default function LiveMatch() {
   if (fixturesResult.error) return <EmptyState icon={Radio} title="Live match unavailable" description={fixturesResult.error} />
   if (!selectedFixture) return <>
     <PageHeader eyebrow="Match centre" title="Live match" />
-    {isAdmin && <Card className="admin-card test-match-card">
-      <h2>Create a safe TEST match</h2>
-      <p>Test matches run through the full match flow but never change the table or player statistics and stay hidden from fans.</p>
-      <form className="test-match-form" onSubmit={(event) => void createTestMatch(event)}>
-        <label className="admin-field"><span>Opponent name</span><input value={testOpponent} onChange={(event) => setTestOpponent(event.target.value)} required /></label>
-        <Button type="submit" disabled={busy || !testOpponent.trim()}>Create TEST match</Button>
-      </form>
-    </Card>}
     <EmptyState icon={Activity} title="No match to follow" description="Live match updates will appear here when a fixture is selected." />
   </>
 
@@ -866,16 +814,9 @@ export default function LiveMatch() {
 
   return <>
     <PageHeader eyebrow="Match centre" title="Live match" description="The clock runs locally. Match updates sync only when staff post an action." />
-    {isAdmin && <Card className="admin-card test-match-card">
-      <h2>Safe TEST match</h2>
-      <form className="test-match-form" onSubmit={(event) => void createTestMatch(event)}>
-        <label className="admin-field"><span>Opponent name</span><input value={testOpponent} onChange={(event) => setTestOpponent(event.target.value)} required /></label>
-        <Button type="submit" disabled={busy || !testOpponent.trim()}>Create TEST match</Button>
-      </form>
-    </Card>}
     {fixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab('timeline'); setQuickAction(null) }}>{fixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.home} v {fixture.away} · {fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
     <section className={`matchday-scoreboard${isLive ? ' matchday-scoreboard-live' : ''}`} aria-label="Match scoreboard">
-      <div className="matchday-scoreboard-top"><span>{selectedFixture.competition}</span><div>{selectedFixture.isTest && <Badge variant="warning">TEST</Badge>}{isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
+      <div className="matchday-scoreboard-top"><span>{selectedFixture.competition}</span><div>{isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
       <div className="matchday-teams">
         <div className="matchday-team"><TeamLogo name={selectedFixture.home} crest /><strong>{selectedFixture.home}</strong></div>
         <div className="matchday-score"><strong>{selectedFixture.status === 'upcoming' ? 'vs' : `${homeScore} – ${awayScore}`}</strong>{isLive && <span>{matchMinute(selectedFixture, clockNow)}</span>}{selectedFixture.period === 'half-time' && <span>HALF-TIME</span>}{selectedFixture.period === 'full-time' && <span>FULL-TIME</span>}</div>
@@ -916,7 +857,7 @@ export default function LiveMatch() {
       <Button type="button" variant="ghost" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button>
     </section>}
 
-    {isAdmin && isFinished && <Card className="admin-card live-admin-card"><h2>Match finished</h2><p className="live-help">{selectedFixture.isTest ? 'This TEST match did not change standings or player statistics.' : 'Resetting reverses its recorded table and player-stat changes.'}</p><Button type="button" variant="danger" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button></Card>}
+    {isAdmin && isFinished && <Card className="admin-card live-admin-card"><h2>Match finished</h2><p className="live-help">Resetting reverses its recorded table and player-stat changes.</p><Button type="button" variant="danger" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button></Card>}
     {isLive && !isAdmin && <div className="live-fan-note"><span className="live-pulse-dot" />Live from Chiwembe Stadium</div>}
     {eventsError && <p className="live-error" role="alert"><ShieldAlert size={15} />{eventsError}</p>}
 

@@ -88,6 +88,16 @@ export interface MatchEvent {
 
 export type NewsCategory = 'Match' | 'Club' | 'Transfer' | 'Community'
 export type NewsStatus = 'draft' | 'published'
+export type NewsBodyBlock =
+  | { id: string; type: 'paragraph'; text: string }
+  | { id: string; type: 'photo'; photoId: string; caption?: string }
+
+export interface NewsPhoto {
+  id: string
+  dataUrl: string
+  caption: string
+  order: number
+}
 
 export interface NewsItem {
   id: string
@@ -99,6 +109,9 @@ export interface NewsItem {
   publishedDate: string
   featured: boolean
   status: NewsStatus
+  bodyBlocks?: NewsBodyBlock[]
+  photoIds?: string[]
+  coverPhotoId?: string
 }
 
 export interface MembershipTier {

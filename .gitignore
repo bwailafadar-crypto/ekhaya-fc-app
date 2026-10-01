@@ -33,3 +33,6 @@ dist-ssr
 /cordova/platforms/
 /cordova/plugins/
 /cordova/www/
+
+# Local HTTPS certs for dev server
+certs/*.pem

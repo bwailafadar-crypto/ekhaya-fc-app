@@ -1,6 +1,15 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+
+const certDir = fileURLToPath(new URL('./certs/', import.meta.url))
+const httpsConfig = {
+  key: fs.readFileSync(path.join(certDir, 'localhost-key.pem')),
+  cert: fs.readFileSync(path.join(certDir, 'localhost-cert.pem')),
+}
 
 export default defineConfig({
   plugins: [react(), VitePWA({
@@ -32,4 +41,14 @@ export default defineConfig({
     },
   })],
   base: './',
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    https: httpsConfig,
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 4173,
+    https: httpsConfig,
+  },
 })

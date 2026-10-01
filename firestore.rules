@@ -42,11 +42,12 @@ service cloud.firestore {
         && request.resource.data.role == 'fan'
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.fullName is string
-        && (request.resource.data.phone == null || request.resource.data.phone is string)
+        && request.resource.data.fullName.size() <= 120
+        && (request.resource.data.phone == null || (request.resource.data.phone is string && request.resource.data.phone.size() <= 32))
         && (request.resource.data.legacyFanDocId == null || request.resource.data.legacyFanDocId is string)
         && (request.resource.data.legacyFanId == null || request.resource.data.legacyFanId is string)
-        && request.resource.data.createdAt is timestamp
-        && request.resource.data.updatedAt is timestamp;
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
 
       allow get: if signedIn() && (request.auth.uid == uid || isSuperadmin());
       allow list: if isSuperadmin();
@@ -58,6 +59,15 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'fullName', 'phone', 'photoDataUrl', 'updatedAt'
           ])
+          && request.resource.data.updatedAt == request.time
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['fullName'])
+            || (request.resource.data.fullName is string && request.resource.data.fullName.size() <= 120))
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['phone'])
+            || request.resource.data.phone == null
+            || (request.resource.data.phone is string && request.resource.data.phone.size() <= 32))
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['photoDataUrl'])
+            || request.resource.data.photoDataUrl == null
+            || (request.resource.data.photoDataUrl is string && request.resource.data.photoDataUrl.size() <= 700000))
         ) || (
           isSuperadmin()
           && request.auth.uid != uid
@@ -65,6 +75,8 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'role', 'disabled', 'updatedAt'
           ])
+          && request.resource.data.updatedAt == request.time
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['disabled']) || request.resource.data.disabled is bool)
         );
 
       allow delete: if isSuperadmin() && request.auth.uid != uid;
@@ -114,6 +126,13 @@ service cloud.firestore {
       allow get, list: if isAdmin()
         || (signedIn() && resource.data.status == 'published');
       allow create, update, delete: if isAdmin();
+
+      match /photos/{photoId} {
+        allow get, list: if isAdmin()
+          || (signedIn()
+            && get(/databases/$(database)/documents/news/$(newsId)).data.status == 'published');
+        allow create, update, delete: if isAdmin();
+      }
     }
 
     match /polls/{pollId} {
@@ -151,10 +170,12 @@ service cloud.firestore {
           'uid', 'tierId', 'fullName', 'phone', 'email', 'status', 'createdAt'
         ])
         && request.resource.data.tierId is string
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 32
         && exists(/databases/$(database)/documents/membershipTiers/$(request.resource.data.tierId))
         && get(/databases/$(database)/documents/membershipTiers/$(request.resource.data.tierId)).data.active == true
-        && request.resource.data.fullName is string
-        && request.resource.data.phone is string
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.status == 'pending'
         && request.resource.data.createdAt is timestamp;

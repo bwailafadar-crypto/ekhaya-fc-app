@@ -122,6 +122,14 @@ function fanIdNumber(value: unknown) {
   return match ? Number(match[1]) : 0
 }
 
+async function highestExistingFanNumber() {
+  const [fans, memberships] = await Promise.all([
+    firestore.collection('fans').select('fanId').get(),
+    firestore.collection('memberships').select('fanId').get(),
+  ])
+  return [...fans.docs, ...memberships.docs].reduce((highest, item) => Math.max(highest, fanIdNumber(item.data().fanId)), 0)
+}
+
 function expiryAfterMonths(start: Date, durationMonths: number) {
   const expiry = new Date(start)
   const day = expiry.getDate()
@@ -157,17 +165,22 @@ export async function verifyAndActivate(txRef: string, expectedUid?: string) {
 
   const tierRef = firestore.collection('membershipTiers').doc(String(initialData.tierId))
   const membershipRef = firestore.collection('memberships').doc(String(initialData.uid))
+  const userRef = firestore.collection('users').doc(String(initialData.uid))
   const counterRef = firestore.collection('settings').doc('fanIdCounter')
+  const counterSnapshot = await counterRef.get()
+  const storedLastNumber = Number(counterSnapshot.data()?.lastNumber ?? 0)
+  const knownNumber = counterSnapshot.exists && Number.isSafeInteger(storedLastNumber) && storedLastNumber >= 0
+    ? storedLastNumber
+    : await highestExistingFanNumber()
   const startDate = new Date()
 
   return firestore.runTransaction(async (transaction) => {
-    const [payment, tier, membership, counter, fans, memberships] = await Promise.all([
+    const [payment, tier, membership, counter, user] = await Promise.all([
       transaction.get(paymentRef),
       transaction.get(tierRef),
       transaction.get(membershipRef),
       transaction.get(counterRef),
-      transaction.get(firestore.collection('fans')),
-      transaction.get(firestore.collection('memberships')),
+      transaction.get(userRef),
     ])
     if (!payment.exists) throw new Error('Payment reference was not found.')
     const paymentData = payment.data()!
@@ -177,23 +190,22 @@ export async function verifyAndActivate(txRef: string, expectedUid?: string) {
     if (!tier.exists || tier.data()?.active !== true) throw new Error('Membership tier is no longer active.')
     if (Number(tier.data()?.priceMWK) !== Number(paymentData.amount)) throw new Error('Membership tier price changed during checkout.')
 
-    const knownNumber = Math.max(
-      0,
-      ...fans.docs.map((fan) => fanIdNumber(fan.data().fanId)),
-      ...memberships.docs.map((member) => fanIdNumber(member.data().fanId)),
-    )
     const membershipData = membership.data()
-    const linkedFans = fans.docs.filter((fan) => String(fan.data().email ?? '').toLocaleLowerCase() === String(paymentData.email).toLocaleLowerCase())
-    const linkedFanId = linkedFans.map((fan) => fan.data().fanId).find((value) => typeof value === 'string')
-    const existingFanId = typeof membershipData?.fanId === 'string' ? membershipData.fanId : linkedFanId
+    const legacyFanDocId = user.data()?.legacyFanDocId
+    const legacyFanRef = typeof legacyFanDocId === 'string' ? firestore.collection('fans').doc(legacyFanDocId) : null
+    const legacyFan = legacyFanRef ? await transaction.get(legacyFanRef) : null
+    const linkedFans = legacyFan?.exists ? [legacyFan] : []
+    const linkedFanId = linkedFans.find((fan) => typeof fan.data()?.fanId === 'string')?.data()?.fanId
+    const existingFanId = typeof membershipData?.fanId === 'string'
+      ? membershipData.fanId
+      : typeof linkedFanId === 'string' ? linkedFanId : undefined
     const counterNumber = Number(counter.data()?.lastNumber ?? 0)
-    const fanId = existingFanId ?? `EKH-FAN-${String(Math.max(counterNumber, knownNumber) + 1).padStart(6, '0')}`
+    const lastNumber = Math.max(Number.isSafeInteger(counterNumber) && counterNumber >= 0 ? counterNumber : 0, knownNumber, fanIdNumber(existingFanId))
+    const fanId = existingFanId ?? `EKH-FAN-${String(lastNumber + 1).padStart(6, '0')}`
     const now = startDate
     const expiryDate = expiryAfterMonths(now, Number(tier.data()?.durationMonths ?? 12))
 
-    if (!existingFanId) {
-      transaction.set(counterRef, { lastNumber: Math.max(counterNumber, knownNumber, fanIdNumber(fanId)), updatedAt: FieldValue.serverTimestamp() }, { merge: true })
-    }
+    transaction.set(counterRef, { lastNumber: Math.max(lastNumber, fanIdNumber(fanId)), updatedAt: FieldValue.serverTimestamp() }, { merge: true })
     transaction.set(membershipRef, {
       uid: paymentData.uid,
       tierId: paymentData.tierId,

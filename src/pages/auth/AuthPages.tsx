@@ -192,11 +192,11 @@ export function SignUpPage() {
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="auth-field">
           <label htmlFor="signup-name">Full name</label>
-          <input id="signup-name" className="auth-input" autoComplete="name" required value={fullName} onChange={(event) => setFullName(event.target.value)} />
+          <input id="signup-name" className="auth-input" autoComplete="name" maxLength={120} required value={fullName} onChange={(event) => setFullName(event.target.value)} />
         </div>
         <div className="auth-field">
           <label htmlFor="signup-phone">Phone number <span>(optional)</span></label>
-          <input id="signup-phone" className="auth-input" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
+          <input id="signup-phone" className="auth-input" type="tel" autoComplete="tel" maxLength={32} value={phone} onChange={(event) => setPhone(event.target.value)} />
         </div>
         <div className="auth-field">
           <label htmlFor="signup-email">Email address</label>

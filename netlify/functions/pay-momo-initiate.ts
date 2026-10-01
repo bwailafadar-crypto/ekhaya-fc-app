@@ -24,7 +24,7 @@ export const handler: Handler = async (event) => {
     const contactEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const method = body.method === 'airtel_money' || body.method === 'tnm_mpamba' ? body.method : ''
     const phone = typeof body.phone === 'string' ? normalizeMalawiPhone(body.phone) : null
-    if (!tierId || !fullName || !method || !phone || contactEmail !== email.toLowerCase()) {
+    if (!tierId || !fullName || fullName.length > 120 || !method || !phone || body.phone.length > 32 || contactEmail !== email.toLowerCase()) {
       return jsonResponse(400, { error: 'Enter your details and a valid Malawi mobile number.' })
     }
 

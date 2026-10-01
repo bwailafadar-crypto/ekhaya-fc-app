@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react'
-import { collection, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, Timestamp, writeBatch } from 'firebase/firestore'
+import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from 'react'
+import { collection, deleteDoc, doc, documentId as firestoreDocumentId, getDoc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
 import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { db } from '../firebase'
@@ -7,10 +7,11 @@ import { useToast } from '../components/ToastContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useAuth } from '../auth/AuthContext'
 import TeamLogo from '../components/TeamLogo'
+import NewsArticleEditor from '../components/NewsArticleEditor'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
-import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, NewsCategory, NewsItem, NewsStatus, Player, PlayerStats, Standing, Team } from '../types'
+import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
 
 type Section = 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
 const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
@@ -37,6 +38,42 @@ type MemberRow = {
   fanId: string | null
   startDate: Timestamp | string | null
   expiryDate: Timestamp | string | null
+}
+
+const MEMBER_PAGE_SIZE = 20
+
+type MemberPageCursors = {
+  memberships: QueryDocumentSnapshot<DocumentData> | null
+  legacyFans: QueryDocumentSnapshot<DocumentData> | null
+  membershipsHasMore: boolean
+  legacyFansHasMore: boolean
+}
+
+function emptyMemberPageCursors(): MemberPageCursors {
+  return { memberships: null, legacyFans: null, membershipsHasMore: true, legacyFansHasMore: true }
+}
+
+async function readMemberPage(cursors: MemberPageCursors) {
+  const pageQuery = (path: 'memberships' | 'fans', cursor: MemberPageCursors['memberships']) => cursor
+    ? query(collection(db, path), orderBy(firestoreDocumentId()), startAfter(cursor), limit(MEMBER_PAGE_SIZE + 1))
+    : query(collection(db, path), orderBy(firestoreDocumentId()), limit(MEMBER_PAGE_SIZE + 1))
+  const [membershipSnapshot, legacyFanSnapshot] = await Promise.all([
+    cursors.membershipsHasMore ? getDocs(pageQuery('memberships', cursors.memberships)) : null,
+    cursors.legacyFansHasMore ? getDocs(pageQuery('fans', cursors.legacyFans)) : null,
+  ])
+  const membershipDocs = membershipSnapshot?.docs.slice(0, MEMBER_PAGE_SIZE) ?? []
+  const legacyFanDocs = legacyFanSnapshot?.docs.slice(0, MEMBER_PAGE_SIZE) ?? []
+
+  return {
+    memberships: membershipDocs.map((item) => ({ id: item.id, data: item.data() as MembershipRecord })),
+    legacyFans: legacyFanDocs.map((item) => ({ ...item.data(), id: item.id }) as LegacyFan),
+    cursors: {
+      memberships: membershipDocs.at(-1) ?? cursors.memberships,
+      legacyFans: legacyFanDocs.at(-1) ?? cursors.legacyFans,
+      membershipsHasMore: Boolean(membershipSnapshot && membershipSnapshot.docs.length > MEMBER_PAGE_SIZE),
+      legacyFansHasMore: Boolean(legacyFanSnapshot && legacyFanSnapshot.docs.length > MEMBER_PAGE_SIZE),
+    },
+  }
 }
 
 function emailKey(email: string) {
@@ -159,10 +196,8 @@ export default function AdminPanel() {
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [selectedStandingId, setSelectedStandingId] = useState('')
   const [selectedFixtureId, setSelectedFixtureId] = useState('')
-  const [selectedNewsId, setSelectedNewsId] = useState('')
   const [playerPhotoDraft, setPlayerPhotoDraft] = useState<{ id: string; dataUrl: string | null } | null>(null)
   const [teamLogoDraft, setTeamLogoDraft] = useState<{ id: string; dataUrl: string | null } | null>(null)
-  const [newsCoverDraft, setNewsCoverDraft] = useState<{ id: string; dataUrl: string | null } | null>(null)
   const [uploading, setUploading] = useState(false)
   const [importingLogos, setImportingLogos] = useState(false)
   const [logoImportFailures, setLogoImportFailures] = useState<string[] | null>(null)
@@ -172,6 +207,11 @@ export default function AdminPanel() {
   const [tierFilter, setTierFilter] = useState('all')
   const [memberStatusFilter, setMemberStatusFilter] = useState('all')
   const [memberActionBusy, setMemberActionBusy] = useState('')
+  const [memberPageLoading, setMemberPageLoading] = useState(false)
+  const [membersHasMore, setMembersHasMore] = useState(false)
+  const memberPageCursors = useRef(emptyMemberPageCursors())
+  const memberPageRequest = useRef(0)
+  const memberPageBusy = useRef(false)
   const [membershipRecords, setMembershipRecords] = useState<AdminCollectionState<StoredMembership>>({ items: [], loading: true, error: null })
   const [legacyFans, setLegacyFans] = useState<AdminCollectionState<LegacyFan>>({ items: [], loading: true, error: null })
   const [clockNow, setClockNow] = useState(0)
@@ -180,7 +220,6 @@ export default function AdminPanel() {
   const teams = useFirestoreCollection<Team>('teams')
   const standings = useFirestoreCollection<Standing>('standings')
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
-  const news = useFirestoreCollection<NewsItem>('news')
   const membershipTiers = useFirestoreCollection<MembershipTier>('membershipTiers')
   const liveFixtures = fixtures.items.filter((fixture) => fixture.status === 'live')
   const selectedPlayer = players.items.find((item) => item.id === selectedPlayerId)
@@ -188,22 +227,62 @@ export default function AdminPanel() {
     ?? (selectedTeamId ? undefined : teams.items[0])
   const selectedStanding = standings.items.find((item) => item.id === selectedStandingId)
   const selectedFixture = fixtures.items.find((item) => item.id === selectedFixtureId)
-  const selectedNews = news.items.find((item) => item.id === selectedNewsId)
   const selectedTier = membershipTiers.items.find((item) => item.id === selectedTierId)
     ?? (selectedTierId ? undefined : membershipTiers.items[0])
   useEffect(() => {
-    if (!isSuperadmin) return
-    const membershipsUnsubscribe = onSnapshot(collection(db, 'memberships'), (snapshot) => {
-      setMembershipRecords({ items: snapshot.docs.map((item) => ({ id: item.id, data: item.data() as MembershipRecord })), loading: false, error: null })
-    }, () => setMembershipRecords({ items: [], loading: false, error: 'Membership requests could not be loaded.' }))
-    const fansUnsubscribe = onSnapshot(collection(db, 'fans'), (snapshot) => {
-      setLegacyFans({ items: snapshot.docs.map((item) => ({ ...item.data(), id: item.id }) as LegacyFan), loading: false, error: null })
-    }, () => setLegacyFans({ items: [], loading: false, error: 'Legacy fan records could not be loaded.' }))
+    if (!isSuperadmin || section !== 'members') return
+    let active = true
+    const requestId = ++memberPageRequest.current
+    const cursors = emptyMemberPageCursors()
+    memberPageCursors.current = cursors
+    memberPageBusy.current = true
+
+    void readMemberPage(cursors).then((page) => {
+      if (!active || requestId !== memberPageRequest.current) return
+      memberPageCursors.current = page.cursors
+      setMembershipRecords({ items: page.memberships, loading: false, error: null })
+      setLegacyFans({ items: page.legacyFans, loading: false, error: null })
+      setMembersHasMore(page.cursors.membershipsHasMore || page.cursors.legacyFansHasMore)
+    }).catch(() => {
+      if (!active || requestId !== memberPageRequest.current) return
+      setMembershipRecords({ items: [], loading: false, error: 'Membership requests could not be loaded.' })
+      setLegacyFans({ items: [], loading: false, error: 'Legacy fan records could not be loaded.' })
+    }).finally(() => {
+      if (!active || requestId !== memberPageRequest.current) return
+      memberPageBusy.current = false
+      setMemberPageLoading(false)
+    })
+
     return () => {
-      membershipsUnsubscribe()
-      fansUnsubscribe()
+      active = false
+      memberPageRequest.current += 1
+      memberPageBusy.current = false
     }
-  }, [isSuperadmin])
+  }, [isSuperadmin, section])
+
+  async function loadMoreMembers() {
+    if (memberPageBusy.current || !membersHasMore) return
+    memberPageBusy.current = true
+    setMemberPageLoading(true)
+    const requestId = memberPageRequest.current
+    try {
+      const page = await readMemberPage(memberPageCursors.current)
+      if (requestId !== memberPageRequest.current) return
+      memberPageCursors.current = page.cursors
+      setMembershipRecords((current) => ({ ...current, items: [...current.items, ...page.memberships], error: null }))
+      setLegacyFans((current) => ({ ...current, items: [...current.items, ...page.legacyFans], error: null }))
+      setMembersHasMore(page.cursors.membershipsHasMore || page.cursors.legacyFansHasMore)
+    } catch {
+      if (requestId === memberPageRequest.current) {
+        setMembershipRecords((current) => ({ ...current, error: 'More membership requests could not be loaded.' }))
+      }
+    } finally {
+      if (requestId === memberPageRequest.current) {
+        memberPageBusy.current = false
+        setMemberPageLoading(false)
+      }
+    }
+  }
   const legacyByEmail = new Map(legacyFans.items.filter((fan) => fan.email).map((fan) => [emailKey(fan.email), fan]))
   const linkedLegacyIds = new Set<string>()
   const accountMembers: MemberRow[] = membershipRecords.items.map(({ id, data }) => {
@@ -250,7 +329,6 @@ export default function AdminPanel() {
   const teamLogoId = selectedTeam?.id ?? ''
   const playerPhoto = playerPhotoDraft?.id === playerPhotoId ? playerPhotoDraft.dataUrl : selectedPlayer?.photoDataUrl ?? null
   const teamLogo = teamLogoDraft?.id === teamLogoId ? teamLogoDraft.dataUrl : selectedTeam?.logoDataUrl ?? null
-  const newsCover = newsCoverDraft?.id === selectedNewsId ? newsCoverDraft.dataUrl : selectedNews?.coverImage ?? null
   const setPlayerPhoto = (dataUrl: string | null) => setPlayerPhotoDraft({ id: playerPhotoId, dataUrl })
   const setTeamLogo = (dataUrl: string | null) => setTeamLogoDraft({ id: teamLogoId, dataUrl })
 
@@ -322,11 +400,24 @@ export default function AdminPanel() {
       const membershipRef = member.uid ? doc(db, 'memberships', member.uid) : null
       const legacyRef = member.legacyFanId ? doc(db, 'fans', member.legacyFanId) : null
       const counterRef = doc(db, 'settings', 'fanIdCounter')
-      const usedFanNumber = Math.max(
-        0,
-        ...membershipRecords.items.map(({ data }) => fanNumber(data.fanId)),
-        ...legacyFans.items.map((fan) => fanNumber(fan.fanId)),
-      )
+      let knownFanNumber = 0
+      if (action !== 'suspend' && !member.fanId) {
+        const counter = await getDoc(counterRef)
+        const counterValue = Number(counter.data()?.lastNumber ?? 0)
+        if (counter.exists() && Number.isSafeInteger(counterValue) && counterValue >= 0) {
+          knownFanNumber = counterValue
+        } else {
+          const [membersSnapshot, fansSnapshot] = await Promise.all([
+            getDocs(collection(db, 'memberships')),
+            getDocs(collection(db, 'fans')),
+          ])
+          knownFanNumber = membersSnapshot.docs.reduce((highest, item) => Math.max(highest, fanNumber(item.data().fanId)), 0)
+          knownFanNumber = fansSnapshot.docs.reduce((highest, item) => Math.max(highest, fanNumber(item.data().fanId)), knownFanNumber)
+        }
+      }
+      let nextStartDate: Timestamp | undefined
+      let nextExpiryDate: Timestamp | undefined
+      let nextFanId = member.fanId
 
       await runTransaction(db, async (transaction) => {
         const refs = [membershipRef, legacyRef].filter((ref): ref is NonNullable<typeof ref> => ref !== null)
@@ -344,23 +435,26 @@ export default function AdminPanel() {
           const priorExpiry = memberDate(member.expiryDate)
           const expiryBase = action === 'renew' && priorExpiry && priorExpiry > now ? priorExpiry : now
           const duration = Math.max(1, Number(tier?.durationMonths ?? 12))
-          update.startDate = Timestamp.fromDate(now)
-          update.expiryDate = Timestamp.fromDate(addMonths(expiryBase, duration))
+          nextStartDate = Timestamp.fromDate(now)
+          nextExpiryDate = Timestamp.fromDate(addMonths(expiryBase, duration))
+          update.startDate = nextStartDate
+          update.expiryDate = nextExpiryDate
           if (!fanId) {
             const counterValue = Number(counterSnapshot?.data()?.lastNumber ?? 0)
-            const nextNumber = Math.max(counterValue, usedFanNumber) + 1
+            const nextNumber = Math.max(Number.isSafeInteger(counterValue) && counterValue >= 0 ? counterValue : 0, knownFanNumber) + 1
             fanId = `EKH-FAN-${String(nextNumber).padStart(6, '0')}`
             transaction.set(counterRef, { lastNumber: nextNumber, updatedAt: serverTimestamp() }, { merge: true })
           }
           update.fanId = fanId
           if (tier) update.tierId = tier.id
         }
+        nextFanId = fanId
         if (membershipRef) transaction.update(membershipRef, update)
         if (legacyRef) {
           const legacyUpdate: Record<string, unknown> = {
             status: update.status,
             updatedAt: serverTimestamp(),
-            ...(fanId ? { fanId } : {}),
+            ...(nextFanId ? { fanId: nextFanId } : {}),
           }
           if (action !== 'suspend') {
             legacyUpdate.memberSince = memberDate(update.startDate)?.toISOString().slice(0, 10)
@@ -370,6 +464,37 @@ export default function AdminPanel() {
           transaction.update(legacyRef, legacyUpdate)
         }
       })
+      const nextStatus = action === 'suspend' ? 'suspended' : 'active'
+      if (membershipRef) {
+        const patch: Partial<MembershipRecord> = {
+          status: nextStatus,
+          ...(action !== 'suspend' ? {
+            tierId: tier!.id,
+            startDate: nextStartDate,
+            expiryDate: nextExpiryDate,
+            ...(nextFanId ? { fanId: nextFanId } : {}),
+          } : {}),
+        }
+        setMembershipRecords((current) => ({
+          ...current,
+          items: current.items.map((item) => item.id === member.uid ? { ...item, data: { ...item.data, ...patch } } : item),
+        }))
+      }
+      if (member.legacyFanId) {
+        const patch: Partial<LegacyFan> = {
+          status: nextStatus,
+          ...(nextFanId ? { fanId: nextFanId } : {}),
+          ...(action !== 'suspend' ? {
+            tier: tier!.name,
+            memberSince: nextStartDate?.toDate().toISOString().slice(0, 10) ?? null,
+            expiryDate: nextExpiryDate?.toDate().toISOString().slice(0, 10) ?? null,
+          } : {}),
+        }
+        setLegacyFans((current) => ({
+          ...current,
+          items: current.items.map((item) => item.id === member.legacyFanId ? { ...item, ...patch } : item),
+        }))
+      }
       showToast(action === 'approve' ? 'Membership approved.' : action === 'renew' ? 'Membership renewed.' : 'Membership suspended.')
     } catch (error) {
       showToast(messageFrom(error), 'error')
@@ -593,62 +718,22 @@ export default function AdminPanel() {
     }
   }
 
-  async function saveNewsArticle(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSaving(true)
-    const form = new FormData(event.currentTarget)
-    const id = selectedNews?.id ?? doc(collection(db, 'news')).id
-    try {
-      await setDoc(doc(db, 'news', id), {
-        title: String(form.get('title') ?? '').trim(),
-        category: String(form.get('category') ?? 'Club') as NewsCategory,
-        summary: String(form.get('summary') ?? '').trim(),
-        body: String(form.get('body') ?? '').trim(),
-        coverImage: newsCover ?? '',
-        publishedDate: String(form.get('publishedDate') ?? ''),
-        featured: form.get('featured') === 'on',
-        status: String(form.get('status') ?? 'draft') as NewsStatus,
-        updatedAt: serverTimestamp(),
-        ...(selectedNews ? {} : { createdAt: serverTimestamp() }),
-      }, { merge: true })
-      setSelectedNewsId(id)
-      showToast(selectedNews ? 'News article updated.' : 'News article created.')
-    } catch (error) {
-      showToast(messageFrom(error), 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function deleteNewsArticle() {
-    if (!selectedNews || !window.confirm(`Delete "${selectedNews.title}"?`)) return
-    try {
-      await deleteDoc(doc(db, 'news', selectedNews.id))
-      setSelectedNewsId('')
-      setNewsCoverDraft(null)
-      showToast('News article deleted.')
-    } catch (error) {
-      showToast(messageFrom(error), 'error')
-    }
-  }
-
-  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'news' ? news.loading : section === 'membershipTiers' ? membershipTiers.loading : membersLoading
-  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'news' ? news.error : section === 'membershipTiers' ? membershipTiers.error : membersError
+  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : section === 'news' ? false : membersLoading
+  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : section === 'news' ? null : membersError
   const collectionErrors = [
     { name: 'Players', error: players.error },
     { name: 'Teams', error: teams.error },
     { name: 'Standings', error: standings.error },
     { name: 'Fixtures', error: fixtures.error },
-    { name: 'News', error: news.error },
     ...(isSuperadmin ? [{ name: 'Membership tiers', error: membershipTiers.error }, { name: 'Members', error: membersError }] : []),
   ].filter(({ error }) => error)
-  const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : section === 'fixtures' ? fixtures.items.length > 0 : section === 'news' ? news.items.length > 0 : section === 'membershipTiers' ? membershipTiers.items.length > 0 : visibleMembers.length > 0
+  const hasItems = section === 'players' ? players.items.length > 0 : section === 'teams' ? teams.items.length > 0 : section === 'standings' ? standings.items.length > 0 : section === 'fixtures' ? fixtures.items.length > 0 : section === 'membershipTiers' ? membershipTiers.items.length > 0 : visibleMembers.length > 0
 
   return <>
     <PageHeader eyebrow="Club operations" title="Admin panel" description="Changes are shared with fans as soon as they are saved." />
     {collectionErrors.map(({ name, error }) => <p className="live-error" role="alert" key={name}>{name} could not be loaded: {error}</p>)}
     {liveFixtures.map((fixture) => <section className="home-live-banner admin-live-banner" key={fixture.id}>
-      <span className="home-live-label"><i className="live-pulse-dot" />{fixture.isTest ? 'TEST MATCH' : 'LIVE NOW'}</span>
+      <span className="home-live-label"><i className="live-pulse-dot" />LIVE NOW</span>
       <span className="home-live-teams"><span><TeamLogo name={fixture.home} />{fixture.home}</span><strong>{fixture.homeScore ?? 0} – {fixture.awayScore ?? 0}</strong><span><TeamLogo name={fixture.away} />{fixture.away}</span></span>
       <span className="home-live-clock">{matchMinute(fixture, clockNow)}</span>
       <Link className="button button-secondary admin-live-manage" to="/live">Manage match <ArrowRight size={15} /></Link>
@@ -676,7 +761,8 @@ export default function AdminPanel() {
                 {member.status === 'active' && <Button type="button" variant="secondary" disabled={memberActionBusy === member.id} onClick={() => void updateMember(member, 'renew')}>Renew</Button>}
               </div>
             </Card>
-          })}</div> : <EmptyState icon={Users} title="No members match these filters" />}
+          })}</div> : <EmptyState icon={Users} title={membersHasMore ? 'No matches on this page' : 'No members match these filters'} description={membersHasMore ? 'Load more records to continue searching.' : undefined} />}
+          {membersHasMore && <div className="member-pagination"><span>{membershipRecords.items.length + legacyFans.items.length} records loaded; filters apply to loaded records.</span><Button type="button" variant="secondary" disabled={memberPageLoading} onClick={() => void loadMoreMembers()}>{memberPageLoading ? 'Loading members...' : 'Load more members'}</Button></div>}
         </section>
       : section === 'membershipTiers' ? <>
           {!hasItems && <Card className="admin-card"><h2>No membership tiers yet</h2><p>Create the four placeholder tiers to start, then set their prices and benefits.</p><Button type="button" disabled={seedingTiers} onClick={() => void seedMembershipTiers()}>{seedingTiers ? 'Creating tiers...' : 'Create default tiers'}</Button></Card>}
@@ -690,23 +776,7 @@ export default function AdminPanel() {
             </form>}
           </Card>}
         </>
-      : section === 'news' ? <Card className="admin-card">
-          <div className="admin-card-heading"><h2>News article</h2><select aria-label="Choose news article" value={selectedNewsId} onChange={(event) => { setSelectedNewsId(event.target.value); setNewsCoverDraft(null) }}><option value="">Create an article</option>{news.items.map((item) => <option key={item.id} value={item.id}>{item.title || 'Untitled article'} · {item.status || 'draft'}</option>)}</select></div>
-          <form className="admin-form" key={selectedNews?.id ?? 'new-news'} onSubmit={saveNewsArticle}>
-            <Field label="Title" name="title" defaultValue={selectedNews?.title} required />
-            <div className="admin-form-grid">
-              <label className="admin-field"><span>Category</span><select name="category" defaultValue={selectedNews?.category ?? 'Club'}>{(['Match', 'Club', 'Transfer', 'Community'] as const).map((category) => <option key={category}>{category}</option>)}</select></label>
-              <Field label="Published date" name="publishedDate" type="date" defaultValue={selectedNews?.publishedDate ?? new Date().toISOString().slice(0, 10)} required />
-              <label className="admin-field"><span>Status</span><select name="status" defaultValue={selectedNews?.status ?? 'draft'}><option value="draft">Draft</option><option value="published">Published</option></select></label>
-            </div>
-            <label className="admin-field"><span>Summary</span><textarea className="news-editor-textarea" name="summary" rows={3} maxLength={280} defaultValue={selectedNews?.summary ?? ''} required /></label>
-            <label className="admin-field"><span>Article body</span><textarea className="news-editor-textarea news-editor-body" name="body" rows={10} defaultValue={selectedNews?.body ?? ''} required /></label>
-            <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, (dataUrl) => setNewsCoverDraft({ id: selectedNewsId, dataUrl }))} /><ImagePlus size={17} />Upload cover image <small>Compressed under 200 KB</small></label>
-            {newsCover && <img className="news-admin-cover-preview" src={newsCover} alt="Article cover preview" />}
-            <label className="membership-active-field"><input type="checkbox" name="featured" defaultChecked={selectedNews?.featured ?? false} /><span>Featured article</span></label>
-            <div className="admin-actions"><Button type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : selectedNews ? 'Save article' : 'Create article'}</Button>{selectedNews && <Button type="button" variant="danger" onClick={() => void deleteNewsArticle()}>Delete article</Button>}</div>
-          </form>
-        </Card>
+      : section === 'news' ? <NewsArticleEditor />
       : !hasItems && section !== 'players' && section !== 'fixtures' ? <EmptyState icon={ImagePlus} title="No records loaded" description="Seed the club data before editing this section." />
         : section === 'players' ? <Card className="admin-card">
           <div className="admin-card-heading"><h2>Player details</h2><select aria-label="Choose player" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}><option value="">Add a player</option>{players.items.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>

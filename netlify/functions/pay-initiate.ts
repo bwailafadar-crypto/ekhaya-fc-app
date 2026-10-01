@@ -13,7 +13,7 @@ export const handler: Handler = async (event) => {
     const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
     const contactEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const method = body.method === 'bank_transfer' ? 'bank_transfer' : body.method === 'card' ? 'card' : ''
-    if (!tierId || !fullName || !phone || !method || contactEmail !== email.toLowerCase()) {
+    if (!tierId || !fullName || fullName.length > 120 || !phone || phone.length > 32 || !method || contactEmail !== email.toLowerCase()) {
       return jsonResponse(400, { error: 'Complete your contact details using your verified account email.' })
     }
 
