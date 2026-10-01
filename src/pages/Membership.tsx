@@ -211,12 +211,13 @@ export default function Membership() {
     }
   }
 
-  return <>
+  return <div className="membership-page">
+    <div className="membership-glow" aria-hidden="true"><span /><span /><span /></div>
     <PageHeader eyebrow="Join the club" title="Membership" description="Choose a tier and send a membership request." />
     {tiersResult.loading ? <div className="loading-list"><Skeleton /><Skeleton /></div>
       : tiersResult.error ? <p className="live-error" role="alert">Membership tiers could not be loaded: {tiersResult.error}</p>
         : tiers.length ? <section className="membership-tier-grid" aria-label="Membership tiers">
-          {tiers.map((tier) => <Card className={`membership-tier-card${selectedTierId === tier.id ? ' selected' : ''}${tier.id === 'gold' ? ' recommended' : ''}`} key={tier.id} style={{ borderTop: `4px solid ${tier.colour || '#C9A227'}` }}>
+          {tiers.map((tier) => <Card className={`membership-tier-card${selectedTierId === tier.id ? ' selected' : ''}${tier.id === 'gold' ? ' recommended' : ''}`} key={tier.id}>
             <div className="membership-tier-heading"><h2>{tier.name}</h2>{tier.id === 'gold' && <span className="membership-tier-badge">Most popular</span>}<span>{tier.durationMonths} months</span></div>
             <strong className="membership-price">MWK {Number(tier.priceMWK ?? 0).toLocaleString()}</strong>
             <ul className="membership-benefits">{(tier.benefits ?? []).map((benefit, index) => <li key={`${tier.id}-${index}`}>{benefit}</li>)}</ul>
@@ -256,5 +257,5 @@ export default function Membership() {
         <div className="admin-actions"><Button type="submit" disabled={submitting || isLoadingMembership}>{submitting ? 'Submitting...' : 'Submit membership request'}</Button><Button type="button" variant="ghost" disabled={submitting} onClick={() => setSelectedTierId('')}>Cancel</Button></div>
       </form>
     </Card>}
-  </>
+  </div>
 }

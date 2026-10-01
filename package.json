@@ -12,7 +12,8 @@
     "seed": "tsx scripts/seed.ts",
     "test:rules": "firebase emulators:exec --only firestore --project demo-ekhaya-rules \"tsx --test tests/firestore.rules.test.ts\"",
     "build:android:release": "node scripts/build-android-release.mjs",
-    "deploy": "npm run build && firebase deploy --only hosting --project ekhaya-fc-app"
+    "deploy": "node scripts/deploy-firebase.mjs",
+    "save-firebase-key": "node scripts/save-firebase-key.cjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
