@@ -12,8 +12,19 @@
     <preference name="android-compileSdkVersion" value="35" />
     <preference name="AndroidWindowSplashScreenBackground" value="#11140F" />
     <preference name="AndroidWindowSplashScreenAnimatedIcon" value="resources/icon.png" />
+    <!-- Load the live website so new features reach fans without a new APK. -->
+    <access origin="*" />
+    <allow-navigation href="https://ekhayafc-app.netlify.app/*" />
+    <!-- PayChangu checkout opens inside the app and returns to the live site. -->
+    <allow-navigation href="https://paychangu.com/*" />
+    <allow-navigation href="https://*.paychangu.com/*" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="mailto:*" />
+    <preference name="AppendUserAgent" value="EkhayaFCApp/1.0" />
+    <preference name="ErrorUrl" value="https://localhost/offline.html" />
+    <preference name="LoadUrlTimeoutValue" value="30000" />
     <hook type="after_prepare" src="hooks/after_prepare/010-android-gradle-properties.js" />
     <platform name="android">
         <icon density="ldpi" src="resources/android/icon/drawable-ldpi-icon.png" />

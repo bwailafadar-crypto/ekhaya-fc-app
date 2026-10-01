@@ -87,3 +87,20 @@ export default defineConfig([
 ])
 
 ```
+
+## Android APK (signed release)
+
+The APK is a thin shell that opens https://ekhayafc-app.netlify.app, so new
+features reach fans after `netlify deploy --prod` without a new APK.
+
+One-time: create the release keystore OUTSIDE the project and back it up
+(without it the installed APK can never be updated):
+
+    mkdir -p ~/ekhaya-keys && keytool -genkeypair -v -keystore ~/ekhaya-keys/ekhaya-release.jks -alias ekhaya -keyalg RSA -keysize 2048 -validity 10000
+
+Build and publish:
+
+    read -r -s -p "Keystore password: " EKHAYA_KEYSTORE_PASSWORD; echo; export EKHAYA_KEYSTORE_PASSWORD
+    npm run build:android:release
+    unset EKHAYA_KEYSTORE_PASSWORD
+    netlify deploy --prod

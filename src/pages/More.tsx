@@ -35,6 +35,7 @@ export default function More() {
       )}
       <InstallSharePanel compact />
       <LogoutButton />
+      <p className="app-version">Version {__APP_BUILD__}</p>
     </div>
   )
 }

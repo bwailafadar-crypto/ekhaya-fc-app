@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ArrowUpRight, Check, CircleCheck, Copy, Download, ExternalLink, Plus, Share2 } from 'lucide-react'
+import ApkDownload from '../components/ApkDownload'
 import InstallSharePanel from '../components/InstallSharePanel'
+import { isAndroidApp } from '../utils/appShell'
 import { useInstallPrompt } from '../components/useInstallPrompt'
 
 function deviceDetails() {
@@ -45,7 +47,8 @@ export default function InstallPage() {
   const [copied, setCopied] = useState(false)
   const [installMessage, setInstallMessage] = useState('')
   const device = deviceDetails()
-  const installed = isStandalone() || promptInstalled
+  const insideApk = isAndroidApp()
+  const installed = insideApk || isStandalone() || promptInstalled
   const installLink = new URL('/download', window.location.origin).toString()
   const chromeIntent = `intent://${window.location.host}/download#Intent;scheme=https;package=com.android.chrome;end`
 
@@ -92,6 +95,7 @@ export default function InstallPage() {
         {device.android ? <>
           <p>Installation is blocked inside this app. Continue in Chrome to install Ekhaya FC.</p>
           <a className="button button-primary" href={chromeIntent}><ExternalLink size={16} aria-hidden="true" />Open in Chrome</a>
+          <ApkDownload />
         </> : <>
           <p>Installation is blocked inside this app. Copy the link, then open Safari and paste it into the address bar.</p>
           <button className="button button-primary" type="button" onClick={() => void copyLink()}><Copy size={16} aria-hidden="true" />{copied ? 'Link copied' : 'Copy link'}</button>
@@ -116,6 +120,7 @@ export default function InstallPage() {
           </button>
         </> : <p>{device.android ? 'Open the browser menu and choose “Install app” or “Add to Home screen”.' : device.desktopChrome || device.desktopEdge ? 'Open the browser menu and choose “Install Ekhaya FC” or use the install icon by the address bar.' : 'Open this link in Chrome to install Ekhaya FC.'}</p>}
         {installMessage && <p className="install-page-message" role="status">{installMessage}</p>}
+        {device.android && <ApkDownload />}
       </div>}
     </section>
     <InstallSharePanel />

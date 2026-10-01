@@ -773,3 +773,8 @@ html:has(.install-page), body:has(.install-page) { min-width: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.install-apk { margin-top: 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.install-apk p { color: var(--muted); font-size: 11px; line-height: 1.5; max-width: 340px; }
+.app-version { margin: 6px 0 2px; text-align: center; color: var(--muted); font-size: 11px; }
+.page-loading { padding: 24px 16px; text-align: center; color: var(--muted); }

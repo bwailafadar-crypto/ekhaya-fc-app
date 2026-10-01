@@ -14,7 +14,13 @@ const httpsConfig = fs.existsSync(keyPath) && fs.existsSync(certPath)
   ? { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }
   : undefined
 
+// e.g. "2026-10-01 14:32" in Malawi time, shown at the bottom of More.
+const appBuild = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Africa/Blantyre', dateStyle: 'short', timeStyle: 'short',
+}).format(new Date())
+
 export default defineConfig({
+  define: { __APP_BUILD__: JSON.stringify(appBuild) },
   plugins: [react(), VitePWA({
     registerType: 'autoUpdate',
     injectRegister: false,

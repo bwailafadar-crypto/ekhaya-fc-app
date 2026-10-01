@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ekhaya FC</title>
+  <link rel="stylesheet" href="shell.css">
+</head>
+<body>
+  <main>
+    <img src="crest.png" alt="Ekhaya FC crest">
+    <h1 id="title">EKHAYA FC</h1>
+    <p id="message">Loading the latest version…</p>
+    <button id="retry" class="hidden" type="button">Retry</button>
+  </main>
+  <script>
+    // The APK always opens the live website, so every deploy reaches fans
+    // without a new APK. This page only shows while loading or when offline.
+    var LIVE_URL = 'https://ekhayafc-app.netlify.app/#/';
+    var message = document.getElementById('message');
+    var retry = document.getElementById('retry');
+
+    function showOffline() {
+      document.getElementById('title').textContent = 'You are offline';
+      message.textContent = 'Connect to the internet to open Ekhaya FC, then tap Retry.';
+      retry.classList.remove('hidden');
+    }
+
+    function openLiveApp() {
+      if (!navigator.onLine) { showOffline(); return; }
+      message.textContent = 'Loading the latest version…';
+      retry.classList.add('hidden');
+      window.location.replace(LIVE_URL);
+    }
+
+    retry.addEventListener('click', openLiveApp);
+    window.addEventListener('online', openLiveApp);
+    openLiveApp();
+  </script>
+</body>
+</html>

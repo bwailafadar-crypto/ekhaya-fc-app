@@ -2,6 +2,7 @@ import { Download, X } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useInstallPrompt } from './useInstallPrompt'
+import { isAndroidApp } from '../utils/appShell'
 
 const DISMISS_KEY = 'ekhaya-install-banner-dismissed'
 
@@ -36,7 +37,7 @@ export default function InstallBanner() {
     if (choice === 'accepted') dismiss()
   }
 
-  if (dismissed || installed || location.pathname === '/install') return null
+  if (dismissed || installed || isAndroidApp() || location.pathname === '/install') return null
 
   return (
     <aside className="install-banner" aria-label="Install Ekhaya FC">
