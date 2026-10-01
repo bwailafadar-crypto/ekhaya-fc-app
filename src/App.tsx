@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { ProtectedRoute } from './auth/ProtectedRoute'
@@ -17,11 +18,14 @@ import FanZone from './pages/FanZone'
 import Membership from './pages/Membership'
 import Profile from './pages/Profile'
 import More from './pages/More'
-import AdminPanel from './pages/AdminPanel'
 import InstallPage from './pages/InstallPage'
 import InstallPromptProvider from './components/InstallPromptProvider'
 import InstallBanner from './components/InstallBanner'
 import PwaUpdateNotice from './components/PwaUpdateNotice'
+
+// The admin panel is large and only used by club staff, so fans never
+// download it unless they open it.
+const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 
 export default function App() {
   return (
@@ -37,7 +41,7 @@ export default function App() {
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin']}><Layout /></ProtectedRoute>}>
-                <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/admin" element={<Suspense fallback={<p className="page-loading">Loading admin…</p>}><AdminPanel /></Suspense>} />
               </Route>
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/" element={<Home />} />

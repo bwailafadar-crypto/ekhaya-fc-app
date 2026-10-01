@@ -6,10 +6,13 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const certDir = fileURLToPath(new URL('./certs/', import.meta.url))
-const httpsConfig = {
-  key: fs.readFileSync(path.join(certDir, 'localhost-key.pem')),
-  cert: fs.readFileSync(path.join(certDir, 'localhost-cert.pem')),
-}
+const keyPath = path.join(certDir, 'localhost-key.pem')
+const certPath = path.join(certDir, 'localhost-cert.pem')
+// Local HTTPS certs are optional (they are gitignored). Without them the dev
+// server falls back to plain HTTP instead of crashing every build.
+const httpsConfig = fs.existsSync(keyPath) && fs.existsSync(certPath)
+  ? { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }
+  : undefined
 
 export default defineConfig({
   plugins: [react(), VitePWA({
@@ -34,7 +37,16 @@ export default defineConfig({
       ],
     },
     workbox: {
-      globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2}'],
+      // Keep the first download small for fans on mobile data: only modern
+      // woff2 fonts in latin scripts, and only the Ekhaya crest from the
+      // opponent logo folder (opponent logos are only used by the admin importer).
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
+      globIgnores: [
+        '**/node_modules/**',
+        'team-logos/!(ekhaya-fc).png',
+        'downloads/**',
+        'assets/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*',
+      ],
       navigateFallback: 'index.html',
       navigateFallbackDenylist: [/^\/\.netlify\/functions\//, /firestore\.googleapis\.com/],
       cleanupOutdatedCaches: true,
