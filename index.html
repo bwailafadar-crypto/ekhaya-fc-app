@@ -9,7 +9,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Ekhaya FC" />
-    <title>ekhaya-fc-app</title>
+    <title>Ekhaya FC</title>
+    <script>
+      // Short share link: /download opens the install page on any host
+      // (Firebase Hosting or Netlify).
+      if (/^\/download\/?$/.test(window.location.pathname)) window.location.replace('/#/install')
+    </script>
   </head>
   <body>
     <div id="root"></div>

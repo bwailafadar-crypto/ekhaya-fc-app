@@ -14,6 +14,8 @@
     <preference name="AndroidWindowSplashScreenAnimatedIcon" value="resources/icon.png" />
     <!-- Load the live website so new features reach fans without a new APK. -->
     <access origin="*" />
+    <allow-navigation href="https://ekhaya-fc-app.web.app/*" />
+    <allow-navigation href="https://ekhaya-fc-app.firebaseapp.com/*" />
     <allow-navigation href="https://ekhayafc-app.netlify.app/*" />
     <!-- PayChangu checkout opens inside the app and returns to the live site. -->
     <allow-navigation href="https://paychangu.com/*" />
