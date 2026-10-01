@@ -8,6 +8,9 @@ export default defineConfig({
     injectRegister: false,
     includeAssets: ['apple-touch-icon.png'],
     manifest: {
+      id: '/',
+      start_url: '/',
+      scope: '/',
       name: 'Ekhaya FC',
       short_name: 'Ekhaya FC',
       description: 'The official Ekhaya FC supporters app.',
@@ -16,8 +19,9 @@ export default defineConfig({
       display: 'standalone',
       orientation: 'portrait',
       icons: [
-        { src: './pwa-icon-192.png', sizes: '192x192', type: 'image/png' },
-        { src: './pwa-icon-512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/pwa-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/pwa-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: '/pwa-icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
     },
     workbox: {

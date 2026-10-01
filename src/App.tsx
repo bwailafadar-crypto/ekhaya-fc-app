@@ -18,45 +18,50 @@ import Membership from './pages/Membership'
 import Profile from './pages/Profile'
 import More from './pages/More'
 import AdminPanel from './pages/AdminPanel'
+import InstallPage from './pages/InstallPage'
+import InstallPromptProvider from './components/InstallPromptProvider'
 import InstallBanner from './components/InstallBanner'
 import PwaUpdateNotice from './components/PwaUpdateNotice'
 
 export default function App() {
   return (
     <HashRouter>
-      <AuthProvider>
-        <TeamProvider>
-          <ErrorBoundary>
-            <>
-            <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin']}><Layout /></ProtectedRoute>}>
-              <Route path="/admin" element={<AdminPanel />} />
-            </Route>
-            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route path="/" element={<Home />} />
-              <Route path="/fixtures" element={<Fixtures />} />
-              <Route path="/results" element={<Results />} />
-              <Route path="/table" element={<LeagueTable />} />
-              <Route path="/live" element={<LiveMatch />} />
-              <Route path="/squad" element={<Squad />} />
-              <Route path="/squad/:id" element={<PlayerDetailPage />} />
-              <Route path="/news" element={<News />} />
-              <Route path="/news/:id" element={<News />} />
-              <Route path="/fanzone" element={<FanZone />} />
-              <Route path="/membership" element={<Membership />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/more" element={<More />} />
-            </Route>
-            </Routes>
-            <InstallBanner />
-            <PwaUpdateNotice />
-            </>
-          </ErrorBoundary>
-        </TeamProvider>
-      </AuthProvider>
+      <InstallPromptProvider>
+        <AuthProvider>
+          <TeamProvider>
+            <ErrorBoundary>
+              <>
+              <Routes>
+              <Route path="/install" element={<InstallPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin']}><Layout /></ProtectedRoute>}>
+                <Route path="/admin" element={<AdminPanel />} />
+              </Route>
+              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                <Route path="/" element={<Home />} />
+                <Route path="/fixtures" element={<Fixtures />} />
+                <Route path="/results" element={<Results />} />
+                <Route path="/table" element={<LeagueTable />} />
+                <Route path="/live" element={<LiveMatch />} />
+                <Route path="/squad" element={<Squad />} />
+                <Route path="/squad/:id" element={<PlayerDetailPage />} />
+                <Route path="/news" element={<News />} />
+                <Route path="/news/:id" element={<News />} />
+                <Route path="/fanzone" element={<FanZone />} />
+                <Route path="/membership" element={<Membership />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/more" element={<More />} />
+              </Route>
+              </Routes>
+              <InstallBanner />
+              <PwaUpdateNotice />
+              </>
+            </ErrorBoundary>
+          </TeamProvider>
+        </AuthProvider>
+      </InstallPromptProvider>
     </HashRouter>
   )
 }

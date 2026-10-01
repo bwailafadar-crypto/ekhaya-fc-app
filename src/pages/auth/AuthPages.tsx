@@ -152,6 +152,7 @@ export function LoginPage() {
       <div className="auth-links">
         <Link className="auth-link" to="/forgot-password">Forgot password?</Link>
         <span>New to Ekhaya? <Link className="auth-link" to="/signup">Create account</Link></span>
+        <Link className="auth-link auth-install-link" to="/install">Install the app</Link>
       </div>
     </AuthShell>
   )

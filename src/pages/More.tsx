@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ChevronRight, CircleUserRound, ClipboardList, Newspaper, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import LogoutButton from '../components/LogoutButton'
+import InstallSharePanel from '../components/InstallSharePanel'
 
 const items = [
   { to: '/results', label: 'Results', icon: Trophy },
@@ -32,6 +33,7 @@ export default function More() {
           <ChevronRight className="arrow" size={18} aria-hidden="true" />
         </Link>
       )}
+      <InstallSharePanel compact />
       <LogoutButton />
     </div>
   )
