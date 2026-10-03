@@ -858,3 +858,140 @@ html:has(.install-page), body:has(.install-page) { min-width: 0; }
   .membership-page .membership-join-card,
   .membership-page .membership-status-card { background: rgb(255 255 255 / 92%); }
 }
+
+/* ==========================================================
+   App-wide white & gold glass theme (update 11)
+   Placed last so it overrides the older dark sections.
+   ========================================================== */
+:root {
+  --glass: rgb(255 255 255 / 58%);
+  --glass-strong: rgb(255 255 255 / 74%);
+  --glass-line: rgb(201 162 39 / 26%);
+  --glass-blur: blur(18px) saturate(160%);
+  --glass-shadow: 0 10px 30px rgb(158 124 18 / 10%), inset 0 1px 0 rgb(255 255 255 / 85%);
+  --gold-text: linear-gradient(100deg, #8A6A0C, #C9A227 45%, #D9B640 70%, #9E7C12);
+}
+body {
+  background:
+    radial-gradient(120% 60% at 0% 0%, #FFF8E1 0%, transparent 60%),
+    radial-gradient(100% 50% at 100% 100%, #FBF0CF 0%, transparent 60%),
+    #FBFAF6;
+  background-attachment: fixed;
+}
+body::before, body::after {
+  content: ''; position: fixed; z-index: 0; pointer-events: none; border-radius: 50%; filter: blur(60px);
+}
+body::before { top: -80px; right: -60px; width: 260px; height: 260px; background: rgb(232 201 90 / 38%); }
+body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background: rgb(201 162 39 / 22%); }
+#root { position: relative; z-index: 1; }
+.app { background: transparent; box-shadow: none; }
+
+/* Top bar & bottom nav */
+.topbar {
+  color: var(--ink); background: rgb(255 255 255 / 66%);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-line);
+  box-shadow: 0 6px 22px rgb(158 124 18 / 8%);
+}
+.topbar::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-light) 50%, var(--gold) 70%, transparent); opacity: .8; }
+.brand { background: var(--gold-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.page-title { color: var(--muted); }
+.topbar-season { color: var(--gold-dark); }
+.bottom-nav {
+  background: rgb(255 255 255 / 70%); border-top: 1px solid var(--glass-line);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: 0 -8px 26px rgb(158 124 18 / 9%);
+}
+.nav-item.active::before { background: linear-gradient(90deg, var(--gold-dark), var(--gold-light)); }
+
+/* Cards & lists */
+.card, .menu-item, .squad-list, .player-facts, .home-shortcuts a, .live-timeline-empty, .install-state {
+  background: var(--glass); border-color: var(--glass-line);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+.card, .menu-item { background: linear-gradient(180deg, rgb(255 255 255 / 42%), transparent 45%), var(--glass); }
+.menu-item:active { border-color: var(--gold); background: var(--glass-strong); }
+.player-row, .player-fact { border-color: rgb(201 162 39 / 16%); }
+.page-header h1 { background: var(--gold-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Shared light hero look */
+.home-hero, .player-hero, .home-welcome, .install-hero, .matchday-scoreboard, .home-live-banner, .digital-membership-card {
+  color: var(--ink);
+  background: linear-gradient(135deg, rgb(255 255 255 / 78%), rgb(255 248 225 / 62%) 55%, rgb(248 237 197 / 55%));
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 14px 34px rgb(158 124 18 / 13%), inset 0 1px 0 rgb(255 255 255 / 90%);
+}
+.home-hero, .player-hero { border-bottom: 2px solid var(--gold); }
+.home-hero h1, .player-profile-heading h1, .home-welcome h2, .install-hero h1 {
+  background: var(--gold-text); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.home-hero .page-eyebrow, .player-profile-heading .page-eyebrow, .home-welcome .page-eyebrow,
+.install-hero .page-eyebrow, .match-report .page-eyebrow { color: var(--gold-dark); }
+.home-hero p, .player-profile-heading p, .home-welcome p, .install-hero > p { color: var(--muted); }
+.home-hero-footer { color: var(--gold-dark); }
+.install-hero { border-bottom: 3px solid var(--gold); }
+.install-hero-crest { background: radial-gradient(circle, rgb(232 201 90 / 30%), transparent 70%); }
+.install-hero-crest img { filter: drop-shadow(0 7px 16px rgb(158 124 18 / 30%)); }
+
+/* Live banner & scoreboard */
+.home-live-banner { border-left: 4px solid var(--live); }
+.home-live-label { color: #C62828; }
+.home-live-teams > strong, .matchday-score strong { background: var(--gold-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.home-live-clock { color: var(--gold-dark); }
+.matchday-scoreboard { border-bottom: 3px solid var(--gold); }
+.matchday-scoreboard-top, .matchday-scoreboard-bottom { color: var(--muted); }
+.matchday-score span { color: var(--ink-2); }
+.matchday-scoreboard-bottom { border-top-color: rgb(201 162 39 / 22%); }
+.matchday-countdown { color: var(--ink); background: linear-gradient(120deg, rgb(255 248 225 / 85%), rgb(248 237 197 / 70%)); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.matchday-countdown > svg { color: var(--gold-dark); }
+.matchday-countdown > div span, .matchday-countdown > span { color: var(--muted); }
+.match-report { color: var(--ink); background: linear-gradient(120deg, rgb(255 255 255 / 75%), rgb(248 237 197 / 60%)); border: 1px solid var(--glass-line); border-left: 4px solid var(--gold); }
+.match-report p { color: var(--muted); }
+.match-stat-bars i:last-child { background: #3A3A36; }
+
+/* League table */
+.standings-table thead th, .standings-table .standings-team-heading {
+  color: #6B540E; background: linear-gradient(180deg, #FBF1CF, #F4E3A6);
+}
+
+/* Digital membership card: gold-foil glass */
+.digital-membership-card {
+  background: linear-gradient(135deg, rgb(255 255 255 / 82%) 0%, rgb(255 246 214 / 70%) 40%, rgb(240 214 128 / 55%) 75%, rgb(255 255 255 / 70%) 100%);
+  border-bottom: 4px solid var(--gold);
+  box-shadow: 0 18px 36px rgb(158 124 18 / 20%), inset 0 1px 0 rgb(255 255 255 / 95%);
+}
+.digital-membership-card::before { background: radial-gradient(circle, rgb(232 201 90 / 45%), transparent 62%); }
+.digital-membership-card::after { background: radial-gradient(circle, rgb(255 255 255 / 70%), transparent 62%); }
+.digital-membership-header > div span { color: var(--gold-dark); }
+.digital-membership-header > div strong { color: var(--muted); }
+.digital-membership-status { color: #6B540E; background: rgb(255 255 255 / 70%); border: 1px solid var(--glass-line); }
+.digital-membership-active { color: #176832; background: rgb(229 244 233 / 90%); }
+.digital-membership-name span, .digital-membership-details span { color: var(--muted); }
+.digital-membership-name strong { color: var(--ink); }
+.digital-membership-meta { color: var(--ink-2); }
+.digital-membership-meta strong { color: var(--gold-dark); }
+.digital-membership-qr { border-color: var(--glass-line); box-shadow: 0 8px 20px rgb(158 124 18 / 18%); }
+
+/* Sign-in page */
+.auth-page { color: var(--ink); background: transparent; }
+.auth-brand-title { background: var(--gold-text); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.auth-brand-caption { color: var(--muted); }
+.auth-card {
+  background: rgb(255 255 255 / 66%); border-color: var(--glass-line);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: 0 22px 60px rgb(158 124 18 / 16%), inset 0 1px 0 rgb(255 255 255 / 90%);
+}
+
+/* Small dark bits → gold */
+.news-share-button { color: #2A2108; background: linear-gradient(135deg, var(--gold-light), var(--gold)); border-color: var(--gold-dark); }
+.install-banner { color: var(--ink); background: rgb(255 255 255 / 82%); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-color: var(--glass-line); box-shadow: 0 10px 28px rgb(158 124 18 / 18%); }
+.install-banner-icon { color: var(--gold-dark); }
+.install-banner-copy span, .install-banner-dismiss { color: var(--muted); }
+
+/* Browsers without blur: keep it readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card, .menu-item, .squad-list, .player-facts, .home-shortcuts a, .topbar, .bottom-nav, .auth-card,
+  .home-hero, .player-hero, .home-welcome, .install-hero, .matchday-scoreboard, .home-live-banner { background: rgb(255 255 255 / 94%); }
+}
