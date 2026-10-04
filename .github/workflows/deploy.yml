@@ -1,0 +1,51 @@
+# Builds the app on GitHub's servers and puts it live on
+# https://ekhaya-fc-app.web.app every time you push to master/main.
+# Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+#   FIREBASE_SA  - the whole contents of ~/ekhaya-keys/firebase-sa.json
+#   APP_ENV      - only the VITE_... lines from your .env file
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Write app settings and key
+        env:
+          APP_ENV: ${{ secrets.APP_ENV }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          if [ -z "$APP_ENV" ] || [ -z "$FIREBASE_SA" ]; then
+            echo "::error::Add the APP_ENV and FIREBASE_SA secrets in GitHub first."
+            exit 1
+          fi
+          printf '%s\n' "$APP_ENV" > .env
+          mkdir -p "$HOME/ekhaya-keys"
+          printf '%s' "$FIREBASE_SA" > "$HOME/ekhaya-keys/firebase-sa.json"
+          chmod 600 "$HOME/ekhaya-keys/firebase-sa.json"
+
+      - name: Build and deploy
+        run: node scripts/deploy-direct.cjs
+
+      - name: Remove key
+        if: always()
+        run: rm -f "$HOME/ekhaya-keys/firebase-sa.json" .env
