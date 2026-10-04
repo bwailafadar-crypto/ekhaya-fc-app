@@ -8,6 +8,7 @@ import { useFirestoreCollection } from '../../hooks/useFirestoreCollection'
 import { useLiveDocs } from '../../hooks/useLiveDocs'
 import type { Fixture, MotmVote, Player, Poll, PollVote, ScorePrediction } from '../../types'
 import { sortByDate } from '../../utils/football'
+import AlertsSetup from './AlertsSetup'
 
 // Deletes many documents in batches (Firestore allows 500 writes per batch).
 async function deleteAll(refs: DocumentReference[]) {
@@ -150,6 +151,7 @@ export default function FanZoneManager() {
   }
 
   return <section className="fz-admin">
+    <AlertsSetup />
     <Card className="admin-card">
       <div className="fz-card-heading"><Vote size={18} /><div><h2>New poll</h2><span>Appears in the Fan Zone straight away</span></div></div>
       <form className="admin-form" onSubmit={createPoll}>

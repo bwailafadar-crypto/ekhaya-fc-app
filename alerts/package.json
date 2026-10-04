@@ -1,0 +1,10 @@
+{
+  "name": "ekhaya-fc-alert-sender",
+  "private": true,
+  "description": "Sends Ekhaya FC push alerts from GitHub Actions (free, no Blaze plan needed)",
+  "main": "send.cjs",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}

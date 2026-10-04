@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from 'react'
 import { collection, deleteDoc, doc, documentId as firestoreDocumentId, getDoc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
-import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, UserRound, Users, Vote } from 'lucide-react'
+import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, Trash2, UserRound, Users, Vote } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import FansManager from './admin/FansManager'
 import FanZoneManager from './admin/FanZoneManager'
@@ -646,13 +646,16 @@ export default function AdminPanel() {
     }
   }
 
-  async function deletePlayer() {
-    if (!selectedPlayer || !window.confirm(`Delete ${selectedPlayer.name} from the squad?`)) return
+  async function deletePlayer(target: Player | undefined = selectedPlayer) {
+    if (!target || !isSuperadmin) return
+    const stats = target.stats
+    const hasRecord = Boolean(stats && (stats.appearances || stats.goals || stats.assists))
+    const warning = hasRecord ? `\n\n${target.name} has ${stats.appearances} appearances, ${stats.goals} goals and ${stats.assists} assists this season. These will be lost.` : ''
+    if (!window.confirm(`Remove ${target.name}${target.number != null ? ` (#${target.number})` : ''} from the squad?${warning}\n\nThis cannot be undone.`)) return
     try {
-      await deleteDoc(doc(db, 'players', selectedPlayer.id))
-      setSelectedPlayerId('')
-      setPlayerPhotoDraft(null)
-      showToast('Player deleted.')
+      await deleteDoc(doc(db, 'players', target.id))
+      if (selectedPlayerId === target.id) { setSelectedPlayerId(''); setPlayerPhotoDraft(null) }
+      showToast(`${target.name} removed from the squad.`)
     } catch (error) {
       showToast(messageFrom(error), 'error')
     }
@@ -834,8 +837,17 @@ export default function AdminPanel() {
             </div></fieldset>
             <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, setPlayerPhoto)} /><ImagePlus size={17} />Upload player photo <small>Compressed under 200 KB</small></label>
             {playerPhoto && <img className="admin-image-preview" src={playerPhoto} alt="Player upload preview" />}
-            <div className="admin-actions"><Button type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : selectedPlayer ? 'Save player' : 'Add player'}</Button>{selectedPlayer && <Button type="button" variant="danger" onClick={() => void deletePlayer()}>Delete player</Button>}</div>
+            <div className="admin-actions"><Button type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : selectedPlayer ? 'Save player' : 'Add player'}</Button>{selectedPlayer && isSuperadmin && <Button type="button" variant="danger" onClick={() => void deletePlayer()}>Delete player</Button>}</div>
           </form>
+          <div className="squad-admin">
+            <div className="squad-admin-heading"><h3>Squad ({players.items.length})</h3><span>{isSuperadmin ? 'Tap Edit to change a player, or the bin to remove them.' : 'Tap Edit to change a player.'}</span></div>
+            <ul>{players.items.slice().sort((a, b) => (a.number ?? 999) - (b.number ?? 999) || a.name.localeCompare(b.name)).map((player) => <li key={player.id} className={player.id === selectedPlayerId ? 'active' : undefined}>
+              <span className="squad-admin-number">{player.number ?? '–'}</span>
+              <span className="squad-admin-name">{player.name}<small>{player.position ?? 'No position'}{player.stats?.appearances ? ` · ${player.stats.appearances} apps` : ''}</small></span>
+              <button type="button" className="squad-admin-edit" onClick={() => { setSelectedPlayerId(player.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Edit</button>
+              {isSuperadmin && <button type="button" className="fz-admin-delete" aria-label={`Remove ${player.name}`} onClick={() => void deletePlayer(player)}><Trash2 size={14} /></button>}
+            </li>)}</ul>
+          </div>
         </Card>
           : section === 'teams' ? <>
             <Card className="admin-card logo-import-card">

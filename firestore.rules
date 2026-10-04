@@ -158,7 +158,9 @@ service cloud.firestore {
 
     match /players/{playerId} {
       allow read: if signedIn();
-      allow create, update, delete: if isAdmin();
+      allow create, update: if isAdmin();
+      // Removing a player from the squad is a superadmin power.
+      allow delete: if isSuperadmin();
     }
 
     match /news/{newsId} {
@@ -236,6 +238,41 @@ service cloud.firestore {
       allow update, delete: if isSuperadmin();
     }
 
+    // Push alerts: each device stores its own token and alert choices.
+    // Only the server functions (admin access) read the full list.
+    match /pushTokens/{tokenId} {
+      allow get: if signedIn() && resource.data.uid == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.token == tokenId
+        && request.resource.data.keys().hasOnly(['uid', 'token', 'prefs', 'platform', 'updatedAt'])
+        && request.resource.data.prefs is map
+        && request.resource.data.prefs.keys().hasOnly(['match', 'news'])
+        && request.resource.data.prefs.match is bool
+        && request.resource.data.prefs.news is bool
+        && request.resource.data.platform in ['android', 'ios', 'desktop']
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    // Free push alerts: the GitHub key that lets admin apps ask GitHub to
+    // send an alert. Admins can use it; only the superadmin can change it.
+    match /adminConfig/{configId} {
+      allow read: if isAdmin();
+      allow write: if isSuperadmin();
+    }
+
+    // One record per alert, so it is sent once even if several admins have
+    // the app open. Create-only: a second attempt is refused.
+    match /alertsSent/{alertId} {
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if false;
+    }
+
     match /settings/{settingId} {
       allow read: if signedIn();
       allow create, update, delete: if isSuperadmin();
@@ -246,6 +283,12 @@ service cloud.firestore {
       allow create: if isAdmin()
         && request.resource.data.actorUid == request.auth.uid;
       allow update, delete: if false;
+    }
+
+    // Fan Zone leaderboard: signed-in fans can read every prediction at once
+    // (collection group query). Writes stay governed by the fixture rules above.
+    match /{path=**}/predictions/{uid} {
+      allow read: if signedIn();
     }
 
     match /{document=**} {

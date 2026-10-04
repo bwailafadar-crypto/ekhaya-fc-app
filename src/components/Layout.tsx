@@ -5,6 +5,8 @@ import { ToastProvider } from './Toast'
 import VerificationBanner from './VerificationBanner'
 import TeamLogo from './TeamLogo'
 import AdminAlerts from './AdminAlerts'
+import ForegroundAlerts from './ForegroundAlerts'
+import AdminAlertRelay from './AdminAlertRelay'
 
 const tabs = [
   { to: '/', label: 'Home', icon: Home },
@@ -40,6 +42,8 @@ export default function Layout() {
         </header>
 
         <VerificationBanner />
+        <ForegroundAlerts />
+        <AdminAlertRelay />
 
         <main className="content">
           <AnimatePresence mode="wait" initial={false}>

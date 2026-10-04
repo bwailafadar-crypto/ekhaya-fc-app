@@ -1166,3 +1166,30 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
 .match-summary-note { color: var(--muted); font-size: 12px; }
 .match-summary-extras { padding-top: 10px; display: flex; flex-direction: column; gap: 5px; border-top: 1px solid rgb(201 162 39 / 18%); color: var(--ink-2); font-size: 12px; }
 .match-summary-extras svg { color: var(--gold-dark); vertical-align: -2px; }
+
+/* ===== Push alerts (update 27) ===== */
+.push-prompt { padding: 13px 14px; display: flex; align-items: center; gap: 11px; border-left: 4px solid var(--gold); }
+.push-prompt > svg { flex: 0 0 auto; color: var(--gold-dark); }
+.push-prompt > div { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.push-prompt strong { font-size: 13px; }
+.push-prompt span { color: var(--muted); font-size: 11px; }
+.push-prompt .button { flex: 0 0 auto; min-height: 38px; padding: 0 14px; }
+.push-settings .button { width: 100%; margin-top: 6px; }
+.push-toggle { padding: 10px 0; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid rgb(201 162 39 / 16%); cursor: pointer; }
+.push-toggle input { width: 20px; height: 20px; flex: 0 0 20px; accent-color: var(--gold-dark); }
+.push-toggle span { display: flex; flex-direction: column; gap: 2px; }
+.push-toggle strong { font-size: 13px; }
+.push-toggle small { color: var(--muted); font-size: 11px; }
+
+/* ===== Squad list in admin (update 29) ===== */
+.squad-admin { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgb(201 162 39 / 20%); }
+.squad-admin-heading { margin-bottom: 9px; display: flex; flex-direction: column; gap: 2px; }
+.squad-admin-heading h3 { margin: 0; font-family: 'Oswald', sans-serif; font-size: 17px; }
+.squad-admin-heading span { color: var(--muted); font-size: 11px; }
+.squad-admin ul { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; list-style: none; }
+.squad-admin li { min-height: 48px; padding: 6px 8px 6px 10px; display: flex; align-items: center; gap: 10px; background: rgb(255 255 255 / 65%); border: 1px solid var(--glass-line); border-radius: 10px; }
+.squad-admin li.active { border-color: var(--gold); background: #FFF8E1; }
+.squad-admin-number { width: 28px; flex: 0 0 28px; color: var(--gold-dark); font-family: 'Oswald', sans-serif; font-size: 16px; text-align: center; }
+.squad-admin-name { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; overflow-wrap: anywhere; font-size: 13px; font-weight: 700; }
+.squad-admin-name small { color: var(--muted); font-size: 10px; font-weight: 600; }
+.squad-admin-edit { min-height: 30px; padding: 0 10px; color: var(--gold-dark); background: #fff; border: 1px solid var(--glass-line); border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
