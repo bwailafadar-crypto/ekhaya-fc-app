@@ -404,6 +404,26 @@ export default function AdminPanel() {
     }
   }
 
+  async function deleteMember(member: MemberRow) {
+    const name = member.fullName || member.email || 'this member'
+    const parts = [member.uid ? 'their membership request/record' : null, member.legacyFanId ? 'their old fan record' : null].filter(Boolean).join(' and ')
+    if (!window.confirm(`Delete ${name}? This permanently removes ${parts}. Their app account stays; use Fans → Delete to remove that too.`)) return
+    setMemberActionBusy(member.id)
+    try {
+      const batch = writeBatch(db)
+      if (member.uid) batch.delete(doc(db, 'memberships', member.uid))
+      if (member.legacyFanId) batch.delete(doc(db, 'fans', member.legacyFanId))
+      await batch.commit()
+      setMembershipRecords((current) => ({ ...current, items: current.items.filter((item) => item.id !== member.uid) }))
+      setLegacyFans((current) => ({ ...current, items: current.items.filter((item) => item.id !== member.legacyFanId) }))
+      showToast(`${name} deleted.`)
+    } catch {
+      showToast('The member was not deleted. Check your connection and try again.', 'error')
+    } finally {
+      setMemberActionBusy('')
+    }
+  }
+
   async function updateMember(member: MemberRow, action: 'approve' | 'suspend' | 'renew') {
     const tier = membershipTiers.items.find((item) => item.id === member.tierId)
     if (action !== 'suspend' && !tier) {
@@ -776,6 +796,7 @@ export default function AdminPanel() {
                 {member.status !== 'active' && <Button type="button" disabled={memberActionBusy === member.id} onClick={() => void updateMember(member, 'approve')}>{member.status === 'pending' ? 'Approve' : 'Reactivate'}</Button>}
                 {member.status === 'active' && <Button type="button" variant="secondary" disabled={memberActionBusy === member.id} onClick={() => void updateMember(member, 'suspend')}>Suspend</Button>}
                 {member.status === 'active' && <Button type="button" variant="secondary" disabled={memberActionBusy === member.id} onClick={() => void updateMember(member, 'renew')}>Renew</Button>}
+                <Button type="button" variant="danger" disabled={memberActionBusy === member.id} onClick={() => void deleteMember(member)}>Delete</Button>
               </div>
             </Card>
           })}</div> : <EmptyState icon={Users} title={membersHasMore ? 'No matches on this page' : 'No members match these filters'} description={membersHasMore ? 'Load more records to continue searching.' : undefined} />}

@@ -29,11 +29,9 @@ function prefersRedirect() {
   return standalone || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
 }
 
-function usesGoogle(user: User) {
-  return user.providerData.some((item) => item.providerId === 'google.com')
-}
 
-// First Google sign-in: create the fan profile the same way email sign-up does.
+// Signed-in account without a profile (first Google sign-in, or a profile a
+// superadmin deleted): create a fresh fan profile the same way sign-up does.
 // Firestore rules only allow role 'fan' here, so nobody can make themselves admin.
 async function createGoogleProfile(user: User): Promise<UserProfile> {
   const email = (user.email ?? '').trim().toLowerCase()
@@ -55,7 +53,7 @@ async function createGoogleProfile(user: User): Promise<UserProfile> {
   const profile: UserProfile = {
     role: 'fan',
     email: user.email ?? email,
-    fullName: (user.displayName ?? '').trim().slice(0, 120) || legacyName,
+    fullName: (user.displayName ?? '').trim().slice(0, 120) || legacyName || (user.email ?? '').split('@')[0].slice(0, 120),
     phone: legacyPhone,
     legacyFanDocId,
     legacyFanId,
@@ -75,6 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accountBlocked, setAccountBlocked] = useState(false)
   const [googleError, setGoogleError] = useState<unknown>(null)
   const profileRequest = useRef(0)
+  // True while email sign-up is writing its own profile, so the auth listener
+  // does not create a second one at the same moment.
+  const signingUp = useRef(false)
 
   useEffect(() => {
     let mounted = true
@@ -102,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const snapshot = await getDoc(doc(db, 'users', nextUser.uid))
             let nextProfile = readProfile(snapshot.data())
-            if (!snapshot.exists() && usesGoogle(nextUser)) nextProfile = await createGoogleProfile(nextUser)
+            if (!snapshot.exists() && !signingUp.current) nextProfile = await createGoogleProfile(nextUser)
             if (nextProfile?.disabled) {
               await firebaseSignOut(auth)
               if (mounted) setAccountBlocked(true)
@@ -155,6 +156,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async ({ fullName, phone, email: rawEmail, password }: SignUpDetails) => {
     const email = rawEmail.trim().toLowerCase()
+    signingUp.current = true
+    try {
+      return await finishSignUp(email)
+    } finally {
+      signingUp.current = false
+    }
+
+    async function finishSignUp(email: string) {
     const credential = await createUserWithEmailAndPassword(auth, email, password)
 
     let nextProfile: UserProfile
@@ -198,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmailVerified(credential.user.emailVerified)
     setLoading(false)
     return verificationSent
+    }
   }, [])
 
   const sendPasswordReset = useCallback(async (email: string) => {

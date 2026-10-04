@@ -1,5 +1,5 @@
-import { collection, doc, getCountFromServer, getDocs, limit, orderBy, query, serverTimestamp, startAfter, Timestamp, updateDoc, where, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
-import { BellRing, Download, Search, ShieldCheck, UserCheck, UserPlus, Users, UserX } from 'lucide-react'
+import { collection, doc, getCountFromServer, getDocs, limit, orderBy, query, serverTimestamp, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
+import { BellRing, Download, Search, ShieldCheck, Trash2, UserCheck, UserPlus, Users, UserX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { getUsersSeenAt, markUsersSeen, requestPhoneAlerts } from '../../utils/adminAlerts'
@@ -148,6 +148,26 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
     }
   }
 
+  async function deleteAccount(account: FanAccount) {
+    const name = account.fullName || account.email || 'this fan'
+    const typed = window.prompt(`Delete ${name}'s account data? This permanently removes their profile and any membership.\n\nIf they sign in again they start fresh as a new fan. To keep them out for good, use Block instead.\n\nType DELETE to confirm.`)
+    if (typed?.trim().toUpperCase() !== 'DELETE') return
+    setBusyId(account.id)
+    try {
+      const batch = writeBatch(db)
+      batch.delete(doc(db, 'memberships', account.id))
+      batch.delete(doc(db, 'users', account.id))
+      await batch.commit()
+      setAccounts((current) => current.filter((item) => item.id !== account.id))
+      showToast(`${name} deleted.`)
+      void loadStats().catch(() => undefined)
+    } catch {
+      showToast('The account was not deleted. Check your connection and try again.', 'error')
+    } finally {
+      setBusyId('')
+    }
+  }
+
   async function exportCsv() {
     setExporting(true)
     try {
@@ -259,7 +279,8 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
               : <Button type="button" variant="secondary" disabled={busy} onClick={() => void changeAccount(account, { role: 'fan' }, `Remove admin access from ${name}?`, `${name} is now a fan.`)}><Users size={15} aria-hidden="true" /> Make fan</Button>}
             {account.disabled
               ? <Button type="button" variant="ghost" disabled={busy} onClick={() => void changeAccount(account, { disabled: false }, `Unblock ${name}? They will be able to sign in again.`, `${name} is unblocked.`)}><UserCheck size={15} aria-hidden="true" /> Unblock</Button>
-              : <Button type="button" variant="danger" disabled={busy} onClick={() => void changeAccount(account, { disabled: true }, `Block ${name}? They will be signed out and cannot use the app until you unblock them.`, `${name} is blocked.`)}><UserX size={15} aria-hidden="true" /> Block</Button>}
+              : <Button type="button" variant="secondary" disabled={busy} onClick={() => void changeAccount(account, { disabled: true }, `Block ${name}? They will be signed out and cannot use the app until you unblock them.`, `${name} is blocked.`)}><UserX size={15} aria-hidden="true" /> Block</Button>}
+            <Button type="button" variant="danger" disabled={busy} onClick={() => void deleteAccount(account)}><Trash2 size={15} aria-hidden="true" /> Delete</Button>
           </div>}
         </Card>
       })}
