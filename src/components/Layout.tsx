@@ -8,6 +8,7 @@ import AdminAlerts from './AdminAlerts'
 import ForegroundAlerts from './ForegroundAlerts'
 import AdminAlertRelay from './AdminAlertRelay'
 import ConnectionBanner from './ConnectionBanner'
+import AlertsPrompt from './AlertsPrompt'
 
 const tabs = [
   { to: '/', label: 'Home', icon: Home },
@@ -45,6 +46,7 @@ export default function Layout() {
         <VerificationBanner />
         <ForegroundAlerts />
         <AdminAlertRelay />
+        <AlertsPrompt />
 
         <main className="content">
           <div key={pathname} className="page-transition">

@@ -8,6 +8,9 @@ export const DEFAULT_PREFS: PushPrefs = { match: true, news: true }
 
 const TOKEN_KEY = 'ekhaya-push-token'
 const PREFS_KEY = 'ekhaya-push-prefs'
+const OFF_KEY = 'ekhaya-push-off'
+const ASKED_KEY = 'ekhaya-push-asked-at'
+const REFRESHED_KEY = 'ekhaya-push-refreshed-at'
 const SW_SCOPE = '/firebase-cloud-messaging-push-scope'
 const VAPID_KEY = (import.meta.env.VITE_FIREBASE_VAPID_KEY ?? '').trim()
 
@@ -76,6 +79,8 @@ export async function enablePush(uid: string, prefs: PushPrefs) {
   })
   writeLocal(TOKEN_KEY, token)
   writeLocal(PREFS_KEY, JSON.stringify(prefs))
+  writeLocal(OFF_KEY, null)
+  writeLocal(REFRESHED_KEY, String(Date.now()))
   return token
 }
 
@@ -92,6 +97,8 @@ export async function disablePush() {
   const instance = await messaging()
   if (instance) await deleteToken(instance).catch(() => undefined)
   writeLocal(TOKEN_KEY, null)
+  // The fan switched alerts off on purpose: never switch them back on by ourselves.
+  writeLocal(OFF_KEY, '1')
 }
 
 /** While the app is open, alerts arrive here instead of as a system notification. */
@@ -104,4 +111,30 @@ export async function listenForForegroundAlerts(show: (title: string, body: stri
     const body = payload.notification?.body ?? payload.data?.body ?? ''
     show(title, body)
   })
+}
+
+const DAY = 24 * 60 * 60 * 1000
+
+/**
+ * Runs when a fan opens the app signed in.
+ * - Phone already allowed alerts: switch them on (or refresh them) silently.
+ * - Never asked / asked over 3 days ago: return 'ask' so the app shows the one-tap card.
+ * - The fan turned alerts off, or the phone cannot get them: do nothing.
+ */
+export async function autoAlerts(uid: string): Promise<'done' | 'ask' | 'skip'> {
+  if (readLocal(OFF_KEY)) return 'skip'
+  if ((await pushSupport()) !== 'ok') return 'skip'
+  if (Notification.permission === 'granted') {
+    const fresh = Date.now() - Number(readLocal(REFRESHED_KEY) || 0) < DAY
+    if (savedToken() && fresh) return 'done'
+    try { await enablePush(uid, savedPrefs()) } catch (error) { console.warn('Alerts were not switched on yet', error) }
+    return 'done'
+  }
+  if (savedToken()) return 'done'
+  return Date.now() - Number(readLocal(ASKED_KEY) || 0) > 3 * DAY ? 'ask' : 'skip'
+}
+
+/** The fan tapped "Not now": ask again in 3 days. */
+export function postponeAlertsPrompt() {
+  writeLocal(ASKED_KEY, String(Date.now()))
 }
