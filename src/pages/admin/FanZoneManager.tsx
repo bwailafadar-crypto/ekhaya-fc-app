@@ -1,5 +1,5 @@
-import { addDoc, collection, doc, serverTimestamp, updateDoc, writeBatch, type DocumentReference } from 'firebase/firestore'
-import { Eraser, Lock, LockOpen, Plus, Star, Target, Trash2, Vote } from 'lucide-react'
+import { addDoc, collection, deleteField, doc, serverTimestamp, updateDoc, writeBatch, type DocumentReference } from 'firebase/firestore'
+import { Eraser, Lock, LockOpen, Plus, RefreshCw, Star, Target, Trash2, Trophy, Vote } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useToast } from '../../components/ToastContext'
 import { Button, Card } from '../../components/UI'
@@ -9,6 +9,7 @@ import { useLiveDocs } from '../../hooks/useLiveDocs'
 import type { Fixture, MotmVote, Player, Poll, PollVote, ScorePrediction } from '../../types'
 import { sortByDate } from '../../utils/football'
 import AlertsSetup from './AlertsSetup'
+import { recalculateLeaderboard } from '../../utils/leaderboardStore'
 
 // Deletes many documents in batches (Firestore allows 500 writes per batch).
 async function deleteAll(refs: DocumentReference[]) {
@@ -21,6 +22,10 @@ async function deleteAll(refs: DocumentReference[]) {
 
 function PredictionsAdmin({ fixture, title }: { fixture: Fixture; title: string }) {
   const { showToast } = useToast()
+  const lockedUpcoming = fixture.status === 'upcoming' && fixture.predictionsLocked === true
+  async function reopen() {
+    try { await updateDoc(doc(db, 'fixtures', fixture.id), { predictionsLocked: false }); showToast('Predictions reopened for this match.') } catch { showToast('Predictions were not reopened.', 'error') }
+  }
   const predictions = useLiveDocs<Omit<ScorePrediction, 'id'>>(['fixtures', fixture.id, 'predictions'])
   const [busy, setBusy] = useState('')
   const [showAll, setShowAll] = useState(false)
@@ -41,6 +46,7 @@ function PredictionsAdmin({ fixture, title }: { fixture: Fixture; title: string 
 
   return <Card className="admin-card">
     <div className="fz-card-heading"><Target size={18} /><div><h2>{title}</h2><span>{fixture.home} v {fixture.away} · {sorted.length} prediction{sorted.length === 1 ? '' : 's'}</span></div></div>
+    {lockedUpcoming && <p className="fz-note"><Lock size={14} /> Predictions are locked (this match was started before). <button type="button" className="squad-admin-edit" onClick={() => void reopen()}><LockOpen size={12} /> Reopen</button></p>}
     {sorted.length ? <ul className="fz-admin-results">{visible.map((item) => <li key={item.id}>
       <span>{item.name || 'Fan'} <strong>{item.home}–{item.away}</strong></span>
       <button type="button" className="fz-admin-delete" disabled={Boolean(busy)} onClick={() => void removeOne(item.id, item.name || 'this fan')} aria-label={`Delete ${item.name || 'fan'}'s prediction`}><Trash2 size={14} /></button>
@@ -61,7 +67,10 @@ function PollRow({ poll }: { poll: Poll }) {
   async function toggle() {
     setBusy(true)
     try {
-      await updateDoc(doc(db, 'polls', poll.id), { status: poll.status === 'open' ? 'closed' : 'open' })
+      // Closing saves the final counts on the poll, so fans read them for free.
+      await updateDoc(doc(db, 'polls', poll.id), poll.status === 'open'
+        ? { status: 'closed', results: counts }
+        : { status: 'open', results: deleteField() })
       showToast(poll.status === 'open' ? 'Poll closed. Fans now see the final results.' : 'Poll reopened.')
     } catch { showToast('The poll was not updated.', 'error') } finally { setBusy(false) }
   }
@@ -71,7 +80,7 @@ function PollRow({ poll }: { poll: Poll }) {
   async function resetVotes() {
     if (!window.confirm(`Delete all ${votes.items.length} votes in "${poll.question}" and start again?`)) return
     setBusy(true)
-    try { await deleteAll(voteRefs()); showToast('Poll votes cleared.') } catch { showToast('The votes were not cleared.', 'error') } finally { setBusy(false) }
+    try { await deleteAll(voteRefs()); await updateDoc(doc(db, 'polls', poll.id), { results: deleteField() }); showToast('Poll votes cleared.') } catch { showToast('The votes were not cleared.', 'error') } finally { setBusy(false) }
   }
 
   async function remove() {
@@ -84,7 +93,7 @@ function PollRow({ poll }: { poll: Poll }) {
     <div className="fz-admin-row-heading"><strong>{poll.question}</strong><span className={poll.status === 'open' ? 'fan-tag fan-tag-new' : 'fan-tag fan-tag-role'}>{poll.status === 'open' ? 'Open' : 'Closed'}</span></div>
     <ul className="fz-admin-results">{poll.options.map((option, index) => <li key={option + index}><span>{option}</span><strong>{counts[index]}</strong></li>)}</ul>
     <div className="admin-actions">
-      <Button type="button" variant="secondary" disabled={busy} onClick={() => void toggle()}>{poll.status === 'open' ? <><Lock size={15} /> Close poll</> : <><LockOpen size={15} /> Reopen</>}</Button>
+      <Button type="button" variant="secondary" disabled={busy || votes.loading} onClick={() => void toggle()}>{poll.status === 'open' ? <><Lock size={15} /> Close poll</> : <><LockOpen size={15} /> Reopen</>}</Button>
       {votes.items.length > 0 && <Button type="button" variant="ghost" disabled={busy} onClick={() => void resetVotes()}><Eraser size={15} /> Clear votes</Button>}
       <Button type="button" variant="danger" disabled={busy} onClick={() => void remove()}><Trash2 size={15} /> Delete poll</Button>
     </div>
@@ -103,13 +112,18 @@ function MotmControl({ fixture, players }: { fixture: Fixture; players: Player[]
   async function resetVotes() {
     if (!window.confirm(`Delete all ${votes.items.length} man-of-the-match votes for this match?`)) return
     setBusy(true)
-    try { await deleteAll(votes.items.map((item) => doc(db, 'fixtures', fixture.id, 'motm', item.id))); showToast('Man of the match votes cleared.') } catch { showToast('The votes were not cleared.', 'error') } finally { setBusy(false) }
+    try { await deleteAll(votes.items.map((item) => doc(db, 'fixtures', fixture.id, 'motm', item.id))); await updateDoc(doc(db, 'fixtures', fixture.id), { motmTally: deleteField(), motmWinnerId: deleteField(), motmWinnerVotes: deleteField(), motmTotalVotes: deleteField() }); showToast('Man of the match votes cleared.') } catch { showToast('The votes were not cleared.', 'error') } finally { setBusy(false) }
   }
 
   async function toggle() {
     setBusy(true)
     try {
-      await updateDoc(doc(db, 'fixtures', fixture.id), { motmClosed: !closed })
+      // Closing saves the final tally and winner on the match (fans read it for free).
+      const tally = Object.fromEntries(counts)
+      const [winnerId, winnerVotes] = top[0] ?? []
+      await updateDoc(doc(db, 'fixtures', fixture.id), closed
+        ? { motmClosed: false, motmTally: deleteField(), motmWinnerId: deleteField(), motmWinnerVotes: deleteField(), motmTotalVotes: deleteField() }
+        : { motmClosed: true, motmTally: tally, motmTotalVotes: votes.items.length, ...(winnerId ? { motmWinnerId: winnerId, motmWinnerVotes: winnerVotes } : {}) })
       showToast(closed ? 'Man of the match voting reopened.' : 'Voting closed. Fans now see the winner.')
     } catch { showToast('Voting was not updated.', 'error') } finally { setBusy(false) }
   }
@@ -118,9 +132,22 @@ function MotmControl({ fixture, players }: { fixture: Fixture; players: Player[]
     <div className="fz-card-heading"><Star size={18} /><div><h2>Man of the match</h2><span>{fixture.home} {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0} {fixture.away} · {votes.items.length} votes</span></div></div>
     {top.length ? <ul className="fz-admin-results">{top.map(([playerId, count]) => <li key={playerId}><span>{players.find((player) => player.id === playerId)?.name ?? 'Unknown player'}</span><strong>{count}</strong></li>)}</ul> : <p className="fz-note">No votes yet.</p>}
     <div className="admin-actions">
-      <Button type="button" variant={closed ? 'secondary' : 'primary'} disabled={busy} onClick={() => void toggle()}>{closed ? <><LockOpen size={15} /> Reopen voting</> : <><Lock size={15} /> Close voting and announce winner</>}</Button>
+      <Button type="button" variant={closed ? 'secondary' : 'primary'} disabled={busy || votes.loading} onClick={() => void toggle()}>{closed ? <><LockOpen size={15} /> Reopen voting</> : <><Lock size={15} /> Close voting and announce winner</>}</Button>
       {votes.items.length > 0 && <Button type="button" variant="danger" disabled={busy} onClick={() => void resetVotes()}><Eraser size={15} /> Clear votes</Button>}
     </div>
+  </Card>
+}
+
+function LeaderboardTools() {
+  const { showToast } = useToast()
+  const [busy, setBusy] = useState(false)
+  async function run() {
+    setBusy(true)
+    try { const fans = await recalculateLeaderboard(); showToast(`Leaderboard updated: ${fans} fans ranked.`) } catch { showToast('The leaderboard could not be updated. Check your connection.', 'error') } finally { setBusy(false) }
+  }
+  return <Card className="admin-card">
+    <div className="fz-card-heading"><Trophy size={18} /><div><h2>Prediction league</h2><span>Updates by itself after each match. Use this after correcting old results.</span></div></div>
+    <Button type="button" variant="secondary" disabled={busy} onClick={() => void run()}><RefreshCw size={15} /> {busy ? 'Updating…' : 'Recalculate leaderboard'}</Button>
   </Card>
 }
 
@@ -152,6 +179,7 @@ export default function FanZoneManager() {
 
   return <section className="fz-admin">
     <AlertsSetup />
+    <LeaderboardTools />
     <Card className="admin-card">
       <div className="fz-card-heading"><Vote size={18} /><div><h2>New poll</h2><span>Appears in the Fan Zone straight away</span></div></div>
       <form className="admin-form" onSubmit={createPoll}>

@@ -14,6 +14,10 @@ on:
         description: 'Also delete players that are not on the official list'
         type: boolean
         default: false
+      confirm_code:
+        description: 'Your squad code (the SQUAD_CODE secret). Needed for apply.'
+        required: false
+        default: ''
 
 jobs:
   squad:
@@ -32,6 +36,18 @@ jobs:
         run: |
           printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Check squad code
+        if: inputs.mode == 'apply'
+        env:
+          GIVEN: ${{ inputs.confirm_code }}
+          EXPECTED: ${{ secrets.SQUAD_CODE }}
+        run: |
+          # Only the superadmin knows this code, so other admins with the alerts key
+          # cannot change or delete players through this workflow.
+          if [ -z "$EXPECTED" ] || [ "$GIVEN" != "$EXPECTED" ]; then
+            echo "::error::Wrong or missing squad code. Add a SQUAD_CODE secret and enter it to apply changes."
+            exit 1
+          fi
       - name: Update squad
         run: |
           ARGS=""

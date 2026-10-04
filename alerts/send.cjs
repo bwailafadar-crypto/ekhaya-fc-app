@@ -41,9 +41,10 @@ async function sendAlert({ kind, title, body, path }, db, messaging) {
     sent += result.successCount
     result.responses.forEach((response, index) => { if (!response.success && DEAD_TOKEN.has(response.error?.code)) dead.push(batch[index]) })
   }
-  if (dead.length) {
+  // Remove devices that no longer exist (in batches: Firestore allows 500 writes per batch).
+  for (let i = 0; i < dead.length; i += 450) {
     const writer = db.batch()
-    dead.forEach((token) => writer.delete(db.collection('pushTokens').doc(token)))
+    dead.slice(i, i + 450).forEach((token) => writer.delete(db.collection('pushTokens').doc(token)))
     await writer.commit()
   }
   return { sent, total: tokens.length, removed: dead.length }

@@ -22,7 +22,6 @@ export default function Home() {
     || 'Fan'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const newsResult = usePublishedNews()
-  const playersResult = useFirestoreCollection<Player>('players')
   const [clockNow, setClockNow] = useState(0)
   const liveMatch = fixturesResult.items.find((fixture) => fixture.status === 'live' && !fixture.isTest)
   const upcoming = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')[0]
@@ -54,7 +53,7 @@ export default function Home() {
         <PageHeader eyebrow="Next up" title="Next match" action={<Link className="text-link" to="/fixtures">All fixtures <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
           : fixturesResult.error ? <p className="live-error" role="alert">Fixtures could not be loaded: {fixturesResult.error}</p>
-          : upcoming ? <><MatchCard fixture={upcoming} />{upcoming.lineupConfirmed && <NextLineup fixture={upcoming} players={playersResult.items} />}</>
+          : upcoming ? <><MatchCard fixture={upcoming} />{upcoming.lineupConfirmed && <NextLineup fixture={upcoming} />}</>
             : <Card><EmptyState icon={CalendarDays} title="No upcoming match" description="Check back when the next fixture is announced." /></Card>}
       </section>
       <section className="home-section">
@@ -90,7 +89,9 @@ function LatestGoal({ fixtureId }: { fixtureId: string }) {
   return <span className="home-live-goal">⚽ {goal.minute}' {goal.playerName || goal.team}</span>
 }
 
-function NextLineup({ fixture, players }: { fixture: Fixture; players: Player[] }) {
+// Players (with photos) are only downloaded when a confirmed line-up is shown.
+function NextLineup({ fixture }: { fixture: Fixture }) {
+  const players = useFirestoreCollection<Player>('players').items
   const pick = (ids: string[] | undefined) => (ids ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
   const starters = pick(fixture.startingPlayerIds)
   if (!starters.length) return null

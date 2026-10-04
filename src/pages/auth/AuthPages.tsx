@@ -231,6 +231,10 @@ export function SignUpPage() {
       setError('Those passwords do not match.')
       return
     }
+    if (/(ekhaya|official|admin|club|management)/i.test(fullName)) {
+      setError('Please use your own name. Names that look like the club or its staff are not allowed.')
+      return
+    }
     setSubmitting(true)
     try {
       await signUp({ fullName, phone, email, password })

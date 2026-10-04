@@ -1,6 +1,6 @@
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { collection, doc, getDocs, limit, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import { CheckCircle2, Lock, Minus, Plus, Star, Target, Trophy, Vote } from 'lucide-react'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import Leaderboard from '../components/Leaderboard'
 import PlayerAvatar from '../components/PlayerAvatar'
@@ -10,7 +10,7 @@ import { useToast } from '../components/ToastContext'
 import { Button, Card, PageHeader, Skeleton } from '../components/UI'
 import { db } from '../firebase'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import { useLiveDocs } from '../hooks/useLiveDocs'
+import { useCounts, useMyDoc } from '../hooks/useCounts'
 import type { Fixture, MotmVote, Player, Poll, PollVote, ScorePrediction } from '../types'
 import { formatMalawiDate, formatMalawiTime, sortByDate } from '../utils/football'
 
@@ -50,40 +50,55 @@ function Stepper({ label, value, onChange, disabled }: { label: string; value: n
   )
 }
 
+const COMMON_SCORES: Array<[number, number]> = [[1, 0], [2, 1], [1, 1], [2, 0], [0, 0], [0, 1], [1, 2], [3, 1], [2, 2], [3, 0]]
+
+function predictionsRef(fixtureId: string) {
+  return collection(db, 'fixtures', fixtureId, 'predictions')
+}
+
+function saveErrorText(error: unknown, fallback: string) {
+  const code = (error as { code?: string })?.code
+  return code === 'permission-denied' ? 'Please verify your email first (check your inbox), then try again.' : fallback
+}
+
 function PredictCard({ fixture }: { fixture: Fixture }) {
   const { user, profile } = useAuth()
   const { showToast } = useToast()
   const now = useNow()
-  const predictions = useLiveDocs<Omit<ScorePrediction, 'id'>>(['fixtures', fixture.id, 'predictions'])
-  const mine = predictions.items.find((item) => item.id === user?.uid)
+  const mine = useMyDoc<Omit<ScorePrediction, 'id'>>(user ? ['fixtures', fixture.id, 'predictions', user.uid] : null)
   const [draft, setDraft] = useState<{ home: number; away: number } | null>(null)
   const [saving, setSaving] = useState(false)
-  const home = draft?.home ?? mine?.home ?? 0
-  const away = draft?.away ?? mine?.away ?? 0
-  const locked = fixture.status !== 'upcoming' || Date.parse(fixture.date) <= now
-
-  const popular = useMemo(() => {
-    const counts = new Map<string, number>()
-    predictions.items.forEach((item) => counts.set(`${item.home}–${item.away}`, (counts.get(`${item.home}–${item.away}`) ?? 0) + 1))
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
-  }, [predictions.items])
+  const [version, setVersion] = useState(0)
+  const home = draft?.home ?? mine.data?.home ?? 0
+  const away = draft?.away ?? mine.data?.away ?? 0
+  const locked = fixture.status !== 'upcoming' || fixture.predictionsLocked === true || Date.parse(fixture.date) <= now
+  const showPopular = Boolean(mine.data) || locked
+  // Totals come from counts (cheap), not by downloading every prediction.
+  const totals = useCounts(`${fixture.id}:${version}:${showPopular ? 'p' : 't'}`, () => ({
+    total: predictionsRef(fixture.id),
+    ...(showPopular ? Object.fromEntries(COMMON_SCORES.map(([h, a]) => [`${h}–${a}`, query(predictionsRef(fixture.id), where('home', '==', h), where('away', '==', a))])) : {}),
+  }))
+  const total = totals.counts.total ?? 0
+  const popular = Object.entries(totals.counts).filter(([key, count]) => key !== 'total' && count > 0).sort((a, b) => b[1] - a[1]).slice(0, 3)
 
   async function save() {
     if (!user) return
     setSaving(true)
     try {
-      const name = (profile?.fullName || user.email?.split('@')[0] || 'Fan').slice(0, 120)
+      // Must match the profile name exactly (the database checks it).
+      const name = (profile?.fullName ?? '').slice(0, 120)
       await setDoc(doc(db, 'fixtures', fixture.id, 'predictions', user.uid), { home, away, name, updatedAt: serverTimestamp() })
       setDraft(null)
+      setVersion((value) => value + 1)
       showToast(`Prediction saved: ${fixture.home} ${home}–${away} ${fixture.away}`)
-    } catch {
-      showToast(locked ? 'Predictions are closed for this match.' : 'Your prediction was not saved. Check your connection and try again.', 'error')
+    } catch (error) {
+      showToast(locked ? 'Predictions are closed for this match.' : saveErrorText(error, 'Your prediction was not saved. Check your connection and try again.'), 'error')
     } finally {
       setSaving(false)
     }
   }
 
-  const changed = draft !== null && (draft.home !== mine?.home || draft.away !== mine?.away)
+  const changed = draft !== null && (draft.home !== mine.data?.home || draft.away !== mine.data?.away)
 
   return (
     <Card className="fz-card">
@@ -94,11 +109,11 @@ function PredictCard({ fixture }: { fixture: Fixture }) {
         <div className="fz-predict-team"><TeamLogo name={fixture.away} /><span>{fixture.away}</span><Stepper label={fixture.away} value={away} disabled={locked} onChange={(value) => setDraft({ home, away: value })} /></div>
       </div>
       {locked
-        ? <p className="fz-note"><Lock size={14} aria-hidden="true" /> Predictions closed at kick-off.{mine ? ` You said ${mine.home}–${mine.away}.` : ''}</p>
-        : <Button type="button" disabled={saving || (!changed && Boolean(mine))} onClick={() => void save()}>{saving ? 'Saving...' : mine ? (changed ? 'Update prediction' : 'Prediction saved ✓') : 'Save prediction'}</Button>}
-      {predictions.items.length > 0 && <div className="fz-popular">
-        <span>{predictions.items.length} fan{predictions.items.length === 1 ? '' : 's'} predicted</span>
-        {(mine || locked) && popular.length > 0 && <div className="fz-chips">{popular.map(([score, count]) => <span className="fz-chip" key={score}>{score} <small>{percent(count, predictions.items.length)}%</small></span>)}</div>}
+        ? <p className="fz-note"><Lock size={14} aria-hidden="true" /> Predictions are closed.{mine.data ? ` You said ${mine.data.home}–${mine.data.away}.` : ''}</p>
+        : <Button type="button" disabled={saving || (!changed && Boolean(mine.data))} onClick={() => void save()}>{saving ? 'Saving...' : mine.data ? (changed ? 'Update prediction' : 'Prediction saved ✓') : 'Save prediction'}</Button>}
+      {total > 0 && <div className="fz-popular">
+        <span>{total} fan{total === 1 ? '' : 's'} predicted</span>
+        {showPopular && popular.length > 0 && <div className="fz-chips">{popular.map(([score, count]) => <span className="fz-chip" key={score}>{score} <small>{percent(count, total)}%</small></span>)}</div>}
       </div>}
     </Card>
   )
@@ -106,19 +121,31 @@ function PredictCard({ fixture }: { fixture: Fixture }) {
 
 function LastPredictionsCard({ fixture }: { fixture: Fixture }) {
   const { user } = useAuth()
-  const predictions = useLiveDocs<Omit<ScorePrediction, 'id'>>(['fixtures', fixture.id, 'predictions'])
-  if (predictions.loading || predictions.items.length === 0) return null
   const homeScore = fixture.homeScore ?? 0
   const awayScore = fixture.awayScore ?? 0
-  const correct = predictions.items.filter((item) => item.home === homeScore && item.away === awayScore)
-  const mine = predictions.items.find((item) => item.id === user?.uid)
-  const mineCorrect = mine && mine.home === homeScore && mine.away === awayScore
+  const mine = useMyDoc<Omit<ScorePrediction, 'id'>>(user ? ['fixtures', fixture.id, 'predictions', user.uid] : null)
+  const exactQuery = () => query(predictionsRef(fixture.id), where('home', '==', homeScore), where('away', '==', awayScore))
+  const totals = useCounts(`${fixture.id}:${homeScore}-${awayScore}`, () => ({ total: predictionsRef(fixture.id), exact: exactQuery() }))
+  const [names, setNames] = useState<{ key: string; list: string[] }>({ key: '', list: [] })
+  const exact = totals.counts.exact ?? 0
+  const namesKey = `${fixture.id}:${homeScore}-${awayScore}:${exact}`
+  useEffect(() => {
+    if (exact === 0 || exact > 8) return
+    let active = true
+    getDocs(query(exactQuery(), limit(8))).then((snapshot) => { if (active) setNames({ key: namesKey, list: snapshot.docs.map((item) => String(item.data().name || 'Fan')) }) }).catch(() => undefined)
+    return () => { active = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [namesKey])
+  const total = totals.counts.total ?? 0
+  if (totals.loading || total === 0) return null
+  const mineCorrect = mine.data && mine.data.home === homeScore && mine.data.away === awayScore
+  const nameList = names.key === namesKey ? names.list : []
 
   return (
     <Card className="fz-card fz-card-compact">
       <div className="fz-card-heading"><Trophy size={18} aria-hidden="true" /><div><h2>Last match predictions</h2><span>{fixture.home} {homeScore}–{awayScore} {fixture.away}</span></div></div>
-      {mine && <p className={mineCorrect ? 'fz-result fz-result-win' : 'fz-result'}>{mineCorrect ? `You called it! ${mine.home}–${mine.away} 🎯` : `You said ${mine.home}–${mine.away}.`}</p>}
-      <p className="fz-note">{correct.length ? `${correct.length} of ${predictions.items.length} fans got the exact score${correct.length <= 8 ? `: ${correct.map((item) => item.name).join(', ')}` : '.'}` : `None of the ${predictions.items.length} fans got the exact score.`}</p>
+      {mine.data && <p className={mineCorrect ? 'fz-result fz-result-win' : 'fz-result'}>{mineCorrect ? `You called it! ${mine.data.home}–${mine.data.away} 🎯` : `You said ${mine.data.home}–${mine.data.away}.`}</p>}
+      <p className="fz-note">{exact ? `${exact} of ${total} fans got the exact score${nameList.length ? `: ${nameList.join(', ')}` : '.'}` : `None of the ${total} fans got the exact score.`}</p>
     </Card>
   )
 }
@@ -126,27 +153,32 @@ function LastPredictionsCard({ fixture }: { fixture: Fixture }) {
 function MotmCard({ fixture, players }: { fixture: Fixture; players: Player[] }) {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const votes = useLiveDocs<Omit<MotmVote, 'id'>>(['fixtures', fixture.id, 'motm'])
+  const mine = useMyDoc<Omit<MotmVote, 'id'>>(user ? ['fixtures', fixture.id, 'motm', user.uid] : null)
   const [saving, setSaving] = useState('')
+  const [version, setVersion] = useState(0)
   const lineup = [...(fixture.startingPlayerIds ?? []), ...(fixture.benchPlayerIds ?? [])]
   const candidates = (lineup.length ? players.filter((player) => lineup.includes(player.id)) : players)
     .slice().sort((a, b) => (a.number ?? 99) - (b.number ?? 99))
-  const mine = votes.items.find((item) => item.id === user?.uid)
   const closed = fixture.motmClosed === true
-  const showResults = Boolean(mine) || closed
-  const counts = new Map<string, number>()
-  votes.items.forEach((item) => counts.set(item.playerId, (counts.get(item.playerId) ?? 0) + 1))
-  const ranked = candidates.slice().sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
-  const leader = ranked[0] && (counts.get(ranked[0].id) ?? 0) > 0 ? ranked[0] : null
+  const showResults = Boolean(mine.data) || closed
+  const savedTally = fixture.motmTally
+  // When voting is closed the final tally is saved on the match (no extra reads);
+  // while open, results are counted once after the fan votes.
+  const live = useCounts(showResults && !savedTally && candidates.length ? `${fixture.id}:${version}` : null, () => Object.fromEntries(candidates.map((player) => [player.id, query(collection(db, 'fixtures', fixture.id, 'motm'), where('playerId', '==', player.id))])))
+  const tally: Record<string, number> = savedTally ?? live.counts
+  const totalVotes = Object.values(tally).reduce((sum, count) => sum + count, 0)
+  const ranked = candidates.slice().sort((a, b) => (tally[b.id] ?? 0) - (tally[a.id] ?? 0))
+  const winner = closed && fixture.motmWinnerId ? players.find((player) => player.id === fixture.motmWinnerId) : (ranked[0] && (tally[ranked[0].id] ?? 0) > 0 ? ranked[0] : null)
 
   async function vote(player: Player) {
     if (!user || closed) return
     setSaving(player.id)
     try {
       await setDoc(doc(db, 'fixtures', fixture.id, 'motm', user.uid), { playerId: player.id, updatedAt: serverTimestamp() })
+      setVersion((value) => value + 1)
       showToast(`You voted for ${player.name}.`)
-    } catch {
-      showToast('Your vote was not saved. Check your connection and try again.', 'error')
+    } catch (error) {
+      showToast(saveErrorText(error, 'Your vote was not saved. Check your connection and try again.'), 'error')
     } finally {
       setSaving('')
     }
@@ -155,18 +187,18 @@ function MotmCard({ fixture, players }: { fixture: Fixture; players: Player[] })
   return (
     <Card className="fz-card">
       <div className="fz-card-heading"><Star size={18} aria-hidden="true" /><div><h2>Man of the match</h2><span>{fixture.home} {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0} {fixture.away}</span></div></div>
-      {closed && leader && <p className="fz-result fz-result-win">🏆 {leader.name} is the fans' man of the match</p>}
+      {closed && winner && <p className="fz-result fz-result-win">🏆 {winner.name} is the fans' man of the match</p>}
       {!candidates.length ? <p className="fz-note">Players will appear here once the squad is added.</p>
-        : showResults ? <div className="fz-bars">
-            {ranked.slice(0, 8).map((player, index) => <ResultBar key={player.id} label={<><PlayerAvatar player={player} />{player.number ? `${player.number}. ` : ''}{player.name}</>} value={counts.get(player.id) ?? 0} total={votes.items.length} mine={mine?.playerId === player.id} leading={index === 0 && (counts.get(player.id) ?? 0) > 0} />)}
-          </div>
+        : showResults ? (live.loading ? <Skeleton className="fz-board-skeleton" /> : <div className="fz-bars">
+            {ranked.slice(0, 8).map((player, index) => <ResultBar key={player.id} label={<><PlayerAvatar player={player} />{player.number ? `${player.number}. ` : ''}{player.name}</>} value={tally[player.id] ?? 0} total={totalVotes} mine={mine.data?.playerId === player.id} leading={index === 0 && (tally[player.id] ?? 0) > 0} />)}
+          </div>)
         : <div className="fz-players">
             {candidates.map((player) => <button key={player.id} type="button" className="fz-player" disabled={Boolean(saving)} onClick={() => void vote(player)}>
               <PlayerAvatar player={player} /><span>{player.number ? <em>{player.number}</em> : null}{player.name}</span>{saving === player.id && <small>Voting...</small>}
             </button>)}
           </div>}
-      <p className="fz-note">{closed ? <><Lock size={14} aria-hidden="true" /> Voting closed · </> : null}{votes.items.length} vote{votes.items.length === 1 ? '' : 's'}{mine && !closed ? ' · tap below to change your vote' : ''}</p>
-      {mine && !closed && <details className="fz-change"><summary>Change my vote</summary><div className="fz-players">{candidates.map((player) => <button key={player.id} type="button" className={mine.playerId === player.id ? 'fz-player active' : 'fz-player'} disabled={Boolean(saving)} onClick={() => void vote(player)}><PlayerAvatar player={player} /><span>{player.name}</span></button>)}</div></details>}
+      <p className="fz-note">{closed ? <><Lock size={14} aria-hidden="true" /> Voting closed · </> : null}{totalVotes} vote{totalVotes === 1 ? '' : 's'}{mine.data && !closed ? ' · tap below to change your vote' : ''}</p>
+      {mine.data && !closed && <details className="fz-change"><summary>Change my vote</summary><div className="fz-players">{candidates.map((player) => <button key={player.id} type="button" className={mine.data?.playerId === player.id ? 'fz-player active' : 'fz-player'} disabled={Boolean(saving)} onClick={() => void vote(player)}><PlayerAvatar player={player} /><span>{player.name}</span></button>)}</div></details>}
     </Card>
   )
 }
@@ -174,11 +206,15 @@ function MotmCard({ fixture, players }: { fixture: Fixture; players: Player[] })
 function PollCard({ poll }: { poll: Poll }) {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const votes = useLiveDocs<Omit<PollVote, 'id'>>(['polls', poll.id, 'votes'])
+  const mine = useMyDoc<Omit<PollVote, 'id'>>(user ? ['polls', poll.id, 'votes', user.uid] : null)
   const [saving, setSaving] = useState(-1)
-  const mine = votes.items.find((item) => item.id === user?.uid)
+  const [version, setVersion] = useState(0)
   const closed = poll.status !== 'open'
-  const counts = poll.options.map((_, index) => votes.items.filter((item) => item.option === index).length)
+  const showResults = Boolean(mine.data) || closed
+  // Closed polls keep their final results on the poll itself (no extra reads).
+  const live = useCounts(showResults && !poll.results ? `${poll.id}:${version}` : null, () => Object.fromEntries(poll.options.map((_, index) => [String(index), query(collection(db, 'polls', poll.id, 'votes'), where('option', '==', index))])))
+  const counts = poll.options.map((_, index) => poll.results?.[index] ?? live.counts[String(index)] ?? 0)
+  const total = counts.reduce((sum, count) => sum + count, 0)
   const top = Math.max(...counts, 0)
 
   async function vote(option: number) {
@@ -186,8 +222,9 @@ function PollCard({ poll }: { poll: Poll }) {
     setSaving(option)
     try {
       await setDoc(doc(db, 'polls', poll.id, 'votes', user.uid), { option, updatedAt: serverTimestamp() })
-    } catch {
-      showToast('Your vote was not saved. Check your connection and try again.', 'error')
+      setVersion((value) => value + 1)
+    } catch (error) {
+      showToast(saveErrorText(error, 'Your vote was not saved. Check your connection and try again.'), 'error')
     } finally {
       setSaving(-1)
     }
@@ -195,13 +232,31 @@ function PollCard({ poll }: { poll: Poll }) {
 
   return (
     <Card className="fz-card">
-      <div className="fz-card-heading"><Vote size={18} aria-hidden="true" /><div><h2>{poll.question}</h2><span>{closed ? 'Final results' : 'Club poll'} · {votes.items.length} vote{votes.items.length === 1 ? '' : 's'}</span></div></div>
-      {mine || closed
-        ? <div className="fz-bars">{poll.options.map((option, index) => <ResultBar key={option + index} label={option} value={counts[index]} total={votes.items.length} mine={mine?.option === index} leading={top > 0 && counts[index] === top} />)}</div>
+      <div className="fz-card-heading"><Vote size={18} aria-hidden="true" /><div><h2>{poll.question}</h2><span>{closed ? 'Final results' : 'Club poll'}{showResults ? ` · ${total} vote${total === 1 ? '' : 's'}` : ''}</span></div></div>
+      {showResults
+        ? (live.loading ? <Skeleton className="fz-board-skeleton" /> : <div className="fz-bars">{poll.options.map((option, index) => <ResultBar key={option + index} label={option} value={counts[index]} total={total} mine={mine.data?.option === index} leading={top > 0 && counts[index] === top} />)}</div>)
         : <div className="fz-options">{poll.options.map((option, index) => <button key={option + index} type="button" className="fz-option" disabled={saving >= 0} onClick={() => void vote(index)}>{saving === index ? 'Voting...' : option}</button>)}</div>}
-      {mine && !closed && <div className="fz-options fz-options-small">{poll.options.map((option, index) => index !== mine.option && <button key={option + index} type="button" className="fz-option" disabled={saving >= 0} onClick={() => void vote(index)}>Switch to {option}</button>)}</div>}
+      {mine.data && !closed && <div className="fz-options fz-options-small">{poll.options.map((option, index) => index !== mine.data?.option && <button key={option + index} type="button" className="fz-option" disabled={saving >= 0} onClick={() => void vote(index)}>Switch to {option}</button>)}</div>}
     </Card>
   )
+}
+
+function VerifyEmailNotice() {
+  const { user, emailVerified, sendVerificationEmail, refreshEmailVerification } = useAuth()
+  const { showToast } = useToast()
+  const [busy, setBusy] = useState(false)
+  if (!user || emailVerified) return null
+  return <Card className="push-prompt">
+    <Lock size={20} aria-hidden="true" />
+    <div><strong>Verify your email to take part</strong><span>Voting and predictions need a verified email, so every vote is a real fan.</span></div>
+    <Button type="button" variant="secondary" disabled={busy} onClick={async () => {
+      setBusy(true)
+      try {
+        if (await refreshEmailVerification()) showToast('Email verified. You can vote now!')
+        else { await sendVerificationEmail(); showToast(`Verification email sent to ${user.email}.`) }
+      } catch { showToast('Could not send the email. Try again shortly.', 'error') } finally { setBusy(false) }
+    }}>{busy ? '...' : 'Verify'}</Button>
+  </Card>
 }
 
 export default function FanZone() {
@@ -220,6 +275,7 @@ export default function FanZone() {
   return <div className="fan-zone">
     <PageHeader eyebrow="Supporters" title="Fan Zone" description="Predict scores, pick the man of the match and have your say." />
     {(fixtures.error || players.error || polls.error) && <p className="live-error" role="alert">Some Fan Zone content could not be loaded. Check your connection.</p>}
+    <VerifyEmailNotice />
     <PushSettings compact />
     {nextMatch ? <PredictCard fixture={nextMatch} /> : <Card className="fz-card"><h2>Predict the score</h2><p className="fz-note">The next fixture will appear here once it is scheduled.</p></Card>}
     <Leaderboard />

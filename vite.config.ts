@@ -53,7 +53,9 @@ export default defineConfig({
         'downloads/**',
         // The alerts worker is registered separately and must never be cached.
         'firebase-messaging-sw.js',
-        'assets/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*',
+        'assets/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,latin-ext}-*',
+        // Fans never open the admin panel; staff download it when they do.
+        'assets/AdminPanel-*',
       ],
       navigateFallback: 'index.html',
       navigateFallbackDenylist: [/^\/\.netlify\/functions\//, /firestore\.googleapis\.com/],

@@ -1,7 +1,10 @@
 import { Goal, Square, Star, Target } from 'lucide-react'
+import { collection, query, where } from 'firebase/firestore'
+import { db } from '../firebase'
+import { useCounts } from '../hooks/useCounts'
 import { useLiveDocs } from '../hooks/useLiveDocs'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import type { Fixture, MatchEvent, MotmVote, Player, ScorePrediction } from '../types'
+import type { Fixture, MatchEvent, Player } from '../types'
 
 function sameTeam(a: string, b: string) {
   return a.trim().toLowerCase() === b.trim().toLowerCase()
@@ -10,21 +13,22 @@ function sameTeam(a: string, b: string) {
 /** Full-time summary: scorers, cards, fans' man of the match and prediction stats. */
 export default function MatchSummary({ fixture, compact = false }: { fixture: Fixture; compact?: boolean }) {
   const events = useLiveDocs<Omit<MatchEvent, 'id'>>(['fixtures', fixture.id, 'events'])
-  const motm = useLiveDocs<Omit<MotmVote, 'id'>>(fixture.isTest ? null : ['fixtures', fixture.id, 'motm'])
-  const predictions = useLiveDocs<Omit<ScorePrediction, 'id'>>(fixture.isTest ? null : ['fixtures', fixture.id, 'predictions'])
   const players = useFirestoreCollection<Player>('players')
   const home = fixture.homeScore ?? 0
   const away = fixture.awayScore ?? 0
+  // Counted, not downloaded: about one read each however many fans predicted.
+  const predictionsRef = collection(db, 'fixtures', fixture.id, 'predictions')
+  const predictionCounts = useCounts(fixture.isTest ? null : `${fixture.id}:${home}-${away}`, () => ({ total: predictionsRef, exact: query(predictionsRef, where('home', '==', home), where('away', '==', away)) }))
   const byMinute = events.items.slice().sort((a, b) => a.minute - b.minute)
   const goals = byMinute.filter((event) => event.kind === 'goal')
   const cards = byMinute.filter((event) => event.kind === 'card')
   const sideGoals = (team: string) => goals.filter((event) => sameTeam(event.team, team))
 
-  const tally = new Map<string, number>()
-  motm.items.forEach((vote) => tally.set(vote.playerId, (tally.get(vote.playerId) ?? 0) + 1))
-  const [leaderId, leaderVotes] = [...tally.entries()].sort((a, b) => b[1] - a[1])[0] ?? []
-  const leader = leaderId ? players.items.find((player) => player.id === leaderId) : undefined
-  const exact = predictions.items.filter((item) => item.home === home && item.away === away).length
+  // The fans' man of the match is saved on the match when voting closes.
+  const leader = fixture.motmClosed && fixture.motmWinnerId ? players.items.find((player) => player.id === fixture.motmWinnerId) : undefined
+  const leaderVotes = fixture.motmWinnerVotes
+  const totalPredictions = predictionCounts.counts.total ?? 0
+  const exact = predictionCounts.counts.exact ?? 0
 
   const goalLine = (event: Omit<MatchEvent, 'id'> & { id: string }) => <li key={event.id}><strong>{event.minute}'</strong> {event.playerName || 'Goal'}{event.assistPlayerName && !compact ? <small> (assist {event.assistPlayerName})</small> : null}</li>
 
@@ -40,9 +44,9 @@ export default function MatchSummary({ fixture, compact = false }: { fixture: Fi
         <div><span className="match-summary-team">{fixture.away}</span><ul>{sideGoals(fixture.away).map(goalLine)}</ul></div>
       </div> : !events.loading && <p className="match-summary-note">{home + away === 0 ? 'A goalless draw.' : 'Goal details were not recorded for this match.'}</p>}
       {!compact && cards.length > 0 && <ul className="match-summary-cards">{cards.map((event) => <li key={event.id}><Square size={12} className={event.card === 'red' ? 'card-red' : 'card-yellow'} aria-label={`${event.card === 'red' ? 'Red' : 'Yellow'} card`} /> {event.minute}' {event.playerName || event.team}</li>)}</ul>}
-      {!fixture.isTest && (leader || predictions.items.length > 0) && <div className="match-summary-extras">
-        {leader && <span><Star size={14} aria-hidden="true" /> {fixture.motmClosed ? "Fans' man of the match" : 'Leading MOTM vote'}: <strong>{leader.name}</strong>{leaderVotes ? ` (${leaderVotes} vote${leaderVotes === 1 ? '' : 's'})` : ''}</span>}
-        {predictions.items.length > 0 && <span><Target size={14} aria-hidden="true" /> {exact} of {predictions.items.length} fans predicted {home}–{away}</span>}
+      {!fixture.isTest && (leader || totalPredictions > 0) && <div className="match-summary-extras">
+        {leader && <span><Star size={14} aria-hidden="true" /> Fans' man of the match: <strong>{leader.name}</strong>{leaderVotes ? ` (${leaderVotes} vote${leaderVotes === 1 ? '' : 's'})` : ''}</span>}
+        {totalPredictions > 0 && <span><Target size={14} aria-hidden="true" /> {exact} of {totalPredictions} fans predicted {home}–{away}</span>}
       </div>}
     </section>
   )

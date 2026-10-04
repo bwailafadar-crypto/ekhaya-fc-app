@@ -2,16 +2,16 @@ import { Medal, Trophy } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { POINTS_EXACT, POINTS_RESULT, useLeaderboard } from '../hooks/useLeaderboard'
+import { POINTS_EXACT, POINTS_RESULT, useLeaderboard, useMyLeaderboardEntry } from '../hooks/useLeaderboard'
 import { Card, Skeleton } from './UI'
 
 const medals = ['🥇', '🥈', '🥉']
 
 export default function Leaderboard() {
   const { user } = useAuth()
-  const { rows, matches, loading, error } = useLeaderboard()
+  const { rows, totalFans, matches, loading, error } = useLeaderboard()
+  const { entry: mine } = useMyLeaderboardEntry(user?.uid)
   const [expanded, setExpanded] = useState(false)
-  const mine = rows.find((row) => row.uid === user?.uid)
   const visible = rows.slice(0, expanded ? 50 : 10)
 
   return (
@@ -21,7 +21,7 @@ export default function Leaderboard() {
         : error ? <p className="fz-note">The leaderboard could not be loaded. Check your connection.</p>
         : rows.length === 0 ? <p className="fz-note"><Medal size={14} aria-hidden="true" /> No points yet. Predict the next match to get on the board.</p>
         : <>
-            {mine && <p className="fz-result fz-result-win">You're #{mine.rank} of {rows.length} with {mine.points} pt{mine.points === 1 ? '' : 's'}</p>}
+            {mine && <p className="fz-result fz-result-win">You're #{mine.rank} of {totalFans || rows.length} with {mine.points} pt{mine.points === 1 ? '' : 's'}</p>}
             <ol className="fz-board">
               {visible.map((row) => <li key={row.uid} className={row.uid === user?.uid ? 'mine' : undefined}>
                 <span className="fz-board-rank">{row.rank <= 3 ? medals[row.rank - 1] : row.rank}</span>
@@ -39,9 +39,8 @@ export default function Leaderboard() {
 /** Small badge for the profile page. */
 export function LeaderboardBadge() {
   const { user } = useAuth()
-  const { rows, loading } = useLeaderboard()
+  const { entry: mine, loading } = useMyLeaderboardEntry(user?.uid)
   if (loading) return null
-  const mine = rows.find((row) => row.uid === user?.uid)
   return (
     <Link to="/fanzone" className="fz-badge">
       <Trophy size={18} aria-hidden="true" />

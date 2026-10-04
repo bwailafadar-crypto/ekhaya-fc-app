@@ -25,7 +25,9 @@ export default function AlertsSetup() {
     event.preventDefault()
     const form = event.currentTarget
     const token = String(new FormData(form).get('token') ?? '').trim()
-    if (!/^(github_pat_|ghp_)/.test(token)) { showToast('That does not look like a GitHub token. It starts with github_pat_.', 'error'); return }
+    // Only fine-grained keys (limited to this one repository) are accepted;
+    // classic ghp_ keys can control every repository and are refused.
+    if (!/^github_pat_[A-Za-z0-9_]{20,}$/.test(token)) { showToast('Use a fine-grained GitHub key (it starts with github_pat_). Classic keys are not accepted for safety.', 'error'); return }
     setBusy(true)
     try { await saveGithubKey(token); form.reset(); setHasKey(true); showToast('GitHub key saved. Send a test alert to check it.') } catch { showToast('The key was not saved.', 'error') } finally { setBusy(false) }
   }

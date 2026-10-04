@@ -48,6 +48,13 @@ export interface Fixture {
   statsApplied?: boolean
   /** Fan Zone: admin closed man-of-the-match voting for this match. */
   motmClosed?: boolean
+  /** Fan Zone: predictions closed (set at kick-off; an admin can reopen). */
+  predictionsLocked?: boolean
+  /** Fan Zone: man of the match result saved when voting closes. */
+  motmWinnerId?: string
+  motmWinnerVotes?: number
+  motmTotalVotes?: number
+  motmTally?: Record<string, number>
 }
 
 export interface AppliedStandingChange {
@@ -200,6 +207,8 @@ export interface Poll {
   options: string[]
   status: 'open' | 'closed'
   createdAt?: Timestamp
+  /** Final vote counts per option, saved when the poll is closed. */
+  results?: number[]
 }
 
 export interface PollVote { id: string; option: number; updatedAt?: Timestamp }

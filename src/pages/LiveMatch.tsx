@@ -230,6 +230,8 @@ export default function LiveMatch() {
         const kickoffAt = serverTimestamp()
         transaction.update(fixtureRef, {
           status: 'live', homeScore: 0, awayScore: 0, period: 'first-half',
+          // Close score predictions for good at kick-off (kept even if the match is reset).
+          predictionsLocked: true,
           kickoffAt, periodStartedAt: kickoffAt, clockElapsedSeconds: 0, firstHalfSeconds: 0, addedTime: 0,
           matchStats: selectedFixture.matchStats ?? { home: { ...EMPTY_MATCH_STATS }, away: { ...EMPTY_MATCH_STATS } },
           eventCount: 0,
@@ -756,6 +758,7 @@ export default function LiveMatch() {
         transaction.update(fixtureRef, {
           status: 'upcoming', homeScore: deleteField(), awayScore: deleteField(), minute: deleteField(),
           eventCount: deleteField(), startingPlayerIds: deleteField(), liveStartedAt: deleteField(), finishedAt: deleteField(),
+          motmClosed: deleteField(), motmTally: deleteField(), motmWinnerId: deleteField(), motmWinnerVotes: deleteField(), motmTotalVotes: deleteField(),
           benchPlayerIds: deleteField(), lineupConfirmed: deleteField(), kickoffAt: deleteField(), periodStartedAt: deleteField(),
           period: deleteField(), clockElapsedSeconds: deleteField(), firstHalfSeconds: deleteField(), addedTime: deleteField(), matchStats: deleteField(),
           statsApplied: false, statsAppliedChanges: deleteField(), statsSkipped: deleteField(), updatedAt: serverTimestamp(),

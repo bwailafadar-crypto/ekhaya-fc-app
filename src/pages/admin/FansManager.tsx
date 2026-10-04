@@ -53,7 +53,9 @@ function joinedLabel(date: Date | null) {
   return `Joined ${date.toLocaleDateString()}`
 }
 
-function csvCell(value: string) {
+function csvCell(raw: string) {
+  // Stop spreadsheet formulas hidden in names (e.g. "=HYPERLINK(...)") from running.
+  const value = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
 }
 

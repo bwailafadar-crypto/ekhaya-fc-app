@@ -464,10 +464,14 @@ export default function AdminPanel() {
         if (legacyRef && !legacySnapshot?.exists()) throw new Error('This legacy fan record no longer exists.')
 
         const update: Record<string, unknown> = { status: action === 'suspend' ? 'suspended' : 'active', updatedAt: serverTimestamp() }
-        let fanId = member.fanId
+        // Use the fan ID saved in the database right now (it may have been
+        // assigned by another admin or by a payment since this screen loaded).
+        const storedFanId = membershipSnapshot?.data()?.fanId || legacySnapshot?.data()?.fanId
+        let fanId = (typeof storedFanId === 'string' && storedFanId) || member.fanId
+        const priorExpiryStored = membershipSnapshot?.data()?.expiryDate ?? legacySnapshot?.data()?.expiryDate
         if (action !== 'suspend') {
           const now = new Date()
-          const priorExpiry = memberDate(member.expiryDate)
+          const priorExpiry = memberDate(priorExpiryStored ?? member.expiryDate)
           const expiryBase = action === 'renew' && priorExpiry && priorExpiry > now ? priorExpiry : now
           const duration = Math.max(1, Number(tier?.durationMonths ?? 12))
           nextStartDate = Timestamp.fromDate(now)

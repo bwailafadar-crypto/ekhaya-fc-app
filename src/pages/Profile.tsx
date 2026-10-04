@@ -50,7 +50,7 @@ export default function Profile() {
   const membership = membershipState.uid === uid ? membershipState.value : null
   const legacyFan = legacyState.email === email ? legacyState.value : null
   const tier = matchingTier(membership?.tierId ?? legacyFan?.tier, tiers.items)
-  const status = membership?.status ?? (legacyFan?.status.toLocaleLowerCase() === 'active' ? 'active' : 'pending')
+  const status = membership?.status ?? (legacyFan?.status?.toLowerCase?.() === 'active' ? 'active' : 'pending')
   const fullName = membership?.fullName || legacyFan?.fullName || profile?.fullName || user?.displayName || 'Ekhaya supporter'
   const fanId = membership?.fanId || legacyFan?.fanId || null
   const expiry = dateLabel(membership?.expiryDate ?? legacyFan?.expiryDate)

@@ -24,8 +24,31 @@ service cloud.firestore {
       return hasRole('superadmin');
     }
 
+    // A fan who may take part (vote, predict, react): signed in, email
+    // verified, and not blocked by the club. Blocking is enforced here, not
+    // only in the app.
+    function isBlocked() {
+      return exists(userPath(request.auth.uid))
+        && get(userPath(request.auth.uid)).data.get('disabled', false) == true;
+    }
+
+    function canAct() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && !isBlocked();
+    }
+
+    function myName() {
+      return get(userPath(request.auth.uid)).data.get('fullName', '');
+    }
+
     function fixtureDoc(fixtureId) {
       return get(/databases/$(database)/documents/fixtures/$(fixtureId)).data;
+    }
+
+    // Fans cannot pose as the club or its staff in their display name.
+    function validFanName(name) {
+      return !name.lower().matches('.*(ekhaya|official|admin|club|management).*');
     }
 
     function validRole(role) {
@@ -47,9 +70,11 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.fullName is string
         && request.resource.data.fullName.size() <= 120
+        && validFanName(request.resource.data.fullName)
         && (request.resource.data.phone == null || (request.resource.data.phone is string && request.resource.data.phone.size() <= 32))
-        && (request.resource.data.legacyFanDocId == null || request.resource.data.legacyFanDocId is string)
-        && (request.resource.data.legacyFanId == null || request.resource.data.legacyFanId is string)
+        // Old fan records are linked by the club, never by the fan themselves.
+        && request.resource.data.legacyFanDocId == null
+        && request.resource.data.legacyFanId == null
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
 
@@ -65,7 +90,8 @@ service cloud.firestore {
           ])
           && request.resource.data.updatedAt == request.time
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['fullName'])
-            || (request.resource.data.fullName is string && request.resource.data.fullName.size() <= 120))
+            || (request.resource.data.fullName is string && request.resource.data.fullName.size() <= 120
+              && validFanName(request.resource.data.fullName)))
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['phone'])
             || request.resource.data.phone == null
             || (request.resource.data.phone is string && request.resource.data.phone.size() <= 32))
@@ -77,7 +103,7 @@ service cloud.firestore {
           && request.auth.uid != uid
           && validRole(request.resource.data.role)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'role', 'disabled', 'updatedAt'
+            'role', 'disabled', 'legacyFanDocId', 'legacyFanId', 'updatedAt'
           ])
           && request.resource.data.updatedAt == request.time
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['disabled']) || request.resource.data.disabled is bool)
@@ -87,8 +113,11 @@ service cloud.firestore {
     }
 
     match /fans/{fanDocId} {
+      // Old member records: only the superadmin, or the owner of a VERIFIED
+      // matching email (so nobody can sign up with someone else's address).
       allow get, list: if signedIn()
-        && (isSuperadmin() || resource.data.email == request.auth.token.email);
+        && (isSuperadmin()
+          || (request.auth.token.email_verified == true && resource.data.email == request.auth.token.email));
       allow create, update, delete: if isSuperadmin();
     }
 
@@ -109,17 +138,19 @@ service cloud.firestore {
       // Fan Zone: one score prediction per fan, only before kick-off.
       match /predictions/{uid} {
         allow read: if signedIn();
-        allow create, update: if signedIn()
+        allow create, update: if canAct()
           && request.auth.uid == uid
           && fixtureDoc(fixtureId).status == 'upcoming'
+          && fixtureDoc(fixtureId).get('predictionsLocked', false) != true
+          && fixtureDoc(fixtureId).get('isTest', false) != true
           && request.resource.data.keys().hasOnly(['home', 'away', 'name', 'updatedAt'])
           && request.resource.data.keys().hasAll(['home', 'away', 'name', 'updatedAt'])
           && request.resource.data.home is int
           && request.resource.data.home >= 0 && request.resource.data.home <= 20
           && request.resource.data.away is int
           && request.resource.data.away >= 0 && request.resource.data.away <= 20
-          && request.resource.data.name is string
-          && request.resource.data.name.size() <= 120
+          // The name shown on the leaderboard is the fan's real profile name.
+          && request.resource.data.name == myName()
           && request.resource.data.updatedAt == request.time;
         allow delete: if isAdmin();
       }
@@ -128,7 +159,7 @@ service cloud.firestore {
       // until an admin closes voting.
       match /motm/{uid} {
         allow read: if signedIn();
-        allow create, update: if signedIn()
+        allow create, update: if canAct()
           && request.auth.uid == uid
           && fixtureDoc(fixtureId).status == 'finished'
           && fixtureDoc(fixtureId).get('isTest', false) != true
@@ -143,10 +174,12 @@ service cloud.firestore {
 
       match /reactions/{uid} {
         allow read: if signedIn();
-        allow create, update: if signedIn()
+        allow create, update: if canAct()
           && request.auth.uid == uid
           && request.resource.data.keys().hasOnly(['emoji', 'updatedAt'])
-          && request.resource.data.emoji in ['⚽', '🔥', '👏', '😱'];
+          && request.resource.data.emoji in ['⚽', '🔥', '👏', '😱']
+          && exists(/databases/$(database)/documents/fixtures/$(fixtureId))
+          && request.resource.data.updatedAt == request.time;
         allow delete: if signedIn() && request.auth.uid == uid;
       }
     }
@@ -183,7 +216,7 @@ service cloud.firestore {
       // Fan Zone: one vote per fan while the poll is open.
       match /votes/{uid} {
         allow read: if signedIn();
-        allow create, update: if signedIn()
+        allow create, update: if canAct()
           && request.auth.uid == uid
           && get(/databases/$(database)/documents/polls/$(pollId)).data.status == 'open'
           && request.resource.data.keys().hasOnly(['option', 'updatedAt'])
@@ -196,15 +229,16 @@ service cloud.firestore {
       }
     }
 
-    match /predictions/{predictionId} {
-      allow read: if signedIn()
-        && (resource.data.uid == request.auth.uid || isAdmin());
-      allow create: if signedIn()
-        && request.resource.data.uid == request.auth.uid;
-      allow update: if signedIn()
-        && resource.data.uid == request.auth.uid
-        && request.resource.data.uid == request.auth.uid;
-      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    // Season leaderboard, calculated by admins after each match so fans read
+    // one small document instead of every prediction ever made.
+    match /leaderboard/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /leaderboardEntries/{uid} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
     }
 
     match /membershipTiers/{tierId} {
@@ -245,6 +279,7 @@ service cloud.firestore {
       allow create, update: if signedIn()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.token == tokenId
+        && tokenId.size() >= 100 && tokenId.size() <= 400
         && request.resource.data.keys().hasOnly(['uid', 'token', 'prefs', 'platform', 'updatedAt'])
         && request.resource.data.prefs is map
         && request.resource.data.prefs.keys().hasOnly(['match', 'news'])
@@ -270,7 +305,9 @@ service cloud.firestore {
         && request.resource.data.title is string
         && request.resource.data.title.size() <= 200
         && request.resource.data.createdAt == request.time;
-      allow read, update, delete: if false;
+      // An admin removes the record again if sending failed, so it can retry.
+      allow delete: if isAdmin();
+      allow read, update: if false;
     }
 
     match /settings/{settingId} {
@@ -280,15 +317,8 @@ service cloud.firestore {
 
     match /auditLogs/{logId} {
       allow read: if isSuperadmin();
-      allow create: if isAdmin()
-        && request.resource.data.actorUid == request.auth.uid;
-      allow update, delete: if false;
-    }
-
-    // Fan Zone leaderboard: signed-in fans can read every prediction at once
-    // (collection group query). Writes stay governed by the fixture rules above.
-    match /{path=**}/predictions/{uid} {
-      allow read: if signedIn();
+      // Not used by the app; closed so nothing can be dumped here.
+      allow create, update, delete: if false;
     }
 
     match /{document=**} {

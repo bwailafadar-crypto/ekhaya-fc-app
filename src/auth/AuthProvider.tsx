@@ -1,5 +1,5 @@
 import { browserLocalPersistence, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type User, deleteUser, onAuthStateChanged, reload, sendEmailVerification, sendPasswordResetEmail, setPersistence, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
-import { collection, doc, getDoc, getDocFromCache, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
+import { doc, getDoc, getDocFromCache, serverTimestamp, setDoc } from 'firebase/firestore'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { auth, db } from '../firebase'
 import { AuthContext, type AppRole, type AuthContextValue, type SignUpDetails, type UserProfile } from './AuthContext'
@@ -30,33 +30,26 @@ function prefersRedirect() {
 }
 
 
+// Names that look like the club or its staff are refused by the database.
+function safeName(name: string) {
+  const trimmed = name.slice(0, 120)
+  return /(ekhaya|official|admin|club|management)/i.test(trimmed) ? 'Fan' : trimmed
+}
+
 // Signed-in account without a profile (first Google sign-in, or a profile a
 // superadmin deleted): create a fresh fan profile the same way sign-up does.
 // Firestore rules only allow role 'fan' here, so nobody can make themselves admin.
 async function createGoogleProfile(user: User): Promise<UserProfile> {
   const email = (user.email ?? '').trim().toLowerCase()
-  let legacyFanDocId: string | null = null
-  let legacyFanId: string | null = null
-  let legacyName = ''
-  let legacyPhone: string | null = null
-  try {
-    const matchingFans = await getDocs(query(collection(db, 'fans'), where('email', '==', email)))
-    const legacyFan = matchingFans.docs[0]
-    const legacyData = legacyFan?.data()
-    legacyFanDocId = legacyFan?.id ?? null
-    legacyFanId = typeof legacyData?.fanId === 'string' ? legacyData.fanId : null
-    legacyName = typeof legacyData?.fullName === 'string' ? legacyData.fullName : ''
-    legacyPhone = typeof legacyData?.phone === 'string' ? legacyData.phone : null
-  } catch {
-    // An old fan record is optional; carry on without it.
-  }
+  // Old member records are linked by the club, never automatically at sign-up
+  // (the email may not be verified yet).
   const profile: UserProfile = {
     role: 'fan',
     email: user.email ?? email,
-    fullName: (user.displayName ?? '').trim().slice(0, 120) || legacyName || (user.email ?? '').split('@')[0].slice(0, 120),
-    phone: legacyPhone,
-    legacyFanDocId,
-    legacyFanId,
+    fullName: safeName((user.displayName ?? '').trim() || (user.email ?? '').split('@')[0]),
+    phone: null,
+    legacyFanDocId: null,
+    legacyFanId: null,
     disabled: false,
   }
   const { disabled: _disabled, ...stored } = profile
@@ -183,16 +176,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let nextProfile: UserProfile
     try {
       await credential.user.getIdToken(true)
-      const matchingFans = await getDocs(query(collection(db, 'fans'), where('email', '==', email)))
-      const legacyFan = matchingFans.docs[0]
-      const legacyData = legacyFan?.data()
       nextProfile = {
         role: 'fan',
         email,
-        fullName: fullName.trim() || (typeof legacyData?.fullName === 'string' ? legacyData.fullName : ''),
-        phone: phone.trim() || (typeof legacyData?.phone === 'string' ? legacyData.phone : null),
-        legacyFanDocId: legacyFan?.id ?? null,
-        legacyFanId: typeof legacyData?.fanId === 'string' ? legacyData.fanId : null,
+        fullName: fullName.trim().slice(0, 120),
+        phone: phone.trim() || null,
+        legacyFanDocId: null,
+        legacyFanId: null,
         disabled: false,
       }
 
@@ -238,6 +228,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const currentUser = auth.currentUser
     if (!currentUser) return false
     await reload(currentUser)
+    // Refresh the sign-in token too, so the database sees "verified" right away.
+    if (currentUser.emailVerified) await currentUser.getIdToken(true)
     setEmailVerified(currentUser.emailVerified)
     setUser(currentUser)
     return currentUser.emailVerified
