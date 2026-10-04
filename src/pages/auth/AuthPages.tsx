@@ -1,5 +1,5 @@
 import { FirebaseError } from 'firebase/app'
-import { ArrowLeft, Eye, EyeOff, LoaderCircle, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Check, Eye, EyeOff, LoaderCircle, Send, ShieldCheck, X } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/UI'
@@ -120,11 +120,52 @@ function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
 }
 
 function SubmitButton({ busy, idleLabel, busyLabel }: { busy: boolean; idleLabel: string; busyLabel: string }) {
+  const [ripple, setRipple] = useState<{ x: number; y: number; key: number } | null>(null)
   return (
-    <Button type="submit" disabled={busy} aria-busy={busy}>
-      {busy && <LoaderCircle className="button-spinner" size={17} aria-hidden="true" />}
-      {busy ? busyLabel : idleLabel}
+    <Button
+      type="submit"
+      className={`auth-submit${busy ? ' is-busy' : ''}`}
+      disabled={busy}
+      aria-busy={busy}
+      onPointerDown={(event) => {
+        // Gold ripple from where the button was pressed.
+        const box = event.currentTarget.getBoundingClientRect()
+        setRipple({ x: event.clientX - box.left, y: event.clientY - box.top, key: Date.now() })
+      }}
+    >
+      {ripple && <span key={ripple.key} className="auth-ripple" style={{ left: ripple.x, top: ripple.y }} aria-hidden="true" onAnimationEnd={() => setRipple(null)} />}
+      <span className="auth-submit-label">
+        {busy && <LoaderCircle className="button-spinner" size={17} aria-hidden="true" />}
+        {busy ? busyLabel : idleLabel}
+      </span>
     </Button>
+  )
+}
+
+type SendStatus = 'idle' | 'sending' | 'success' | 'error'
+
+/**
+ * Telegram-style send button: a paper plane cruises while signing in, flies
+ * away and the button turns green on success, or turns red and shakes on failure.
+ */
+function SendButton({ status, label }: { status: SendStatus; label: string }) {
+  const text = status === 'sending' ? 'Signing in…' : status === 'success' ? 'Welcome!' : status === 'error' ? 'Try again' : label
+  return (
+    <button
+      type="submit"
+      className={`button button-primary auth-submit auth-send is-${status}`}
+      disabled={status === 'sending' || status === 'success'}
+      aria-busy={status === 'sending'}
+    >
+      <span className="auth-submit-label">
+        <span className="auth-send-icon" aria-hidden="true">
+          {status === 'success' ? <><Send className="auth-plane auth-plane-away" size={18} /><Check className="auth-send-check" size={19} strokeWidth={3} /></>
+            : status === 'error' ? <X className="auth-send-check" size={19} strokeWidth={3} />
+            : <Send className="auth-plane" size={18} />}
+        </span>
+        <span aria-live="polite">{text}</span>
+      </span>
+    </button>
   )
 }
 
@@ -132,16 +173,19 @@ function AuthShell({
   title,
   intro,
   children,
+  holdRedirect = false,
 }: {
   title: string
   intro: string
   children: ReactNode
+  /** Keep this page on screen (e.g. to finish the sign-in animation). */
+  holdRedirect?: boolean
 }) {
   const { user, loading } = useAuth()
   const location = useLocation()
 
-  if (loading) return <div className="auth-loading"><div className="skeleton" /></div>
-  if (user) {
+  if (loading && !holdRedirect) return <div className="auth-loading"><div className="skeleton" /></div>
+  if (user && !holdRedirect) {
     const from = (location.state as { from?: string } | null)?.from
     return <Navigate to={from?.startsWith('/') ? from : '/'} replace />
   }
@@ -174,25 +218,27 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [status, setStatus] = useState<SendStatus>('idle')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
-    setSubmitting(true)
+    setStatus('sending')
     try {
       await signIn(email, password)
+      // Green "Welcome!" while the plane flies off, then into the app.
+      setStatus('success')
       const from = (location.state as { from?: string } | null)?.from
-      navigate(from?.startsWith('/') ? from : '/', { replace: true })
+      window.setTimeout(() => navigate(from?.startsWith('/') ? from : '/', { replace: true }), 1100)
     } catch (reason) {
       setError(getErrorMessage(reason))
-    } finally {
-      setSubmitting(false)
+      setStatus('error')
+      window.setTimeout(() => setStatus((current) => (current === 'error' ? 'idle' : current)), 1800)
     }
   }
 
   return (
-    <AuthShell title="Welcome back" intro="Sign in to follow the club and connect with Ekhaya supporters.">
+    <AuthShell title="Welcome back" intro="Sign in to follow the club and connect with Ekhaya supporters." holdRedirect={status === 'sending' || status === 'success'}>
       {accountBlocked && <p className="auth-error" role="alert">This account has been blocked by the club. Contact Ekhaya FC if you think this is a mistake.</p>}
       <GoogleSignIn onError={setError} />
       <form className="auth-form" onSubmit={handleSubmit}>
@@ -202,7 +248,7 @@ export function LoginPage() {
         </div>
         <PasswordField id="login-password" label="Password" autoComplete="current-password" value={password} onChange={setPassword} />
         {error && <p className="auth-error" role="alert">{error}</p>}
-        <SubmitButton busy={submitting} idleLabel="Sign in" busyLabel="Signing in..." />
+        <SendButton status={status} label="Sign in" />
       </form>
       <div className="auth-links">
         <Link className="auth-link" to="/forgot-password">Forgot password?</Link>
