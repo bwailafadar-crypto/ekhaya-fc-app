@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, CalendarDays, Newspaper, ShieldCheck, Trophy, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import LineupPitch from '../components/LineupPitch'
 import MatchCard from '../components/MatchCard'
+import MatchSummary from '../components/MatchSummary'
 import { Badge, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import TeamLogo from '../components/TeamLogo'
 import NewsCoverImage from '../components/NewsCoverImage'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { usePublishedNews } from '../hooks/usePublishedNews'
-import type { Fixture } from '../types'
+import type { Fixture, MatchEvent, Player } from '../types'
+import { useLiveDocs } from '../hooks/useLiveDocs'
 import { sortByDate } from '../utils/football'
 import { matchMinute } from '../utils/matchClock'
 
@@ -19,6 +22,7 @@ export default function Home() {
     || 'Fan'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const newsResult = usePublishedNews()
+  const playersResult = useFirestoreCollection<Player>('players')
   const [clockNow, setClockNow] = useState(0)
   const liveMatch = fixturesResult.items.find((fixture) => fixture.status === 'live' && !fixture.isTest)
   const upcoming = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')[0]
@@ -38,6 +42,7 @@ export default function Home() {
         <span className="home-live-label"><i className="live-pulse-dot" />LIVE NOW</span>
         <span className="home-live-teams"><span><TeamLogo name={liveMatch.home} />{liveMatch.home}</span><strong>{liveMatch.homeScore ?? 0} – {liveMatch.awayScore ?? 0}</strong><span><TeamLogo name={liveMatch.away} />{liveMatch.away}</span></span>
         <span className="home-live-clock">{matchMinute(liveMatch, clockNow)} <ArrowRight size={15} /></span>
+        <LatestGoal fixtureId={liveMatch.id} />
       </Link>}
       <section className="home-hero">
         <span className="page-eyebrow">The heart of the home</span>
@@ -49,14 +54,14 @@ export default function Home() {
         <PageHeader eyebrow="Next up" title="Next match" action={<Link className="text-link" to="/fixtures">All fixtures <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
           : fixturesResult.error ? <p className="live-error" role="alert">Fixtures could not be loaded: {fixturesResult.error}</p>
-          : upcoming ? <MatchCard fixture={upcoming} />
+          : upcoming ? <><MatchCard fixture={upcoming} />{upcoming.lineupConfirmed && <NextLineup fixture={upcoming} players={playersResult.items} />}</>
             : <Card><EmptyState icon={CalendarDays} title="No upcoming match" description="Check back when the next fixture is announced." /></Card>}
       </section>
       <section className="home-section">
         <PageHeader eyebrow="Full time" title="Last result" action={<Link className="text-link" to="/results">Results <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
           : fixturesResult.error ? null
-          : lastResult ? <MatchCard fixture={lastResult} />
+          : lastResult ? <><MatchCard fixture={lastResult} /><MatchSummary fixture={lastResult} compact /></>
             : <Card><EmptyState icon={Trophy} title="No results yet" /></Card>}
       </section>
       <section className="home-shortcuts" aria-label="Quick links">
@@ -76,4 +81,18 @@ export default function Home() {
       </section>
     </>
   )
+}
+
+function LatestGoal({ fixtureId }: { fixtureId: string }) {
+  const events = useLiveDocs<Omit<MatchEvent, 'id'>>(['fixtures', fixtureId, 'events'])
+  const goal = events.items.filter((event) => event.kind === 'goal').sort((a, b) => b.minute - a.minute)[0]
+  if (!goal) return null
+  return <span className="home-live-goal">⚽ {goal.minute}' {goal.playerName || goal.team}</span>
+}
+
+function NextLineup({ fixture, players }: { fixture: Fixture; players: Player[] }) {
+  const pick = (ids: string[] | undefined) => (ids ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
+  const starters = pick(fixture.startingPlayerIds)
+  if (!starters.length) return null
+  return <details className="home-lineup" open><summary>Starting XI confirmed</summary><LineupPitch starters={starters} bench={pick(fixture.benchPlayerIds)} /></details>
 }
