@@ -1299,3 +1299,41 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
 .community-invite-link button { width: 34px; height: 34px; flex: 0 0 auto; border: 0; border-radius: 8px; display: grid; place-items: center; color: #2A2108; background: linear-gradient(120deg, #E8C95A, #C9A227); }
 .community-updated { text-align: center; }
 select.auth-input { appearance: auto; }
+
+/* ===== Glass navbar + scroll-aware bars (update 42) ===== */
+.topbar { transition: transform 280ms cubic-bezier(.2, .8, .2, 1), background 220ms ease, box-shadow 220ms ease; will-change: transform; }
+.topbar.is-scrolled { background: rgb(255 255 255 / 80%); box-shadow: 0 10px 30px rgb(158 124 18 / 14%); }
+.topbar.is-hidden { transform: translateY(calc(-100% - 4px)); }
+.content { padding-bottom: calc(var(--nav-h) + 40px + env(safe-area-inset-bottom)); }
+.bottom-nav {
+  --gap: 10px;
+  bottom: calc(var(--gap) + env(safe-area-inset-bottom)); width: min(calc(100% - 24px), 560px); height: var(--nav-h);
+  padding: 7px; border: 1px solid rgb(255 255 255 / 75%); border-radius: 24px; overflow: hidden;
+  background: linear-gradient(160deg, rgb(255 255 255 / 72%), rgb(255 250 235 / 52%));
+  -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: 0 14px 34px rgb(120 90 20 / 20%), 0 2px 6px rgb(120 90 20 / 8%), inset 0 1px 0 rgb(255 255 255 / 90%), inset 0 -1px 0 rgb(201 162 39 / 18%);
+  transition: transform 320ms cubic-bezier(.2, .8, .2, 1), opacity 220ms ease;
+}
+.bottom-nav.is-hidden { transform: translate(-50%, calc(100% + var(--gap) + 20px)); opacity: .2; }
+.bottom-nav::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg, rgb(255 255 255 / 45%), transparent 45%); }
+.nav-pill {
+  position: absolute; z-index: 0; top: 7px; bottom: 7px; left: 7px; width: calc((100% - 14px) / 5);
+  border-radius: 17px; transform: translateX(calc(var(--active, 0) * 100%));
+  background: linear-gradient(135deg, rgb(248 228 160 / 95%), rgb(222 186 76 / 85%));
+  box-shadow: 0 6px 16px rgb(201 162 39 / 35%), inset 0 1px 0 rgb(255 255 255 / 80%);
+  transition: transform 380ms cubic-bezier(.3, 1.35, .45, 1);
+}
+.nav-item { z-index: 1; border-radius: 17px; -webkit-tap-highlight-color: transparent; }
+.nav-item::before, .nav-item.active::before { display: none; }
+.nav-item.active { color: #2A2108; }
+.nav-item.active .nav-icon { color: #2A2108; animation: nav-pop 420ms cubic-bezier(.3, 1.5, .5, 1); }
+.nav-item.active .nav-label { font-weight: 700; }
+.nav-item:focus-visible { outline: 2px solid var(--gold-dark); outline-offset: -2px; }
+@keyframes nav-pop { 0% { transform: scale(.7) translateY(3px); } 60% { transform: scale(1.15) translateY(-2px); } 100% { transform: none; } }
+.install-banner { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 20px); }
+.alerts-prompt { bottom: calc(var(--nav-h) + 22px + env(safe-area-inset-bottom, 0px)); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .bottom-nav { background: rgb(255 255 255 / 96%); } }
+@media (prefers-reduced-motion: reduce) {
+  .topbar, .bottom-nav, .nav-pill { transition: none; }
+  .nav-item.active .nav-icon { animation: none; }
+}
