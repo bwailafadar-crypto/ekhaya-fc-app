@@ -1,0 +1,9 @@
+{
+  "name": "Ekhaya FC app",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22-bookworm",
+  "features": { "ghcr.io/devcontainers/features/java:1": { "version": "17" } },
+  "postCreateCommand": "npm ci",
+  "forwardPorts": [5173, 4000, 8080, 9099],
+  "portsAttributes": { "5173": { "label": "App" }, "4000": { "label": "Test database UI" } },
+  "customizations": { "vscode": { "extensions": ["dbaeumer.vscode-eslint", "toba.vsfire"] } }
+}

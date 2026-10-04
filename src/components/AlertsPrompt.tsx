@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { autoAlerts, enablePush, postponeAlertsPrompt, savedPrefs } from '../utils/push'
 import { useToast } from './ToastContext'
+import { useFlag } from '../hooks/useFlag'
 
 /**
  * Makes sure every fan gets match alerts: switches them on silently when the
@@ -11,6 +12,7 @@ import { useToast } from './ToastContext'
 export default function AlertsPrompt() {
   const { user } = useAuth()
   const { showToast } = useToast()
+  const enabled = useFlag('alertsPrompt')
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const uid = user?.uid
@@ -25,7 +27,7 @@ export default function AlertsPrompt() {
     return () => { active = false; window.clearTimeout(timer) }
   }, [uid])
 
-  if (!show || !uid) return null
+  if (!enabled || !show || !uid) return null
 
   const later = () => { postponeAlertsPrompt(); setShow(false) }
   const turnOn = async () => {

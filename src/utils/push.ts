@@ -1,5 +1,5 @@
 import { deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
-import { deleteToken, getMessaging, getToken, isSupported, onMessage, type Messaging } from 'firebase/messaging'
+import type { Messaging } from 'firebase/messaging'
 import { db, firebaseApp } from '../firebase'
 import { isAndroidApp } from './appShell'
 
@@ -29,9 +29,13 @@ export function savedPrefs(): PushPrefs {
   try { return { ...DEFAULT_PREFS, ...JSON.parse(readLocal(PREFS_KEY) ?? '{}') } } catch { return DEFAULT_PREFS }
 }
 
+// The alerts library (about 120 KB) is only downloaded when alerts are used.
+const messagingLib = () => import('firebase/messaging')
 let messagingPromise: Promise<Messaging | null> | null = null
 function messaging() {
-  messagingPromise ??= isSupported().then((ok) => (ok ? getMessaging(firebaseApp) : null)).catch(() => null)
+  messagingPromise ??= messagingLib()
+    .then(async ({ isSupported, getMessaging }) => ((await isSupported()) ? getMessaging(firebaseApp) : null))
+    .catch(() => null)
   return messagingPromise
 }
 
@@ -68,6 +72,7 @@ export async function enablePush(uid: string, prefs: PushPrefs) {
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') throw new Error(permission === 'denied' ? 'blocked' : 'dismissed')
   const registration = await messagingWorker()
+  const { getToken } = await messagingLib()
   const token = await getToken(instance, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration })
   if (!token) throw new Error('no-token')
   const old = savedToken()
@@ -95,7 +100,7 @@ export async function disablePush() {
   const token = savedToken()
   if (token) await deleteDoc(doc(db, 'pushTokens', token)).catch(() => undefined)
   const instance = await messaging()
-  if (instance) await deleteToken(instance).catch(() => undefined)
+  if (instance) await messagingLib().then(({ deleteToken }) => deleteToken(instance)).catch(() => undefined)
   writeLocal(TOKEN_KEY, null)
   // The fan switched alerts off on purpose: never switch them back on by ourselves.
   writeLocal(OFF_KEY, '1')
@@ -106,6 +111,7 @@ export async function listenForForegroundAlerts(show: (title: string, body: stri
   if (!savedToken()) return () => undefined
   const instance = await messaging()
   if (!instance) return () => undefined
+  const { onMessage } = await messagingLib()
   return onMessage(instance, (payload) => {
     const title = payload.notification?.title ?? payload.data?.title ?? 'Ekhaya FC'
     const body = payload.notification?.body ?? payload.data?.body ?? ''

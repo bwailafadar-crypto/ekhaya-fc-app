@@ -1,0 +1,64 @@
+# Checks every pull request and every push to other branches, so problems are
+# found before anything is merged into master (which goes live).
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [master, main, staging]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Lint, types, unit tests
+        run: npm run check
+      - name: Build (with placeholder settings)
+        env:
+          VITE_FIREBASE_API_KEY: AIzaPlaceholderForCiBuildOnly0000000000
+          VITE_FIREBASE_AUTH_DOMAIN: ekhaya-fc-app.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: ekhaya-fc-app
+          VITE_FIREBASE_STORAGE_BUCKET: ekhaya-fc-app.appspot.com
+          VITE_FIREBASE_MESSAGING_SENDER_ID: '0'
+          VITE_FIREBASE_APP_ID: '1:0:web:0'
+        run: npm run build
+      - name: App size budget
+        run: npm run check:bundle
+      - name: Database rules tests (emulator)
+        # Reported, but not blocking yet: turn this on once it has passed once.
+        continue-on-error: true
+        run: npm run test:rules
+
+  container:
+    # Proves the Docker image (same setup on every machine) still builds.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production container
+        run: |
+          docker build -t ekhaya-fc-app:ci \
+            --build-arg VITE_FIREBASE_API_KEY=AIzaPlaceholderForCiBuildOnly0000000000 \
+            --build-arg VITE_FIREBASE_AUTH_DOMAIN=ekhaya-fc-app.firebaseapp.com \
+            --build-arg VITE_FIREBASE_PROJECT_ID=ekhaya-fc-app \
+            --build-arg VITE_FIREBASE_STORAGE_BUCKET=ekhaya-fc-app.appspot.com \
+            --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID=0 \
+            --build-arg VITE_FIREBASE_APP_ID=1:0:web:0 .
+      - name: Container serves the app
+        run: |
+          docker run -d -p 8080:8080 --name web ekhaya-fc-app:ci
+          sleep 3
+          node scripts/smoke-test.cjs http://127.0.0.1:8080/

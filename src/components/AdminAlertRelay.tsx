@@ -1,4 +1,5 @@
 import { collection, deleteDoc, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore'
+import { config } from '../config'
 import { useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
@@ -26,7 +27,8 @@ async function scorerLine(fixtureId: string, team: string) {
 export default function AdminAlertRelay() {
   const { role } = useAuth()
   const { showToast } = useToast()
-  const isAdmin = role === 'admin' || role === 'superadmin'
+  // Only the live app sends push alerts (never staging or a laptop copy).
+  const isAdmin = (role === 'admin' || role === 'superadmin') && config.environment === 'production'
 
   useEffect(() => {
     if (!isAdmin) return

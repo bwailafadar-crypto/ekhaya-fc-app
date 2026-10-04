@@ -11,8 +11,10 @@ import '@fontsource/oswald/700.css'
 import './index.css'
 import { captureInviteCode } from './utils/community'
 import { startLiveReconnect } from './utils/liveReconnect'
+import { installGlobalErrorHandlers } from './utils/logger'
 
 // Remember who invited this visitor before the router changes the address.
+installGlobalErrorHandlers()
 captureInviteCode()
 // Reconnect to live data straight away when the fan returns to the app.
 startLiveReconnect()

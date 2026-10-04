@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import type { Fixture } from '../types'
 import type { Competition } from '../utils/competitions'
 import { fireConfetti } from '../utils/confetti'
+import { useFlag } from '../hooks/useFlag'
 import { SEASON, TROPHY_PHOTOS, cupStatus, isEkhaya, opponent } from '../utils/cupSeason'
 import { ekhayaOutcome, formatMalawiDate } from '../utils/football'
 import TeamLogo from './TeamLogo'
@@ -12,17 +13,19 @@ import { Badge, Card } from './UI'
 /** Trophy-lift moment for a cup Ekhaya won: lifting trophy, confetti blast and congratulations. */
 export function ChampionsCelebration({ cup, final }: { cup: Competition; final: Fixture }) {
   const trophyRef = useRef<HTMLSpanElement>(null)
+  const confetti = useFlag('celebrationConfetti')
   const celebrate = () => {
     const box = trophyRef.current?.getBoundingClientRect()
     if (!box) return () => undefined
     return fireConfetti(box.left + box.width / 2, box.top + box.height / 3)
   }
   useEffect(() => {
+    if (!confetti) return
     // Let the trophy rise first, then the confetti cannons go off.
     let stop: () => void = () => undefined
     const timer = window.setTimeout(() => { stop = celebrate() }, 650)
     return () => { window.clearTimeout(timer); stop() }
-  }, [])
+  }, [confetti])
   const opponentName = opponent(final)
   const photo = TROPHY_PHOTOS[`${cup.id}-${SEASON}`]
   const [photoOk, setPhotoOk] = useState(true)

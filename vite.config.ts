@@ -67,6 +67,21 @@ export default defineConfig({
     },
   })],
   base: './',
+  build: {
+    // Libraries go in their own files, so a new deploy only changes the small
+    // app files: fans re-download ~100 KB instead of ~1 MB after each update.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'vendor-react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/, priority: 3 },
+            { name: 'vendor-firebase', test: /node_modules[\\/](@firebase[\\/](app|auth|firestore|util|component|logger|webchannel-wrapper)|firebase[\\/](app|auth|firestore)|re2js)[\\/]/, priority: 2 },
+          ],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 900,
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

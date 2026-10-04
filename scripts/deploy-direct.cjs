@@ -4,6 +4,8 @@
 //
 //   npm run deploy:direct            -> build + upload + go live
 //   npm run deploy:direct -- --dry-run   -> just list what would be uploaded
+//   node scripts/deploy-direct.cjs --channel staging -> staging preview address
+//     (staging never changes the database rules or the live site)
 const dns = require('node:dns')
 dns.setDefaultResultOrder('ipv4first')
 const fs = require('node:fs')
@@ -20,6 +22,9 @@ const KEY_FILE = path.join(os.homedir(), 'ekhaya-keys', 'firebase-sa.json')
 const API = 'https://firebasehosting.googleapis.com/v1beta1'
 const DRY = process.argv.includes('--dry-run')
 const SKIP_BUILD = process.argv.includes('--skip-build')
+const channelArg = process.argv.indexOf('--channel')
+const CHANNEL = channelArg > -1 ? String(process.argv[channelArg + 1] || '').trim() : ''
+if (channelArg > -1 && !/^[a-z0-9-]{1,30}$/.test(CHANNEL)) { console.error('✖ --channel needs a name like: staging'); process.exit(1) }
 
 const step = (msg) => console.log(`▶ ${msg}`)
 const fail = (msg) => { console.error(`✖ ${msg}`); process.exit(1) }
@@ -150,7 +155,7 @@ async function main() {
   step('Signing in to Google')
   const token = await withRetry('Sign-in', () => getToken(sa))
 
-  if (!process.argv.includes('--skip-rules')) {
+  if (!process.argv.includes('--skip-rules') && !CHANNEL) {
     // Publish firestore.rules first, so the new app never runs against old rules.
     // A rules mistake stops the deploy here, before the website changes.
     step('Publishing database rules')
@@ -203,10 +208,32 @@ async function main() {
   await withRetry('Finalise', () =>
     call(`${API}/${version.name}?update_mask=status`, { method: 'PATCH', token, json: { status: 'FINALIZED' } }))
 
+  if (CHANNEL) {
+    step(`Publishing to the "${CHANNEL}" preview channel`)
+    const channelPath = `${API}/sites/${SITE}/channels/${CHANNEL}`
+    // Preview channels expire; each deploy extends it by 30 days.
+    const channelBody = { ttl: '2592000s', labels: { purpose: CHANNEL } }
+    let channel
+    try {
+      channel = await call(`${channelPath}?update_mask=ttl,labels`, { method: 'PATCH', token, json: channelBody })
+    } catch (err) {
+      if (!/HTTP 404/.test(err.message)) throw err
+      channel = await withRetry('Create channel', () =>
+        call(`${API}/sites/${SITE}/channels?channelId=${CHANNEL}`, { method: 'POST', token, json: channelBody }))
+    }
+    await withRetry('Release to channel', () =>
+      call(`${channelPath}/releases?versionName=${encodeURIComponent(version.name)}`, { method: 'POST', token, json: {} }))
+    const url = channel.url || `https://${SITE}--${CHANNEL}.web.app`
+    fs.writeFileSync(path.join(ROOT, '.deploy-url'), url)
+    console.log(`✔ Staging deploy complete! ${url}`)
+    return
+  }
+
   step('Going live')
   await withRetry('Release', () =>
     call(`${API}/sites/${SITE}/releases?versionName=${encodeURIComponent(version.name)}`, { method: 'POST', token, json: {} }))
 
+  fs.writeFileSync(path.join(ROOT, '.deploy-url'), `https://${SITE}.web.app`)
   console.log(`✔ Deploy complete! https://${SITE}.web.app`)
 }
 

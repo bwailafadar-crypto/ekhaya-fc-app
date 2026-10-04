@@ -10,6 +10,9 @@ import AdminAlertRelay from './AdminAlertRelay'
 import ConnectionBanner from './ConnectionBanner'
 import AlertsPrompt from './AlertsPrompt'
 import CommunitySync from './CommunitySync'
+import SnapshotPublisher from './SnapshotPublisher'
+import { useFlag, useNotice } from '../hooks/useFlag'
+import { config } from '../config'
 
 const tabs = [
   { to: '/', label: 'Home', icon: Home },
@@ -23,14 +26,14 @@ const tabs = [
 const titles: Record<string, string> = {
   '/': 'Home', '/fixtures': 'Fixtures', '/results': 'Results',
   '/table': 'League Table', '/live': 'Live Match', '/squad': 'Squad',
-  '/news': 'News', '/fanzone': 'Fan Zone', '/community': 'Fan Family', '/competitions': 'Competitions', '/membership': 'Membership',
+  '/news': 'News', '/fanzone': 'Fan Zone', '/community': 'Fan Family', '/competitions': 'Competitions', '/health': 'App health', '/membership': 'Membership',
   '/profile': 'Fan Profile', '/more': 'More', '/admin': 'Admin',
 }
 
 // Pages reached from the More tab keep the More tab lit.
-const MORE_PAGES = ['/more', '/competitions', '/results', '/squad', '/news', '/fanzone', '/community', '/membership', '/profile', '/admin']
+const MORE_PAGES = ['/more', '/competitions', '/results', '/squad', '/news', '/fanzone', '/community', '/membership', '/profile', '/admin', '/health']
 // Pages where the bars must never slide away (live scores, admin tools).
-const PINNED = ['/live', '/admin']
+const PINNED = ['/live', '/admin', '/health']
 
 function activeTab(pathname: string) {
   if (pathname === '/') return 0
@@ -43,12 +46,12 @@ function activeTab(pathname: string) {
  * Scroll-aware bars: they slide away while the fan scrolls down to read and
  * come straight back on any scroll up, near the top, or at the end of a page.
  */
-function useScrollChrome(pathname: string) {
+function useScrollChrome(pathname: string, enabled: boolean) {
   const [state, setState] = useState({ path: pathname, hidden: false, scrolled: false })
   useEffect(() => {
     let lastY = window.scrollY
     let frame = 0
-    const pinned = PINNED.some((page) => pathname.startsWith(page))
+    const pinned = !enabled || PINNED.some((page) => pathname.startsWith(page))
     const update = () => {
       frame = 0
       const y = window.scrollY
@@ -67,7 +70,7 @@ function useScrollChrome(pathname: string) {
     const onScroll = () => { frame ||= window.requestAnimationFrame(update) }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => { window.removeEventListener('scroll', onScroll); if (frame) window.cancelAnimationFrame(frame) }
-  }, [pathname])
+  }, [pathname, enabled])
   const current = state.path === pathname
   return { hidden: current && state.hidden, scrolled: current && state.scrolled }
 }
@@ -79,7 +82,9 @@ function tapFeedback() {
 
 export default function Layout() {
   const { pathname } = useLocation()
-  const { hidden, scrolled } = useScrollChrome(pathname)
+  const smartBars = useFlag('smartBars')
+  const notice = useNotice()
+  const { hidden, scrolled } = useScrollChrome(pathname, smartBars)
   const active = activeTab(pathname)
 
   return (
@@ -91,16 +96,18 @@ export default function Layout() {
             <span className="brand">EKHAYA FC</span>
             <span className="page-title">{titles[pathname] ?? ''}</span>
           </div>
-          <span className="topbar-season">EST. 2015</span>
+          <span className="topbar-season">{config.environment === 'production' ? 'EST. 2015' : <span className="env-badge">{config.environment.toUpperCase()}</span>}</span>
           <AdminAlerts />
         </header>
 
         <ConnectionBanner />
+        {notice && <p className="club-notice" role="status">{notice}</p>}
         <VerificationBanner />
         <ForegroundAlerts />
         <AdminAlertRelay />
         <AlertsPrompt />
         <CommunitySync />
+        <SnapshotPublisher />
 
         <main className="content">
           <div key={pathname} className="page-transition">

@@ -1,0 +1,80 @@
+# Staging pipeline: push to the "staging" branch (or run it by hand) to try a
+# change on a private preview address before it goes live. Same checks as
+# production. Staging uses the live database but never changes the database
+# rules, the shared fan data or push alerts.
+# Needs repository secrets (Settings -> Secrets and variables -> Actions):
+#   FIREBASE_SA  - the whole contents of ~/ekhaya-keys/firebase-sa.json
+#   APP_ENV      - only the VITE_... lines from your .env file
+name: Deploy to staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install (exact versions from package-lock.json)
+        run: npm ci
+
+      - name: Write app settings and key
+        env:
+          APP_ENV: ${{ secrets.APP_ENV }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          if [ -z "$APP_ENV" ] || [ -z "$FIREBASE_SA" ]; then
+            echo "::error::Add the APP_ENV and FIREBASE_SA secrets in GitHub first."
+            exit 1
+          fi
+          printf '%s\n' "$APP_ENV" > .env
+          # Refuse to publish a broken app: every Firebase setting must be present.
+          missing=""
+          for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID VITE_FIREBASE_MESSAGING_SENDER_ID; do
+            grep -Eq "^$key=.+" .env || missing="$missing $key"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::APP_ENV secret is missing:$missing. Paste ALL lines from: grep '^VITE_' .env"
+            exit 1
+          fi
+          grep -Eq '^VITE_FIREBASE_API_KEY=AIza' .env || { echo "::error::VITE_FIREBASE_API_KEY in APP_ENV does not look right (it should start with AIza)."; exit 1; }
+          echo "App settings OK ($(grep -c '^VITE_' .env) lines)"
+          mkdir -p "$HOME/ekhaya-keys"
+          printf '%s' "$FIREBASE_SA" > "$HOME/ekhaya-keys/firebase-sa.json"
+          chmod 600 "$HOME/ekhaya-keys/firebase-sa.json"
+
+      - name: Check code (lint, types, unit tests)
+        run: npm run check
+
+      - name: Build
+        run: npm run build
+
+      - name: Check app size budget
+        run: npm run check:bundle
+
+      - name: Put the app on the staging address
+        id: publish
+        run: |
+          node scripts/deploy-direct.cjs --skip-build --channel staging
+          echo "url=$(cat .deploy-url)" >> "$GITHUB_OUTPUT"
+          echo "### Staging is ready: $(cat .deploy-url)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check the staging site
+        run: node scripts/smoke-test.cjs "$(cat .deploy-url)"
+
+      - name: Remove key
+        if: always()
+        run: rm -f "$HOME/ekhaya-keys/firebase-sa.json" .env

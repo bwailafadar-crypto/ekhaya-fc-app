@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, CircleUserRound, ClipboardList, Newspaper, HeartHandshake, Medal, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
+import { Activity, ChevronRight, CircleUserRound, ClipboardList, Newspaper, HeartHandshake, Medal, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
+import { useFlag } from '../hooks/useFlag'
 import LogoutButton from '../components/LogoutButton'
 import InstallSharePanel from '../components/InstallSharePanel'
 
@@ -18,16 +19,26 @@ const items = [
 export default function More() {
   const { role } = useAuth()
   const canManage = role === 'admin' || role === 'superadmin'
+  const fanFamily = useFlag('fanFamily')
+  const competitions = useFlag('competitions')
+  const visible = items.filter((item) => (item.to !== '/community' || fanFamily) && (item.to !== '/competitions' || competitions))
 
   return (
     <div className="menu-list">
-      {items.map((i) => (
+      {visible.map((i) => (
         <Link key={i.to} to={i.to} className="menu-item">
           <i.icon className="menu-icon" size={20} aria-hidden="true" />
           <span>{i.label}</span>
           <ChevronRight className="arrow" size={18} aria-hidden="true" />
         </Link>
       ))}
+      {canManage && (
+        <Link to="/health" className="menu-item">
+          <Activity className="menu-icon" size={20} aria-hidden="true" />
+          <span>App health · switches & errors</span>
+          <ChevronRight className="arrow" size={18} aria-hidden="true" />
+        </Link>
+      )}
       {canManage && (
         <Link to="/admin" className="menu-item">
           <ClipboardList className="menu-icon" size={20} aria-hidden="true" />

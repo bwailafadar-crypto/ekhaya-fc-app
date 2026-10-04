@@ -1,0 +1,84 @@
+// Fast checks for the app's core rules (no database needed). Run: npm test
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { buildMatchSnapshot, buildTeamsSnapshot, fingerprint, SNAPSHOT_MAX_BYTES } from '../../src/data/snapshotPayload.ts'
+import type { Fixture } from '../../src/types.ts'
+import { matchAlerts, newsAlert } from '../../src/utils/alertRules.ts'
+import { competitionOf, isCupCompetition, matchesFilter } from '../../src/utils/competitions.ts'
+import { cupStatus } from '../../src/utils/cupSeason.ts'
+import { ekhayaOutcome } from '../../src/utils/football.ts'
+import { rankPredictions } from '../../src/utils/leaderboardCalc.ts'
+
+const fixture = (over: Partial<Fixture>): Fixture => ({ id: 'f', competition: 'TNM Super League', date: '2026-08-30T14:30:00+02:00', venue: null, home: 'Ekhaya FC', away: 'Mighty Wanderers', status: 'finished', homeScore: 2, awayScore: 1, ...over }) as Fixture
+
+test('competitions: cups are recognised, everything else is league', () => {
+  assert.equal(competitionOf('Airtel Top 8').id, 'airtel-top-8')
+  assert.equal(competitionOf('castel cup').id, 'castel-cup')
+  assert.equal(competitionOf('TNM Super League').kind, 'league')
+  assert.equal(competitionOf(undefined).kind, 'league')
+  assert.ok(isCupCompetition('AIRTEL TOP 8'))
+  assert.ok(matchesFilter('Airtel Top 8', 'cups'))
+  assert.ok(!matchesFilter('TNM Super League', 'cups'))
+  assert.ok(matchesFilter('anything', 'all'))
+})
+
+test('results: W/D/L from Ekhaya\'s point of view', () => {
+  assert.equal(ekhayaOutcome(fixture({})), 'W')
+  assert.equal(ekhayaOutcome(fixture({ home: 'Silver Strikers', away: 'Ekhaya FC', homeScore: 3, awayScore: 0 })), 'L')
+  assert.equal(ekhayaOutcome(fixture({ homeScore: 1, awayScore: 1 })), 'D')
+  assert.equal(ekhayaOutcome(fixture({ status: 'upcoming' })), null)
+})
+
+test('cups: winning the final makes Ekhaya champions', () => {
+  const run = [fixture({ round: 'Semi-final' }), fixture({ round: 'Final' })]
+  assert.match(cupStatus(run).label, /Champions/)
+  assert.equal(cupStatus([fixture({ round: 'Final', homeScore: 0, awayScore: 1 })]).label, 'Runners-up')
+  assert.equal(cupStatus([]).label, 'No matches yet')
+  assert.match(cupStatus([fixture({ round: 'Final', homeScore: 1, awayScore: 1, note: 'Ekhaya won 5–4 on penalties' })]).label, /Champions/)
+})
+
+test('prediction league: 3 for exact, 1 for result, ties share a rank', () => {
+  const rows = rankPredictions([{ id: 'm1', homeScore: 2, awayScore: 1 }], [
+    { uid: 'a', fixtureId: 'm1', home: 2, away: 1, name: 'Ann', updatedAt: 1 },
+    { uid: 'b', fixtureId: 'm1', home: 1, away: 0, name: 'Ben', updatedAt: 1 },
+    { uid: 'c', fixtureId: 'm1', home: 3, away: 2, name: 'Cat', updatedAt: 1 },
+    { uid: 'd', fixtureId: 'm1', home: 0, away: 0, name: 'Dan', updatedAt: 1 },
+  ])
+  assert.deepEqual(rows.map((row) => [row.name, row.points, row.rank]), [['Ann', 3, 1], ['Ben', 1, 2], ['Cat', 1, 2], ['Dan', 0, 4]])
+})
+
+test('alerts: kick-off, goal and full time fire once, test matches never', () => {
+  const base = { id: 'm1', home: 'Ekhaya FC', away: 'Blue Eagles' }
+  assert.equal(matchAlerts({ ...base, status: 'upcoming' }, { ...base, status: 'live' })[0]?.title, 'Kick-off! Ekhaya FC v Blue Eagles')
+  assert.match(matchAlerts({ ...base, status: 'live', homeScore: 0, awayScore: 0 }, { ...base, status: 'live', homeScore: 1, awayScore: 0 })[0]?.title ?? '', /^GOAL!/)
+  assert.match(matchAlerts({ ...base, status: 'live' }, { ...base, status: 'finished' })[0]?.title ?? '', /^Full time/)
+  assert.equal(matchAlerts({ ...base, status: 'upcoming' }, { ...base, status: 'live', isTest: true }).length, 0)
+  assert.equal(matchAlerts(undefined, { ...base, status: 'finished' }).length, 0)
+  assert.ok(newsAlert({ status: 'draft' }, { id: 'n', status: 'published', title: 'Hi' }))
+  assert.equal(newsAlert({ status: 'published' }, { id: 'n', status: 'published', title: 'Hi' }), null)
+})
+
+test('shared snapshot: hides admin-only fields and test matches', () => {
+  const built = buildMatchSnapshot({
+    fixtures: [{ id: 'b', statsAppliedChanges: { x: 1 }, home: 'A' }, { id: 'a', home: 'B' }, { id: 't', isTest: true }],
+    standings: [{ id: 's', points: 3 }],
+  })
+  const fixtures = built.doc.fixtures as Array<Record<string, unknown>>
+  assert.deepEqual(fixtures.map((row) => row.id), ['a', 'b'])
+  assert.ok(!('statsAppliedChanges' in fixtures[1]))
+  assert.ok(!('teams' in built.doc))
+})
+
+test('shared snapshot: two admins always agree on the fingerprint (no rewrite loop)', () => {
+  const one = buildMatchSnapshot({ fixtures: [{ id: 'a', home: 'B', away: 'C', kickoffAt: { toMillis: () => 5 } }], standings: [] })
+  const two = buildMatchSnapshot({ fixtures: [{ away: 'C', kickoffAt: { toMillis: () => 5 }, id: 'a', home: 'B' }], standings: [] })
+  assert.equal(one.hash, two.hash)
+  assert.notEqual(fingerprint({ a: 1 }).hash, fingerprint({ a: 2 }).hash)
+})
+
+test('shared snapshot: switches itself off when too big (fans read directly)', () => {
+  const big = 'x'.repeat(SNAPSHOT_MAX_BYTES)
+  assert.equal(buildTeamsSnapshot([{ id: 't', logoDataUrl: big }]).doc.disabled, true)
+  assert.equal(buildMatchSnapshot({ fixtures: [{ id: 'a', note: big }], standings: [] }).doc.disabled, true)
+  assert.equal(buildTeamsSnapshot([{ id: 't', name: 'Ekhaya FC' }]).doc.disabled, undefined)
+})

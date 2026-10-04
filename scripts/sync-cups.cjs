@@ -46,6 +46,7 @@ async function main() {
     }))
     await batch.commit()
   }
+  if (apply && changed) await require('./publish-snapshot.cjs').publishSnapshot()
   console.log(changed ? (apply ? `\nDone: ${changed} cup match(es) saved.` : `\n${changed} change(s) found. Run again with mode "apply" to save them.`) : '\nEverything is already up to date.')
 }
 

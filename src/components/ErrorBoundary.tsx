@@ -1,4 +1,5 @@
-import { Component, type ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { logError } from '../utils/logger'
 import { Button, Card } from './UI'
 
 type ErrorBoundaryProps = { children: ReactNode }
@@ -9,6 +10,13 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
   static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true }
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    // Anything can be thrown (even null), so never assume it is an Error.
+    const where = (info.componentStack ?? '').split('\n').slice(0, 4).join('\n')
+    if (error instanceof Error) error.stack = `${error.stack ?? ''}\n${where}`
+    logError('render', error ?? new Error(`Empty error thrown${where}`))
   }
 
   render() {

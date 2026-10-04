@@ -113,6 +113,7 @@ async function main() {
     for (const [k, v] of Object.entries(deltas)) stats[k] = Math.max(0, Number(stats[k] ?? 0) - v)
     await ref.update({ stats, updatedAt: FieldValue.serverTimestamp() })
   }
+  await require('./publish-snapshot.cjs').publishSnapshot()
   console.log(`\nDone: ${fixes.length} fixture(s) restored${tableMode !== 'ok' ? ', league table restored' : ''}${playerDeltas.size ? `, ${playerDeltas.size} player stat record(s) corrected` : ''}.`)
 }
 

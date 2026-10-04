@@ -1,3 +1,4 @@
+import { useFlag } from '../hooks/useFlag'
 import { CUPS, type CompetitionFilter } from '../utils/competitions'
 
 const TOP = [
@@ -7,6 +8,8 @@ const TOP = [
 ]
 
 export default function CompetitionTabs({ value, onChange }: { value: CompetitionFilter; onChange: (value: CompetitionFilter) => void }) {
+  const enabled = useFlag('competitions')
+  if (!enabled) return null
   const inCups = value === 'cups' || CUPS.some((cup) => cup.id === value)
   const top = inCups ? 'cups' : value
   return (

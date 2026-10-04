@@ -1,0 +1,47 @@
+# One command for a complete local copy of the app, the same on every laptop:
+#   docker compose up
+# Then:  app            http://localhost:5173   (live-reload while you edit)
+#        database UI    http://localhost:4000   (local test database, no live data)
+# Sign in with admin@ekhaya.test / ekhaya123 (superadmin) or fan@ekhaya.test / ekhaya123.
+#
+# Production-like build of the real app instead:  docker compose --profile prod up web
+services:
+  emulators:
+    image: node:22-bookworm
+    working_dir: /app
+    command: bash -c "apt-get update -qq && apt-get install -y -qq openjdk-17-jre-headless >/dev/null && npm ci --no-audit --no-fund && npx firebase emulators:start --only auth,firestore --project demo-ekhaya"
+    volumes: [".:/app", "node_modules:/app/node_modules", "firebase-cache:/root/.cache/firebase"]
+    ports: ["4000:4000", "8080:8080", "9099:9099"]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "curl -sf http://127.0.0.1:8080 >/dev/null"]
+      interval: 5s
+      retries: 60
+
+  seed:
+    image: node:22-bookworm
+    working_dir: /app
+    depends_on: { emulators: { condition: service_healthy } }
+    environment:
+      FIRESTORE_EMULATOR_HOST: emulators:8080
+      FIREBASE_AUTH_EMULATOR_HOST: emulators:9099
+    command: node scripts/seed-emulator.cjs
+    volumes: [".:/app", "node_modules:/app/node_modules"]
+
+  app:
+    image: node:22-bookworm
+    working_dir: /app
+    depends_on: { seed: { condition: service_completed_successfully } }
+    environment:
+      VITE_USE_EMULATORS: "true"
+    command: npx vite --host 0.0.0.0 --port 5173
+    volumes: [".:/app", "node_modules:/app/node_modules"]
+    ports: ["5173:5173"]
+
+  web:
+    profiles: [prod]
+    build: { context: ., args: { VITE_FIREBASE_API_KEY: "${VITE_FIREBASE_API_KEY}", VITE_FIREBASE_AUTH_DOMAIN: "${VITE_FIREBASE_AUTH_DOMAIN}", VITE_FIREBASE_PROJECT_ID: "${VITE_FIREBASE_PROJECT_ID}", VITE_FIREBASE_STORAGE_BUCKET: "${VITE_FIREBASE_STORAGE_BUCKET}", VITE_FIREBASE_MESSAGING_SENDER_ID: "${VITE_FIREBASE_MESSAGING_SENDER_ID}", VITE_FIREBASE_APP_ID: "${VITE_FIREBASE_APP_ID}", VITE_FIREBASE_VAPID_KEY: "${VITE_FIREBASE_VAPID_KEY}" } }
+    ports: ["8081:8080"]
+
+volumes:
+  node_modules:
+  firebase-cache:

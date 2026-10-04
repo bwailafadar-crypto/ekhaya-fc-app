@@ -1,4 +1,5 @@
-import { browserLocalPersistence, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type User, deleteUser, onAuthStateChanged, reload, sendEmailVerification, sendPasswordResetEmail, setPersistence, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
+import { browserPopupRedirectResolver, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type User, deleteUser, onAuthStateChanged, reload, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
+import { setLogUser } from '../utils/logger'
 import { doc, getDoc, getDocFromCache, serverTimestamp, setDoc } from 'firebase/firestore'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { auth, db } from '../firebase'
@@ -72,68 +73,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true
-    let unsubscribe: (() => void) | undefined
 
-    void setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        if (!mounted) return
-        // Finishes a Google sign-in that had to use a full-page redirect.
-        // Finishes a Google sign-in that used a full-page redirect and
-        // keeps any error so the sign-in page can show it.
-        void getRedirectResult(auth).catch((error: unknown) => { if (mounted) setGoogleError(error) })
-        unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
-          const requestId = ++profileRequest.current
-          if (!mounted) return
-          setUser(nextUser)
-          setEmailVerified(Boolean(nextUser?.emailVerified))
-          if (!nextUser) {
-            setProfile(null)
-            setLoading(false)
-            return
-          }
+    // Never wait forever on a slow connection: show the page after 6 seconds
+    // and let sign-in finish in the background.
+    const startupTimer = window.setTimeout(() => { if (mounted) setLoading(false) }, 6000)
+    // Finishes a Google sign-in that used a full-page redirect (only when
+    // Google sign-in is switched on) and keeps any error for the sign-in page.
+    if (import.meta.env.VITE_ENABLE_GOOGLE_SIGNIN === 'true') {
+      void getRedirectResult(auth, browserPopupRedirectResolver).catch((error: unknown) => { if (mounted) setGoogleError(error) })
+    }
+    const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
+      window.clearTimeout(startupTimer)
+      const requestId = ++profileRequest.current
+      if (!mounted) return
+      setUser(nextUser)
+      setLogUser(nextUser?.uid ?? null)
+      setEmailVerified(Boolean(nextUser?.emailVerified))
+      if (!nextUser) {
+        setProfile(null)
+        setLoading(false)
+        return
+      }
 
-          // Show the app straight away from the profile saved on this phone,
-          // then confirm with the server in the background.
-          let shownFromCache = false
-          try {
-            const cached = await getDocFromCache(doc(db, 'users', nextUser.uid))
-            const cachedProfile = readProfile(cached.data())
-            if (cachedProfile && !cachedProfile.disabled && mounted && requestId === profileRequest.current) {
-              setProfile(cachedProfile)
-              setLoading(false)
-              shownFromCache = true
-            }
-          } catch {
-            // Nothing saved yet (first sign-in on this device).
-          }
-          if (!shownFromCache) setLoading(true)
-          try {
-            const snapshot = await getDoc(doc(db, 'users', nextUser.uid))
-            let nextProfile = readProfile(snapshot.data())
-            if (!snapshot.exists() && !signingUp.current) nextProfile = await createGoogleProfile(nextUser)
-            if (nextProfile?.disabled) {
-              await firebaseSignOut(auth)
-              if (mounted) setAccountBlocked(true)
-              return
-            }
-            if (mounted && requestId === profileRequest.current) {
-              setAccountBlocked(false)
-              setProfile(nextProfile)
-            }
-          } catch {
-            if (mounted && requestId === profileRequest.current && !shownFromCache) setProfile(null)
-          } finally {
-            if (mounted && requestId === profileRequest.current) setLoading(false)
-          }
-        })
-      })
-      .catch(() => {
-        if (mounted) setLoading(false)
-      })
+      // Show the app straight away from the profile saved on this phone,
+      // then confirm with the server in the background.
+      let shownFromCache = false
+      try {
+        const cached = await getDocFromCache(doc(db, 'users', nextUser.uid))
+        const cachedProfile = readProfile(cached.data())
+        if (cachedProfile && !cachedProfile.disabled && mounted && requestId === profileRequest.current) {
+          setProfile(cachedProfile)
+          setLoading(false)
+          shownFromCache = true
+        }
+      } catch {
+        // Nothing saved yet (first sign-in on this device).
+      }
+      if (!shownFromCache) setLoading(true)
+      // If the server is slow, stop showing the loading screen after 6 s;
+      // the profile is applied as soon as it arrives.
+      const slowTimer = shownFromCache ? undefined : window.setTimeout(() => {
+        if (mounted && requestId === profileRequest.current) setLoading(false)
+      }, 6000)
+      try {
+        const snapshot = await getDoc(doc(db, 'users', nextUser.uid))
+        let nextProfile = readProfile(snapshot.data())
+        if (!snapshot.exists() && !signingUp.current) nextProfile = await createGoogleProfile(nextUser)
+        if (nextProfile?.disabled) {
+          await firebaseSignOut(auth)
+          if (mounted) setAccountBlocked(true)
+          return
+        }
+        if (mounted && requestId === profileRequest.current) {
+          setAccountBlocked(false)
+          setProfile(nextProfile)
+        }
+      } catch {
+        if (mounted && requestId === profileRequest.current && !shownFromCache) setProfile(null)
+      } finally {
+        window.clearTimeout(slowTimer)
+        if (mounted && requestId === profileRequest.current) setLoading(false)
+      }
+    })
 
     return () => {
       mounted = false
-      unsubscribe?.()
+      window.clearTimeout(startupTimer)
+      unsubscribe()
     }
   }, [])
 
@@ -146,15 +152,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const provider = new GoogleAuthProvider()
     provider.setCustomParameters({ prompt: 'select_account' })
     if (prefersRedirect()) {
-      await signInWithRedirect(auth, provider)
+      await signInWithRedirect(auth, provider, browserPopupRedirectResolver)
       return
     }
     try {
-      await signInWithPopup(auth, provider)
+      await signInWithPopup(auth, provider, browserPopupRedirectResolver)
     } catch (error) {
       const code = (error as { code?: string }).code
       if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment' || code === 'auth/network-request-failed') {
-        await signInWithRedirect(auth, provider)
+        await signInWithRedirect(auth, provider, browserPopupRedirectResolver)
         return
       }
       throw error

@@ -1,9 +1,8 @@
 import { Goal, Square, Star, Target } from 'lucide-react'
 import { collection, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
-import { useCounts } from '../hooks/useCounts'
+import { useCounts, useMyDoc } from '../hooks/useCounts'
 import { useLiveDocs } from '../hooks/useLiveDocs'
-import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture, MatchEvent, Player } from '../types'
 
 function sameTeam(a: string, b: string) {
@@ -13,7 +12,6 @@ function sameTeam(a: string, b: string) {
 /** Full-time summary: scorers, cards, fans' man of the match and prediction stats. */
 export default function MatchSummary({ fixture, compact = false }: { fixture: Fixture; compact?: boolean }) {
   const events = useLiveDocs<Omit<MatchEvent, 'id'>>(['fixtures', fixture.id, 'events'])
-  const players = useFirestoreCollection<Player>('players')
   const home = fixture.homeScore ?? 0
   const away = fixture.awayScore ?? 0
   // Counted, not downloaded: about one read each however many fans predicted.
@@ -25,7 +23,8 @@ export default function MatchSummary({ fixture, compact = false }: { fixture: Fi
   const sideGoals = (team: string) => goals.filter((event) => sameTeam(event.team, team))
 
   // The fans' man of the match is saved on the match when voting closes.
-  const leader = fixture.motmClosed && fixture.motmWinnerId ? players.items.find((player) => player.id === fixture.motmWinnerId) : undefined
+  // Only the winner's record is read (1 read), not the whole squad with photos.
+  const leader = useMyDoc<Player>(fixture.motmClosed && fixture.motmWinnerId ? ['players', fixture.motmWinnerId] : null).data ?? undefined
   const leaderVotes = fixture.motmWinnerVotes
   const totalPredictions = predictionCounts.counts.total ?? 0
   const exact = predictionCounts.counts.exact ?? 0

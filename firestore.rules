@@ -333,6 +333,42 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Shared public data for fans (fixtures, table, teams in one document).
+    // Built by admin apps and the GitHub workflows.
+    match /publicData/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Feature flags and the club-wide notice. Only the superadmin changes them.
+    match /appConfig/{docId} {
+      allow read: if signedIn();
+      allow write: if isSuperadmin()
+        && request.resource.data.keys().hasOnly(['flags', 'notice', 'updatedAt'])
+        && request.resource.data.flags is map
+        && request.resource.data.notice is string
+        && request.resource.data.notice.size() <= 200
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // Errors fans hit, for Admin -> App health. Write-only for fans.
+    match /clientErrors/{errorId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'context', 'message', 'code', 'stack', 'path', 'build', 'env', 'agent', 'createdAt'])
+        && request.resource.data.context is string && request.resource.data.context.size() <= 60
+        && request.resource.data.message is string && request.resource.data.message.size() <= 500
+        && request.resource.data.code is string && request.resource.data.code.size() <= 80
+        && request.resource.data.stack is string && request.resource.data.stack.size() <= 1500
+        && request.resource.data.path is string && request.resource.data.path.size() <= 120
+        && request.resource.data.build is string && request.resource.data.build.size() <= 40
+        && request.resource.data.env is string && request.resource.data.env.size() <= 20
+        && request.resource.data.agent is string && request.resource.data.agent.size() <= 160
+        && request.resource.data.createdAt == request.time;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
     match /alertsSent/{alertId} {
       allow create: if isAdmin()
         && request.resource.data.keys().hasOnly(['title', 'createdAt'])

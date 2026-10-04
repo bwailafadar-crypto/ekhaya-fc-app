@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronRight, HeartHandshake, Lock, Minus, Plus, Star, Ta
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { useFlag } from '../hooks/useFlag'
 import Leaderboard from '../components/Leaderboard'
 import PlayerAvatar from '../components/PlayerAvatar'
 import PushSettings from '../components/PushSettings'
@@ -261,6 +262,7 @@ function VerifyEmailNotice() {
 }
 
 export default function FanZone() {
+  const fanFamily = useFlag('fanFamily')
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   const players = useFirestoreCollection<Player>('players')
   const polls = useFirestoreCollection<Poll>('polls')
@@ -278,7 +280,7 @@ export default function FanZone() {
     {(fixtures.error || players.error || polls.error) && <p className="live-error" role="alert">Some Fan Zone content could not be loaded. Check your connection.</p>}
     <VerifyEmailNotice />
     <PushSettings compact />
-    <Link className="community-link" to="/community"><HeartHandshake size={20} aria-hidden="true" /><span><strong>Fan Family</strong><small>Join your district branch and invite friends</small></span><ChevronRight size={18} aria-hidden="true" /></Link>
+    {fanFamily && <Link className="community-link" to="/community"><HeartHandshake size={20} aria-hidden="true" /><span><strong>Fan Family</strong><small>Join your district branch and invite friends</small></span><ChevronRight size={18} aria-hidden="true" /></Link>}
     {nextMatch ? <PredictCard fixture={nextMatch} /> : <Card className="fz-card"><h2>Predict the score</h2><p className="fz-note">The next fixture will appear here once it is scheduled.</p></Card>}
     <Leaderboard />
     {lastMatch && <MotmCard fixture={lastMatch} players={players.items} />}

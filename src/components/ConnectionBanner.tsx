@@ -1,7 +1,7 @@
-import { collection, limit, onSnapshot, query } from 'firebase/firestore'
+import { onSnapshot } from 'firebase/firestore'
+import { SNAPSHOT_REF } from '../data/publicSnapshot'
 import { CloudOff, WifiOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { db } from '../firebase'
 
 /**
  * Tells fans when they are seeing saved information because the connection is
@@ -20,7 +20,7 @@ export default function ConnectionBanner() {
     // A tiny live query: if its data keeps coming only from the phone's saved
     // copy for a while, the server is not reachable.
     let timer: number | undefined
-    const stop = onSnapshot(query(collection(db, 'fixtures'), limit(1)), { includeMetadataChanges: true }, (snapshot) => {
+    const stop = onSnapshot(SNAPSHOT_REF(), { includeMetadataChanges: true }, (snapshot) => {
       window.clearTimeout(timer)
       if (snapshot.metadata.fromCache) timer = window.setTimeout(() => setWeak(true), 8000)
       else setWeak(false)

@@ -1,6 +1,7 @@
-# Builds the app on GitHub's servers and puts it live on
-# https://ekhaya-fc-app.web.app every time you push to master/main.
-# Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+# Production pipeline: every push to master/main is checked, built, put live on
+# https://ekhaya-fc-app.web.app, then verified. A failed check stops the deploy
+# before anything changes for fans.
+# Needs repository secrets (Settings -> Secrets and variables -> Actions):
 #   FIREBASE_SA  - the whole contents of ~/ekhaya-keys/firebase-sa.json
 #   APP_ENV      - only the VITE_... lines from your .env file
 name: Deploy to Firebase Hosting
@@ -23,10 +24,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
 
-      - name: Install
+      - name: Install (exact versions from package-lock.json)
         run: npm ci
 
       - name: Write app settings and key
@@ -54,8 +55,23 @@ jobs:
           printf '%s' "$FIREBASE_SA" > "$HOME/ekhaya-keys/firebase-sa.json"
           chmod 600 "$HOME/ekhaya-keys/firebase-sa.json"
 
-      - name: Build and deploy
-        run: node scripts/deploy-direct.cjs
+      - name: Check code (lint, types, unit tests)
+        run: npm run check
+
+      - name: Build
+        run: npm run build
+
+      - name: Check app size budget
+        run: npm run check:bundle
+
+      - name: Publish database rules and put the app live
+        run: node scripts/deploy-direct.cjs --skip-build
+
+      - name: Refresh shared fan data
+        run: node scripts/publish-snapshot.cjs
+
+      - name: Check the live site
+        run: node scripts/smoke-test.cjs https://ekhaya-fc-app.web.app/
 
       - name: Remove key
         if: always()

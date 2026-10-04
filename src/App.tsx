@@ -28,6 +28,7 @@ const More = lazy(() => import('./pages/More'))
 const InstallPage = lazy(() => import('./pages/InstallPage'))
 const Community = lazy(() => import('./pages/Community'))
 const Competitions = lazy(() => import('./pages/Competitions'))
+const AppHealth = lazy(() => import('./pages/AppHealth'))
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin']}><Layout /></ProtectedRoute>}>
                 <Route path="/admin" element={<Suspense fallback={<p className="page-loading">Loading admin…</p>}><AdminPanel /></Suspense>} />
+                <Route path="/health" element={<AppHealth />} />
               </Route>
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/" element={<Home />} />
