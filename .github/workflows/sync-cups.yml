@@ -40,10 +40,21 @@ jobs:
         run: |
           # Only the superadmin knows this code, so other admins with the alerts key
           # cannot change results through this workflow.
-          if [ -z "$EXPECTED" ] || [ "$GIVEN" != "$EXPECTED" ]; then
-            echo "::error::Wrong or missing squad code. Add a SQUAD_CODE secret and enter it to apply changes."
+          # Spaces and capital letters are ignored (phone keyboards add them).
+          clean() { printf '%s' "$1" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]'; }
+          if [ -z "$(clean "$EXPECTED")" ]; then
+            echo "::error::No SQUAD_CODE secret is saved. Add it in Settings > Secrets and variables > Actions, then run this again."
             exit 1
           fi
+          if [ -z "$(clean "$GIVEN")" ]; then
+            echo "::error::You left the squad code box empty. Run again and type your code."
+            exit 1
+          fi
+          if [ "$(clean "$GIVEN")" != "$(clean "$EXPECTED")" ]; then
+            echo "::error::The code you typed does not match the saved SQUAD_CODE. Update the secret to a new code and type exactly that."
+            exit 1
+          fi
+          echo "Squad code accepted."
       - name: Update cup results
         run: |
           ARGS=""
