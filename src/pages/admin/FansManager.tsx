@@ -158,6 +158,8 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
     try {
       const batch = writeBatch(db)
       batch.delete(doc(db, 'memberships', account.id))
+      batch.delete(doc(db, 'fanCards', account.id))
+      batch.delete(doc(db, 'referrals', account.id))
       batch.delete(doc(db, 'users', account.id))
       await batch.commit()
       setAccounts((current) => current.filter((item) => item.id !== account.id))

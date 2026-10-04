@@ -9,6 +9,10 @@ import '@fontsource/oswald/500.css'
 import '@fontsource/oswald/600.css'
 import '@fontsource/oswald/700.css'
 import './index.css'
+import { captureInviteCode } from './utils/community'
+
+// Remember who invited this visitor before the router changes the address.
+captureInviteCode()
 
 // If the app was updated while open and an old piece of it is gone, load the
 // new version once instead of showing a broken page.

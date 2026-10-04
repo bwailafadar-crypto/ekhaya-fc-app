@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, CircleUserRound, ClipboardList, Newspaper, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
+import { ChevronRight, CircleUserRound, ClipboardList, Newspaper, HeartHandshake, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import LogoutButton from '../components/LogoutButton'
 import InstallSharePanel from '../components/InstallSharePanel'
@@ -9,6 +9,7 @@ const items = [
   { to: '/squad', label: 'Squad', icon: Users },
   { to: '/news', label: 'News', icon: Newspaper },
   { to: '/fanzone', label: 'Fan Zone', icon: Vote },
+  { to: '/community', label: 'Fan Family · branches & invites', icon: HeartHandshake },
   { to: '/membership', label: 'Membership', icon: ShieldCheck },
   { to: '/profile', label: 'Fan Profile', icon: CircleUserRound },
 ]

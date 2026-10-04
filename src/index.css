@@ -1285,3 +1285,17 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
 @keyframes alerts-up { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
 @keyframes alerts-ring { 0%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(-14deg); } 20%, 40% { transform: rotate(14deg); } 50% { transform: rotate(0); } }
 @media (prefers-reduced-motion: reduce) { .alerts-prompt, .alerts-prompt-icon { animation: none; } }
+
+/* ===== Fan Family: branches & invites (update 41) ===== */
+.community-link { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-radius: 16px; color: var(--ink); text-decoration: none; background: linear-gradient(120deg, rgb(255 255 255 / 85%), rgb(248 237 200 / 70%)); border: 1px solid rgb(201 162 39 / 35%); box-shadow: 0 8px 22px rgb(120 90 20 / 10%); }
+.community-link > svg:first-child { color: var(--gold-dark); flex: 0 0 auto; }
+.community-link span { flex: 1; display: grid; gap: 2px; }
+.community-link strong { font-family: 'Oswald', sans-serif; font-size: 16px; }
+.community-link small { color: var(--muted); font-size: 12px; }
+.community-branch-form { display: grid; gap: 10px; }
+.community-branch-form select { font-size: 14px; }
+.community-invite-link { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; border-radius: 10px; background: #FCFBF8; border: 1px dashed rgb(201 162 39 / 55%); }
+.community-invite-link span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--ink-2); }
+.community-invite-link button { width: 34px; height: 34px; flex: 0 0 auto; border: 0; border-radius: 8px; display: grid; place-items: center; color: #2A2108; background: linear-gradient(120deg, #E8C95A, #C9A227); }
+.community-updated { text-align: center; }
+select.auth-input { appearance: auto; }

@@ -5,6 +5,8 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/UI'
 import { useAuth } from '../../auth/AuthContext'
 import { isAndroidApp } from '../../utils/appShell'
+import { BRANCHES, saveBranch } from '../../utils/community'
+import { auth } from '../../firebase'
 
 const GOOGLE_SIGNIN_ENABLED = import.meta.env.VITE_ENABLE_GOOGLE_SIGNIN === 'true'
 
@@ -417,6 +419,7 @@ export function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [branch, setBranch] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -434,6 +437,9 @@ export function SignUpPage() {
     setSubmitting(true)
     try {
       await signUp({ fullName, phone, email, password })
+      const newUid = auth.currentUser?.uid
+      // Joining a branch is a bonus: never block sign-up if it fails.
+      if (branch && newUid) await saveBranch(newUid, fullName.trim().slice(0, 120), branch).catch(() => undefined)
       navigate('/', { replace: true })
     } catch (reason) {
       setError(getErrorMessage(reason))
@@ -453,6 +459,13 @@ export function SignUpPage() {
         <div className="auth-field">
           <label htmlFor="signup-phone">Phone number <span>(optional)</span></label>
           <input id="signup-phone" className="auth-input" type="tel" autoComplete="tel" maxLength={32} value={phone} onChange={(event) => setPhone(event.target.value)} />
+        </div>
+        <div className="auth-field">
+          <label htmlFor="signup-branch">Your district <span>(optional)</span></label>
+          <select id="signup-branch" className="auth-input" value={branch} onChange={(event) => setBranch(event.target.value)}>
+            <option value="">Choose your fan branch…</option>
+            {BRANCHES.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
         </div>
         <div className="auth-field">
           <label htmlFor="signup-email">Email address</label>

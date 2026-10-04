@@ -9,6 +9,7 @@ import ForegroundAlerts from './ForegroundAlerts'
 import AdminAlertRelay from './AdminAlertRelay'
 import ConnectionBanner from './ConnectionBanner'
 import AlertsPrompt from './AlertsPrompt'
+import CommunitySync from './CommunitySync'
 
 const tabs = [
   { to: '/', label: 'Home', icon: Home },
@@ -22,7 +23,7 @@ const tabs = [
 const titles: Record<string, string> = {
   '/': 'Home', '/fixtures': 'Fixtures', '/results': 'Results',
   '/table': 'League Table', '/live': 'Live Match', '/squad': 'Squad',
-  '/news': 'News', '/fanzone': 'Fan Zone', '/membership': 'Membership',
+  '/news': 'News', '/fanzone': 'Fan Zone', '/community': 'Fan Family', '/membership': 'Membership',
   '/profile': 'Fan Profile', '/more': 'More', '/admin': 'Admin',
 }
 
@@ -47,6 +48,7 @@ export default function Layout() {
         <ForegroundAlerts />
         <AdminAlertRelay />
         <AlertsPrompt />
+        <CommunitySync />
 
         <main className="content">
           <div key={pathname} className="page-transition">

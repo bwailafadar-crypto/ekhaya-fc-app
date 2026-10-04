@@ -299,6 +299,40 @@ service cloud.firestore {
 
     // One record per alert, so it is sent once even if several admins have
     // the app open. Create-only: a second attempt is refused.
+    // Fan Family: each fan's public name + district branch (name must match their profile).
+    match /fanCards/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && !isBlocked()
+        && request.resource.data.keys().hasOnly(['name', 'branch', 'updatedAt'])
+        && request.resource.data.name == myName()
+        && request.resource.data.branch in ['balaka','blantyre','chikwawa','chiradzulu','chitipa','dedza','dowa','karonga','kasungu','likoma','lilongwe','machinga','mangochi','mchinji','mulanje','mwanza','mzimba-mzuzu','neno','nkhata-bay','nkhotakota','nsanje','ntcheu','ntchisi','phalombe','rumphi','salima','thyolo','zomba','outside-malawi']
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if signedIn() && (request.auth.uid == uid || isSuperadmin());
+    }
+
+    // Who invited whom. Only a new, verified fan can say who invited them, once.
+    match /referrals/{uid} {
+      allow create: if canAct()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['by', 'createdAt'])
+        && request.resource.data.by is string
+        && request.resource.data.by != uid
+        && exists(userPath(request.resource.data.by))
+        && get(userPath(uid)).data.createdAt > request.time - duration.value(7, 'd')
+        && request.resource.data.createdAt == request.time;
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin() || (signedIn() && resource.data.by == request.auth.uid);
+      allow update: if false;
+      allow delete: if isSuperadmin();
+    }
+
+    match /communityStats/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     match /alertsSent/{alertId} {
       allow create: if isAdmin()
         && request.resource.data.keys().hasOnly(['title', 'createdAt'])
