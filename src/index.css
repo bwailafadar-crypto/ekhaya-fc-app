@@ -1106,3 +1106,6 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
 .fz-admin-results { margin: 0 0 11px; padding: 0; display: flex; flex-direction: column; gap: 4px; list-style: none; }
 .fz-admin-results li { padding: 6px 9px; display: flex; justify-content: space-between; gap: 10px; background: rgb(255 255 255 / 60%); border-radius: 8px; font-size: 12px; }
 .fz-admin-results strong { color: var(--gold-dark); }
+.fz-admin-results li { align-items: center; }
+.fz-admin-delete { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; color: #A41F1F; background: #FCE8E7; border: 1px solid #F2CAC8; border-radius: 8px; cursor: pointer; }
+.fz-admin-delete:disabled { opacity: .5; cursor: default; }
