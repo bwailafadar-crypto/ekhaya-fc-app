@@ -51,6 +51,8 @@ export default defineConfig({
         '**/node_modules/**',
         'team-logos/!(ekhaya-fc).png',
         'downloads/**',
+        // The alerts worker is registered separately and must never be cached.
+        'firebase-messaging-sw.js',
         'assets/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*',
       ],
       navigateFallback: 'index.html',

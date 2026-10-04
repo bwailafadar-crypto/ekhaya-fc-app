@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
+import { LeaderboardBadge } from '../components/Leaderboard'
 import LogoutButton from '../components/LogoutButton'
+import PushSettings from '../components/PushSettings'
 import TeamLogo from '../components/TeamLogo'
 import { Card, PageHeader, Skeleton } from '../components/UI'
 import { db } from '../firebase'
@@ -63,6 +65,7 @@ export default function Profile() {
         <h2>{fullName}</h2>
         <p>{user?.email}</p>
       </Card>
+      <LeaderboardBadge />
       <section className="digital-membership-card" aria-label="Digital membership card">
         <div className="digital-membership-header"><TeamLogo name="Ekhaya FC" crest /><div><span>EKHAYA FC</span><strong>OFFICIAL SUPPORTER CLUB</strong></div><span className={`digital-membership-status digital-membership-${status}`}>{status === 'active' ? 'ACTIVE' : status.toUpperCase()}</span></div>
         {loading ? <div className="digital-membership-loading"><Skeleton /><Skeleton /></div> : <>
@@ -73,6 +76,7 @@ export default function Profile() {
         </>}
       </section>
       {(membershipState.error || legacyState.error || tiers.error) && <p className="live-error" role="alert">{membershipState.error || legacyState.error || tiers.error}</p>}
+      <PushSettings />
       <LogoutButton />
     </>
   )

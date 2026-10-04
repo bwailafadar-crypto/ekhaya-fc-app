@@ -2,7 +2,9 @@ import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { CheckCircle2, Lock, Minus, Plus, Star, Target, Trophy, Vote } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import Leaderboard from '../components/Leaderboard'
 import PlayerAvatar from '../components/PlayerAvatar'
+import PushSettings from '../components/PushSettings'
 import TeamLogo from '../components/TeamLogo'
 import { useToast } from '../components/ToastContext'
 import { Button, Card, PageHeader, Skeleton } from '../components/UI'
@@ -218,7 +220,9 @@ export default function FanZone() {
   return <div className="fan-zone">
     <PageHeader eyebrow="Supporters" title="Fan Zone" description="Predict scores, pick the man of the match and have your say." />
     {(fixtures.error || players.error || polls.error) && <p className="live-error" role="alert">Some Fan Zone content could not be loaded. Check your connection.</p>}
+    <PushSettings compact />
     {nextMatch ? <PredictCard fixture={nextMatch} /> : <Card className="fz-card"><h2>Predict the score</h2><p className="fz-note">The next fixture will appear here once it is scheduled.</p></Card>}
+    <Leaderboard />
     {lastMatch && <MotmCard fixture={lastMatch} players={players.items} />}
     {lastMatch && <LastPredictionsCard fixture={lastMatch} />}
     {openPolls.map((poll) => <PollCard key={poll.id} poll={poll} />)}
