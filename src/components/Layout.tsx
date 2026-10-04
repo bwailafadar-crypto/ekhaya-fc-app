@@ -7,6 +7,7 @@ import TeamLogo from './TeamLogo'
 import AdminAlerts from './AdminAlerts'
 import ForegroundAlerts from './ForegroundAlerts'
 import AdminAlertRelay from './AdminAlertRelay'
+import ConnectionBanner from './ConnectionBanner'
 
 const tabs = [
   { to: '/', label: 'Home', icon: Home },
@@ -41,6 +42,7 @@ export default function Layout() {
           <AdminAlerts />
         </header>
 
+        <ConnectionBanner />
         <VerificationBanner />
         <ForegroundAlerts />
         <AdminAlertRelay />
