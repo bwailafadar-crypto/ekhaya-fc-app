@@ -150,6 +150,27 @@ async function main() {
   step('Signing in to Google')
   const token = await withRetry('Sign-in', () => getToken(sa))
 
+  if (!process.argv.includes('--skip-rules')) {
+    // Publish firestore.rules first, so the new app never runs against old rules.
+    // A rules mistake stops the deploy here, before the website changes.
+    step('Publishing database rules')
+    const RULES_API = `https://firebaserules.googleapis.com/v1/projects/${SITE}`
+    const content = fs.readFileSync(path.join(ROOT, 'firestore.rules'), 'utf8')
+    let ruleset
+    try {
+      ruleset = await withRetry('Upload rules', () =>
+        call(`${RULES_API}/rulesets`, { method: 'POST', token, json: { source: { files: [{ name: 'firestore.rules', content }] } } }))
+    } catch (err) {
+      fail(`Database rules were not accepted: ${err.message}`)
+    }
+    await withRetry('Release rules', () =>
+      call(`${RULES_API}/releases/cloud.firestore`, {
+        method: 'PATCH', token,
+        json: { release: { name: `projects/${SITE}/releases/cloud.firestore`, rulesetName: ruleset.name } },
+      }))
+    console.log('  rules are live')
+  }
+
   step('Creating a new version')
   const version = await withRetry('Create version', () =>
     call(`${API}/sites/${SITE}/versions`, { method: 'POST', token, json: { config: hostingConfig() } }))

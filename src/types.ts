@@ -46,6 +46,8 @@ export interface Fixture {
   benchPlayerIds?: string[]
   lineupConfirmed?: boolean
   statsApplied?: boolean
+  /** Fan Zone: admin closed man-of-the-match voting for this match. */
+  motmClosed?: boolean
 }
 
 export interface AppliedStandingChange {
@@ -191,3 +193,15 @@ export interface Standing {
 }
 
 export type TableRow = Standing
+// ---- Fan Zone ----
+export interface Poll {
+  id: string
+  question: string
+  options: string[]
+  status: 'open' | 'closed'
+  createdAt?: Timestamp
+}
+
+export interface PollVote { id: string; option: number; updatedAt?: Timestamp }
+export interface ScorePrediction { id: string; home: number; away: number; name: string; updatedAt?: Timestamp }
+export interface MotmVote { id: string; playerId: string; updatedAt?: Timestamp }

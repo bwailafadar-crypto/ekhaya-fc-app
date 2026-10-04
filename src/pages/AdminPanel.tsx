@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from 'react'
 import { collection, deleteDoc, doc, documentId as firestoreDocumentId, getDoc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
-import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, UserRound, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, UserRound, Users, Vote } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import FansManager from './admin/FansManager'
+import FanZoneManager from './admin/FanZoneManager'
 import { db } from '../firebase'
 import { useToast } from '../components/ToastContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
@@ -14,7 +15,7 @@ import { compressImage } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
 import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
 
-type Section = 'fans' | 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
+type Section = 'fans' | 'fanzone' | 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
 const superadminSections: Section[] = ['fans', 'membershipTiers', 'members']
 const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
   { key: 'fans', label: 'Fans', icon: UserRound },
@@ -23,6 +24,7 @@ const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
   { key: 'standings', label: 'Table', icon: Table2 },
   { key: 'fixtures', label: 'Fixtures', icon: CalendarDays },
   { key: 'news', label: 'News', icon: Newspaper },
+  { key: 'fanzone', label: 'Fan Zone', icon: Vote },
   { key: 'membershipTiers', label: 'Membership Tiers', icon: ShieldCheck },
   { key: 'members', label: 'Membership requests', icon: Users },
 ]
@@ -731,8 +733,8 @@ export default function AdminPanel() {
     }
   }
 
-  const isLoading = section === 'fans' ? false : section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : section === 'news' ? false : membersLoading
-  const sectionError = section === 'fans' ? null : section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : section === 'news' ? null : membersError
+  const isLoading = section === 'fans' || section === 'fanzone' ? false : section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : section === 'news' ? false : membersLoading
+  const sectionError = section === 'fans' || section === 'fanzone' ? null : section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : section === 'news' ? null : membersError
   const collectionErrors = [
     { name: 'Players', error: players.error },
     { name: 'Teams', error: teams.error },
@@ -757,6 +759,7 @@ export default function AdminPanel() {
     {isLoading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : sectionError ? null
       : section === 'fans' ? <FansManager onOpenRequests={() => setSection('members')} />
+      : section === 'fanzone' ? <FanZoneManager />
       : section === 'members' ? <section className="admin-members">
           <div className="member-filters">
             <label className="admin-field"><span>Tier</span><select value={tierFilter} onChange={(event) => setTierFilter(event.target.value)}><option value="all">All tiers</option>{membershipTiers.items.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select></label>

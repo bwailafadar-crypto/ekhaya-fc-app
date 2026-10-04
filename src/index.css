@@ -1048,3 +1048,61 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
 .fan-account-actions .button { min-height: 36px; padding: 0 11px; font-size: 11px; }
 .fans-note { color: var(--muted); font-size: 11px; text-align: center; }
 @media (min-width: 480px) { .fans-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* ===== Fan Zone (update 20) ===== */
+.fan-zone { display: flex; flex-direction: column; }
+.fz-card { padding: 16px; }
+.fz-card-compact { padding: 13px 15px; }
+.fz-card-heading { margin-bottom: 14px; display: flex; align-items: flex-start; gap: 10px; }
+.fz-card-heading > svg { margin-top: 3px; flex: 0 0 auto; color: var(--gold-dark); }
+.fz-card-heading h2 { margin: 0; font-size: 18px; line-height: 1.2; overflow-wrap: anywhere; }
+.fz-card-heading span { color: var(--muted); font-size: 11px; font-weight: 600; }
+.fz-section-title { margin: 8px 2px 10px; font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 600; }
+.fz-note { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; color: var(--muted); font-size: 11px !important; line-height: 1.5; }
+.fz-predict { margin-bottom: 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.fz-predict-team { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; }
+.fz-predict-team .team-logo { --logo-size: 44px; }
+.fz-predict-team > span { min-height: 28px; overflow-wrap: anywhere; font-size: 11px; font-weight: 700; line-height: 1.25; }
+.fz-predict-dash { padding-top: 64px; color: var(--gold-dark); font-family: 'Oswald', sans-serif; font-size: 22px; }
+.fz-stepper { display: flex; align-items: center; gap: 6px; }
+.fz-stepper button { width: 34px; height: 34px; display: grid; place-items: center; color: var(--gold-dark); background: rgb(255 255 255 / 75%); border: 1px solid var(--glass-line); border-radius: 10px; cursor: pointer; }
+.fz-stepper button:disabled { opacity: .4; cursor: default; }
+.fz-stepper strong { min-width: 34px; background: var(--gold-text); -webkit-background-clip: text; background-clip: text; color: transparent; font-family: 'Oswald', sans-serif; font-size: 34px; font-weight: 600; line-height: 1; text-align: center; }
+.fz-card .button { width: 100%; }
+.fz-popular { margin-top: 12px; padding-top: 11px; display: flex; flex-direction: column; gap: 7px; border-top: 1px solid rgb(201 162 39 / 16%); color: var(--muted); font-size: 11px; font-weight: 600; }
+.fz-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fz-chip { padding: 4px 9px; color: #6B540E; background: #FBF1CF; border: 1px solid var(--glass-line); border-radius: 999px; font-size: 12px; font-weight: 800; }
+.fz-chip small { color: var(--muted); font-weight: 600; }
+.fz-result { padding: 9px 11px; color: var(--ink-2); background: rgb(255 255 255 / 70%); border: 1px solid var(--glass-line); border-radius: 10px; font-size: 12px !important; font-weight: 700; }
+.fz-result-win { color: #6B540E !important; background: linear-gradient(120deg, #FFF6D6, #F8E4A0); border-color: var(--gold); }
+.fz-bars { display: flex; flex-direction: column; gap: 7px; }
+.fz-bar { position: relative; min-height: 42px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; overflow: hidden; background: rgb(255 255 255 / 65%); border: 1px solid var(--glass-line); border-radius: 11px; }
+.fz-bar-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, rgb(232 201 90 / 38%), rgb(201 162 39 / 22%)); transition: width 400ms ease; }
+.fz-bar-leading .fz-bar-fill { background: linear-gradient(90deg, rgb(232 201 90 / 70%), rgb(201 162 39 / 45%)); }
+.fz-bar-mine { border-color: var(--gold); }
+.fz-bar-label { position: relative; min-width: 0; display: flex; align-items: center; gap: 7px; overflow-wrap: anywhere; font-size: 12px; font-weight: 700; }
+.fz-bar-label .player-avatar { width: 28px; height: 28px; flex-basis: 28px; font-size: 11px; }
+.fz-bar-label svg { flex: 0 0 auto; color: var(--gold-dark); }
+.fz-bar-value { position: relative; color: var(--ink-2); font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600; }
+.fz-options { display: flex; flex-direction: column; gap: 8px; }
+.fz-options-small { margin-top: 9px; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+.fz-option { min-height: 44px; padding: 0 14px; color: var(--ink); background: rgb(255 255 255 / 75%); border: 1px solid var(--glass-line); border-radius: 11px; font-size: 13px; font-weight: 700; text-align: left; cursor: pointer; transition: border-color 160ms ease, background 160ms ease; }
+.fz-option:hover, .fz-option:focus-visible { border-color: var(--gold); background: #FFF8E1; }
+.fz-options-small .fz-option { min-height: 32px; padding: 0 10px; color: var(--muted); font-size: 11px; }
+.fz-players { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.fz-player { min-height: 52px; padding: 7px 9px; display: flex; align-items: center; gap: 8px; color: var(--ink); background: rgb(255 255 255 / 75%); border: 1px solid var(--glass-line); border-radius: 11px; font-size: 11px; font-weight: 700; text-align: left; cursor: pointer; }
+.fz-player.active, .fz-player:hover { border-color: var(--gold); background: #FFF8E1; }
+.fz-player .player-avatar { width: 34px; height: 34px; flex: 0 0 34px; font-size: 12px; }
+.fz-player span { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+.fz-player em { margin-right: 4px; color: var(--gold-dark); font-family: 'Oswald', sans-serif; font-style: normal; }
+.fz-player small { margin-left: auto; color: var(--muted); }
+.fz-change { margin-top: 8px; }
+.fz-change summary { color: var(--gold-dark); font-size: 11px; font-weight: 700; cursor: pointer; }
+.fz-change .fz-players { margin-top: 9px; }
+.fz-admin { display: flex; flex-direction: column; }
+.fz-admin-row { padding: 13px; }
+.fz-admin-row-heading { margin-bottom: 9px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.fz-admin-row-heading strong { overflow-wrap: anywhere; font-size: 13px; }
+.fz-admin-results { margin: 0 0 11px; padding: 0; display: flex; flex-direction: column; gap: 4px; list-style: none; }
+.fz-admin-results li { padding: 6px 9px; display: flex; justify-content: space-between; gap: 10px; background: rgb(255 255 255 / 60%); border-radius: 8px; font-size: 12px; }
+.fz-admin-results strong { color: var(--gold-dark); }

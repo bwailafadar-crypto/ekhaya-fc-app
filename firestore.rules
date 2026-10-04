@@ -24,6 +24,10 @@ service cloud.firestore {
       return hasRole('superadmin');
     }
 
+    function fixtureDoc(fixtureId) {
+      return get(/databases/$(database)/documents/fixtures/$(fixtureId)).data;
+    }
+
     function validRole(role) {
       return role in ['fan', 'admin', 'superadmin'];
     }
@@ -102,6 +106,41 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin();
       }
 
+      // Fan Zone: one score prediction per fan, only before kick-off.
+      match /predictions/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && fixtureDoc(fixtureId).status == 'upcoming'
+          && request.resource.data.keys().hasOnly(['home', 'away', 'name', 'updatedAt'])
+          && request.resource.data.keys().hasAll(['home', 'away', 'name', 'updatedAt'])
+          && request.resource.data.home is int
+          && request.resource.data.home >= 0 && request.resource.data.home <= 20
+          && request.resource.data.away is int
+          && request.resource.data.away >= 0 && request.resource.data.away <= 20
+          && request.resource.data.name is string
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if isAdmin();
+      }
+
+      // Fan Zone: one man-of-the-match vote per fan after a real match,
+      // until an admin closes voting.
+      match /motm/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && fixtureDoc(fixtureId).status == 'finished'
+          && fixtureDoc(fixtureId).get('isTest', false) != true
+          && fixtureDoc(fixtureId).get('motmClosed', false) != true
+          && request.resource.data.keys().hasOnly(['playerId', 'updatedAt'])
+          && request.resource.data.keys().hasAll(['playerId', 'updatedAt'])
+          && request.resource.data.playerId is string
+          && exists(/databases/$(database)/documents/players/$(request.resource.data.playerId))
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if isAdmin();
+      }
+
       match /reactions/{uid} {
         allow read: if signedIn();
         allow create, update: if signedIn()
@@ -138,6 +177,21 @@ service cloud.firestore {
     match /polls/{pollId} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();
+
+      // Fan Zone: one vote per fan while the poll is open.
+      match /votes/{uid} {
+        allow read: if signedIn();
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && get(/databases/$(database)/documents/polls/$(pollId)).data.status == 'open'
+          && request.resource.data.keys().hasOnly(['option', 'updatedAt'])
+          && request.resource.data.keys().hasAll(['option', 'updatedAt'])
+          && request.resource.data.option is int
+          && request.resource.data.option >= 0
+          && request.resource.data.option < get(/databases/$(database)/documents/polls/$(pollId)).data.options.size()
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if isAdmin();
+      }
     }
 
     match /predictions/{predictionId} {
