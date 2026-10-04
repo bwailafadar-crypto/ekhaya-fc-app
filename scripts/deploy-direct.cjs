@@ -138,7 +138,14 @@ async function main() {
   }
 
   if (!fs.existsSync(KEY_FILE)) fail(`Key not found: ${KEY_FILE}. Run: npm run save-firebase-key`)
-  const sa = JSON.parse(fs.readFileSync(KEY_FILE, 'utf8'))
+  let sa
+  try {
+    sa = JSON.parse(fs.readFileSync(KEY_FILE, 'utf8'))
+    if (!sa.client_email || !sa.private_key) throw new Error('missing fields')
+  } catch {
+    // Never print the key itself, even partly.
+    fail('The Firebase key is incomplete or not valid JSON. Copy the whole firebase-sa.json file (it starts with { and ends with }) and save it again.')
+  }
 
   step('Signing in to Google')
   const token = await withRetry('Sign-in', () => getToken(sa))
