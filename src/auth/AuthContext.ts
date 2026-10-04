@@ -10,6 +10,7 @@ export type UserProfile = {
   phone: string | null
   legacyFanDocId: string | null
   legacyFanId: string | null
+  disabled: boolean
 }
 
 export type SignUpDetails = {
@@ -25,8 +26,11 @@ export type AuthContextValue = {
   role: AppRole | null
   emailVerified: boolean
   loading: boolean
+  /** True after a blocked account was signed out, so the login page can explain why. */
+  accountBlocked: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (details: SignUpDetails) => Promise<boolean>
+  signInWithGoogle: () => Promise<void>
   sendPasswordReset: (email: string) => Promise<void>
   sendVerificationEmail: () => Promise<void>
   refreshEmailVerification: () => Promise<boolean>

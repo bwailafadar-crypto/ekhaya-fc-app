@@ -995,3 +995,56 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
   .card, .menu-item, .squad-list, .player-facts, .home-shortcuts a, .topbar, .bottom-nav, .auth-card,
   .home-hero, .player-hero, .home-welcome, .install-hero, .matchday-scoreboard, .home-live-banner { background: rgb(255 255 255 / 94%); }
 }
+
+/* ===== Google sign-in (update 14) ===== */
+.google-signin { width: 100%; min-height: 48px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; color: #1F1F1F; background: #fff; border: 1px solid #DADCE0; border-radius: 12px; box-shadow: 0 2px 8px rgb(0 0 0 / 6%); font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: box-shadow 160ms ease, background 160ms ease; }
+.google-signin:hover { background: #F8F9FA; box-shadow: 0 3px 12px rgb(0 0 0 / 10%); }
+.google-signin:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.google-signin:disabled { opacity: .7; cursor: wait; }
+.auth-divider { margin: 16px 0 4px; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--glass-line), transparent); }
+
+/* ===== Admin bell ===== */
+.admin-bell { position: relative; width: 40px; height: 40px; margin-left: 4px; flex: 0 0 40px; display: grid; place-items: center; color: var(--gold-dark); background: rgb(255 255 255 / 70%); border: 1px solid var(--glass-line); border-radius: 12px; box-shadow: 0 4px 12px rgb(158 124 18 / 12%); }
+.admin-bell:active { transform: scale(.95); }
+.admin-bell-badge { position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; display: grid; place-items: center; color: #fff; background: #D32F2F; border: 2px solid #fff; border-radius: 999px; font-size: 9px; font-weight: 800; line-height: 1; }
+
+/* ===== Fans manager ===== */
+.fans-manager { display: flex; flex-direction: column; gap: 12px; }
+.fans-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.fans-stat { margin: 0; padding: 13px; display: flex; flex-direction: column; gap: 3px; }
+.fans-stat svg { color: var(--gold-dark); }
+.fans-stat strong { background: var(--gold-text); -webkit-background-clip: text; background-clip: text; color: transparent; font-family: 'Oswald', sans-serif; font-size: 28px; font-weight: 600; line-height: 1.1; }
+.fans-stat span { color: var(--muted); font-size: 11px; font-weight: 600; }
+.fans-requests { margin: 0; padding: 13px 14px; display: flex; align-items: center; gap: 12px; border-left: 4px solid var(--gold); }
+.fans-requests > div { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.fans-requests strong { font-size: 13px; }
+.fans-requests span { color: var(--muted); font-size: 11px; }
+.fans-toolbar { display: flex; flex-direction: column; gap: 9px; }
+.fans-search { min-height: 44px; padding: 0 12px; display: flex; align-items: center; gap: 8px; color: var(--muted); background: var(--glass-strong); border: 1px solid var(--glass-line); border-radius: 12px; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.fans-search:focus-within { outline: 2px solid rgb(201 162 39 / 45%); outline-offset: 1px; }
+.fans-search input { min-width: 0; flex: 1; height: 42px; color: var(--ink); background: transparent; border: 0; outline: 0; font-size: 13px; }
+.fans-filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.fans-filter { min-height: 34px; padding: 0 12px; flex: 0 0 auto; color: var(--muted); background: rgb(255 255 255 / 60%); border: 1px solid var(--glass-line); border-radius: 999px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.fans-filter.active { color: #3E3004; background: linear-gradient(120deg, #F8EDC5, var(--gold-light)); border-color: var(--gold); }
+.fans-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.fans-tools .button { min-height: 38px; font-size: 11px; }
+.fans-list { display: flex; flex-direction: column; gap: 9px; }
+.fan-account { margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.fan-account-blocked { opacity: .75; border-color: rgb(211 47 47 / 30%); }
+.fan-account-main { display: flex; align-items: center; gap: 11px; }
+.fan-account-avatar { width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; object-fit: cover; color: #4B3A08; background: linear-gradient(145deg, #FBF1CF, var(--gold-light)); border: 1px solid var(--glass-line); border-radius: 50%; font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600; }
+.fan-account-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.fan-account-copy strong { overflow-wrap: anywhere; font-size: 13px; }
+.fan-account-copy em { color: var(--muted); font-style: normal; font-weight: 500; }
+.fan-account-copy span { overflow-wrap: anywhere; color: var(--ink-2); font-size: 11px; }
+.fan-account-copy small { color: var(--muted); font-size: 10px; }
+.fan-account-tags { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.fan-tag { padding: 3px 7px; border-radius: 999px; font-size: 9px; font-weight: 800; white-space: nowrap; }
+.fan-tag-new { color: #176832; background: #E5F4E9; }
+.fan-tag-role { color: #6B540E; background: #FBF1CF; border: 1px solid var(--glass-line); }
+.fan-tag-blocked { color: #A41F1F; background: #FCE8E7; }
+.fan-account-actions { padding-top: 10px; display: flex; flex-wrap: wrap; gap: 7px; border-top: 1px solid rgb(201 162 39 / 16%); }
+.fan-account-actions .button { min-height: 36px; padding: 0 11px; font-size: 11px; }
+.fans-note { color: var(--muted); font-size: 11px; text-align: center; }
+@media (min-width: 480px) { .fans-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

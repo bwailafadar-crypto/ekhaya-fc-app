@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from 'react'
 import { collection, deleteDoc, doc, documentId as firestoreDocumentId, getDoc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
-import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, Users } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, UserRound, Users } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import FansManager from './admin/FansManager'
 import { db } from '../firebase'
 import { useToast } from '../components/ToastContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
@@ -13,15 +14,17 @@ import { compressImage } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
 import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
 
-type Section = 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
+type Section = 'fans' | 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
+const superadminSections: Section[] = ['fans', 'membershipTiers', 'members']
 const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
+  { key: 'fans', label: 'Fans', icon: UserRound },
   { key: 'players', label: 'Players', icon: Users },
   { key: 'teams', label: 'Teams', icon: ShieldCheck },
   { key: 'standings', label: 'Table', icon: Table2 },
   { key: 'fixtures', label: 'Fixtures', icon: CalendarDays },
   { key: 'news', label: 'News', icon: Newspaper },
   { key: 'membershipTiers', label: 'Membership Tiers', icon: ShieldCheck },
-  { key: 'members', label: 'Members', icon: Users },
+  { key: 'members', label: 'Membership requests', icon: Users },
 ]
 
 type AdminCollectionState<T> = { items: T[]; loading: boolean; error: string | null }
@@ -191,7 +194,17 @@ function messageFrom(error: unknown) {
 export default function AdminPanel() {
   const { role } = useAuth()
   const isSuperadmin = role === 'superadmin'
-  const [section, setSection] = useState<Section>('players')
+  const [searchParams] = useSearchParams()
+  const requestedSection = searchParams.get('section') as Section | null
+  const allowedRequest = requestedSection && sections.some(({ key }) => key === requestedSection) && (isSuperadmin || !superadminSections.includes(requestedSection))
+    ? requestedSection : null
+  const [section, setSection] = useState<Section>(() => allowedRequest ?? (isSuperadmin ? 'fans' : 'players'))
+  // The top-bar bell links to ?section=fans; follow it even when already on this page.
+  const [handledRequest, setHandledRequest] = useState(allowedRequest)
+  if (allowedRequest !== handledRequest) {
+    setHandledRequest(allowedRequest)
+    if (allowedRequest) setSection(allowedRequest)
+  }
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [selectedStandingId, setSelectedStandingId] = useState('')
@@ -718,8 +731,8 @@ export default function AdminPanel() {
     }
   }
 
-  const isLoading = section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : section === 'news' ? false : membersLoading
-  const sectionError = section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : section === 'news' ? null : membersError
+  const isLoading = section === 'fans' ? false : section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : section === 'news' ? false : membersLoading
+  const sectionError = section === 'fans' ? null : section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : section === 'news' ? null : membersError
   const collectionErrors = [
     { name: 'Players', error: players.error },
     { name: 'Teams', error: teams.error },
@@ -739,10 +752,11 @@ export default function AdminPanel() {
       <Link className="button button-secondary admin-live-manage" to="/live">Manage match <ArrowRight size={15} /></Link>
     </section>)}
     <div className="admin-tabs" role="tablist" aria-label="Admin sections">
-      {sections.filter(({ key }) => (key !== 'membershipTiers' && key !== 'members') || isSuperadmin).map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={section === key} className={section === key ? 'admin-tab active' : 'admin-tab'} onClick={() => setSection(key)}><Icon size={16} />{label}</button>)}
+      {sections.filter(({ key }) => !superadminSections.includes(key) || isSuperadmin).map(({ key, label, icon: Icon }) => <button key={key} type="button" role="tab" aria-selected={section === key} className={section === key ? 'admin-tab active' : 'admin-tab'} onClick={() => setSection(key)}><Icon size={16} />{label}</button>)}
     </div>
     {isLoading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : sectionError ? null
+      : section === 'fans' ? <FansManager onOpenRequests={() => setSection('members')} />
       : section === 'members' ? <section className="admin-members">
           <div className="member-filters">
             <label className="admin-field"><span>Tier</span><select value={tierFilter} onChange={(event) => setTierFilter(event.target.value)}><option value="all">All tiers</option>{membershipTiers.items.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select></label>

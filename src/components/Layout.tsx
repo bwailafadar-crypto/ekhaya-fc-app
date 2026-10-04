@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ToastProvider } from './Toast'
 import VerificationBanner from './VerificationBanner'
 import TeamLogo from './TeamLogo'
+import AdminAlerts from './AdminAlerts'
 
 const tabs = [
   { to: '/', label: 'Home', icon: Home },
@@ -35,6 +36,7 @@ export default function Layout() {
             <span className="page-title">{titles[pathname] ?? ''}</span>
           </div>
           <span className="topbar-season">EST. 2015</span>
+          <AdminAlerts />
         </header>
 
         <VerificationBanner />
