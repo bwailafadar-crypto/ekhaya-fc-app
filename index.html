@@ -18,6 +18,37 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Rescue screen: shown only if the app has not appeared after 10 seconds
+         or failed to start, so fans never get stuck on a blank white page. -->
+    <div id="boot-rescue" hidden style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#1C1C1C;background:#FBFAF6">
+      <img src="./team-logos/ekhaya-fc.png" alt="Ekhaya FC" width="96" height="96" style="object-fit:contain" />
+      <strong style="font-size:18px">Ekhaya FC is taking longer than usual</strong>
+      <span style="max-width:320px;color:#6F6B62;font-size:14px;line-height:1.5">Your connection may be slow. Tap Reload. If that does not help, tap Reset app.</span>
+      <button type="button" onclick="location.reload()" style="min-width:200px;min-height:46px;border:0;border-radius:12px;background:linear-gradient(120deg,#E8C95A,#C9A227);color:#2A2108;font-size:15px;font-weight:700">Reload</button>
+      <button type="button" id="boot-reset" style="min-width:200px;min-height:42px;border:1px solid #E8E4D8;border-radius:12px;background:#fff;color:#6F6B62;font-size:14px;font-weight:600">Reset app</button>
+      <small id="boot-error" style="max-width:340px;color:#A41F1F;font-size:11px;word-break:break-word"></small>
+    </div>
+    <script>
+      (function () {
+        var errors = []
+        function show() {
+          var root = document.getElementById('root')
+          if (root && root.hasChildNodes()) return
+          document.getElementById('boot-error').textContent = errors.length ? 'Details: ' + errors.slice(0, 2).join(' | ') : ''
+          document.getElementById('boot-rescue').hidden = false
+        }
+        window.addEventListener('error', function (e) { errors.push(String(e.message || (e.target && e.target.src) || 'error')); setTimeout(show, 2500) }, true)
+        window.addEventListener('unhandledrejection', function (e) { errors.push(String((e.reason && e.reason.message) || e.reason)); setTimeout(show, 2500) })
+        setTimeout(show, 10000)
+        document.getElementById('boot-reset').onclick = function () {
+          // Remove the saved copy of the app and load a fresh one.
+          var done = function () { location.reload() }
+          var clearCaches = function () { return window.caches ? caches.keys().then(function (k) { return Promise.all(k.map(function (n) { return caches.delete(n) })) }) : Promise.resolve() }
+          ;(navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function (r) { return Promise.all(r.map(function (x) { return x.unregister() })) }) : Promise.resolve())
+            .then(clearCaches).then(done, done)
+        }
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
