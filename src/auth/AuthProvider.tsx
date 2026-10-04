@@ -21,6 +21,14 @@ function readProfile(data: Record<string, unknown> | undefined): UserProfile | n
   }
 }
 
+// Phones and installed apps sign in within the same tab: pop-up tabs on
+// mobile browsers often fail to hand the result back to the app.
+function prefersRedirect() {
+  if (typeof window === 'undefined') return false
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches
+  return standalone || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+}
+
 function usesGoogle(user: User) {
   return user.providerData.some((item) => item.providerId === 'google.com')
 }
@@ -65,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [emailVerified, setEmailVerified] = useState(false)
   const [loading, setLoading] = useState(true)
   const [accountBlocked, setAccountBlocked] = useState(false)
+  const [googleError, setGoogleError] = useState<unknown>(null)
   const profileRequest = useRef(0)
 
   useEffect(() => {
@@ -75,7 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(() => {
         if (!mounted) return
         // Finishes a Google sign-in that had to use a full-page redirect.
-        void getRedirectResult(auth).catch(() => undefined)
+        // Finishes a Google sign-in that used a full-page redirect and
+        // keeps any error so the sign-in page can show it.
+        void getRedirectResult(auth).catch((error: unknown) => { if (mounted) setGoogleError(error) })
         unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
           const requestId = ++profileRequest.current
           if (!mounted) return
@@ -123,13 +134,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signInWithGoogle = useCallback(async () => {
+    setGoogleError(null)
     const provider = new GoogleAuthProvider()
     provider.setCustomParameters({ prompt: 'select_account' })
+    if (prefersRedirect()) {
+      await signInWithRedirect(auth, provider)
+      return
+    }
     try {
       await signInWithPopup(auth, provider)
     } catch (error) {
       const code = (error as { code?: string }).code
-      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment' || code === 'auth/network-request-failed') {
         await signInWithRedirect(auth, provider)
         return
       }
@@ -215,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     emailVerified,
     loading,
     accountBlocked,
+    googleError,
     signIn,
     signUp,
     signInWithGoogle,
@@ -222,7 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sendVerificationEmail,
     refreshEmailVerification,
     signOut,
-  }), [user, profile, role, emailVerified, loading, accountBlocked, signIn, signUp, signInWithGoogle, sendPasswordReset, sendVerificationEmail, refreshEmailVerification, signOut])
+  }), [user, profile, role, emailVerified, loading, accountBlocked, googleError, signIn, signUp, signInWithGoogle, sendPasswordReset, sendVerificationEmail, refreshEmailVerification, signOut])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

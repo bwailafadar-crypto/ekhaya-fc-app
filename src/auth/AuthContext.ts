@@ -28,6 +28,8 @@ export type AuthContextValue = {
   loading: boolean
   /** True after a blocked account was signed out, so the login page can explain why. */
   accountBlocked: boolean
+  /** Error from a Google sign-in that came back via full-page redirect. */
+  googleError: unknown
   signIn: (email: string, password: string) => Promise<void>
   signUp: (details: SignUpDetails) => Promise<boolean>
   signInWithGoogle: () => Promise<void>

@@ -24,7 +24,7 @@ function getErrorMessage(error: unknown) {
     'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups and try again.',
     'permission-denied': 'Your account was created, but the Firestore rules blocked profile setup. Deploy firestore.rules, then try again.',
   }
-  return messages[error.code] ?? 'Something went wrong. Please try again.'
+  return `${messages[error.code] ?? 'Something went wrong. Please try again.'} (${error.code})`
 }
 
 function PasswordField({
@@ -85,9 +85,10 @@ function GoogleMark() {
 // Google does not allow its sign-in page inside app WebViews, so the APK
 // keeps email sign-in only; the website and installed web app get Google.
 function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
-  const { signInWithGoogle } = useAuth()
+  const { signInWithGoogle, googleError } = useAuth()
   const [busy, setBusy] = useState(false)
   if (isAndroidApp()) return null
+  const redirectMessage = googleError && !(googleError instanceof FirebaseError && googleError.code === 'auth/redirect-cancelled-by-user') ? getErrorMessage(googleError) : ''
 
   async function handleClick() {
     onError('')
@@ -104,6 +105,7 @@ function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
 
   return (
     <>
+      {redirectMessage && <p className="auth-error" role="alert">{redirectMessage}</p>}
       <button className="google-signin" type="button" onClick={() => void handleClick()} disabled={busy} aria-busy={busy}>
         {busy ? <LoaderCircle className="button-spinner" size={18} aria-hidden="true" /> : <GoogleMark />}
         {busy ? 'Opening Google...' : 'Continue with Google'}
