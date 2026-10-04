@@ -6,6 +6,8 @@ import { Button } from '../../components/UI'
 import { useAuth } from '../../auth/AuthContext'
 import { isAndroidApp } from '../../utils/appShell'
 
+const GOOGLE_SIGNIN_ENABLED = import.meta.env.VITE_ENABLE_GOOGLE_SIGNIN === 'true'
+
 function getErrorMessage(error: unknown) {
   if (error instanceof TypeError) return 'Connection failed. Check your internet and try again.'
   if (!(error instanceof FirebaseError)) return 'Something went wrong. Please try again.'
@@ -87,7 +89,9 @@ function GoogleMark() {
 function GoogleSignIn({ onError }: { onError: (message: string) => void }) {
   const { signInWithGoogle, googleError } = useAuth()
   const [busy, setBusy] = useState(false)
-  if (isAndroidApp()) return null
+  // Google sign-in is switched off for now. To bring it back, set
+  // VITE_ENABLE_GOOGLE_SIGNIN=true in .env and in the APP_ENV GitHub secret.
+  if (!GOOGLE_SIGNIN_ENABLED || isAndroidApp()) return null
   const redirectMessage = googleError && !(googleError instanceof FirebaseError && googleError.code === 'auth/redirect-cancelled-by-user') ? getErrorMessage(googleError) : ''
 
   async function handleClick() {
