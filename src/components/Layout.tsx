@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import { CalendarDays, Home, Menu, Radio, Trophy } from 'lucide-react'
+import { Suspense } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ToastProvider } from './Toast'
 import VerificationBanner from './VerificationBanner'
@@ -17,7 +17,6 @@ const tabs = [
   { to: '/more', label: 'More', icon: Menu },
 ]
 
-const MotionNavLink = motion.create(NavLink)
 
 const titles: Record<string, string> = {
   '/': 'Home', '/fixtures': 'Fixtures', '/results': 'Results',
@@ -48,32 +47,22 @@ export default function Layout() {
         <AdminAlertRelay />
 
         <main className="content">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={pathname}
-              className="page-transition"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-            >
-              <Outlet />
-            </motion.div>
-          </AnimatePresence>
+          <div key={pathname} className="page-transition">
+              <Suspense fallback={<div className="page-loading-skeleton" aria-label="Loading"><span /><span /><span /></div>}><Outlet /></Suspense>
+          </div>
         </main>
 
         <nav className="bottom-nav" aria-label="Main navigation">
           {tabs.map(({ to, label, icon: Icon }) => (
-            <MotionNavLink
+            <NavLink
               key={to}
               to={to}
               end={to === '/'}
-              whileTap={{ scale: 0.92 }}
               className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}
             >
               <Icon className="nav-icon" size={20} strokeWidth={2.1} aria-hidden="true" />
               <span className="nav-label">{label}</span>
-            </MotionNavLink>
+            </NavLink>
           ))}
         </nav>
       </div>

@@ -6,26 +6,26 @@ import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import TeamProvider from './data/TeamProvider'
 import { ForgotPasswordPage, LoginPage, SignUpPage } from './pages/auth/AuthPages'
-import PlayerDetailPage from './pages/PlayerDetail'
 import Home from './pages/Home'
-import Fixtures from './pages/Fixtures'
-import Results from './pages/Results'
-import LeagueTable from './pages/LeagueTable'
-import LiveMatch from './pages/LiveMatch'
-import Squad from './pages/Squad'
-import News from './pages/News'
-import FanZone from './pages/FanZone'
-import Membership from './pages/Membership'
-import Profile from './pages/Profile'
-import More from './pages/More'
-import InstallPage from './pages/InstallPage'
 import InstallPromptProvider from './components/InstallPromptProvider'
 import InstallBanner from './components/InstallBanner'
 import PwaUpdateNotice from './components/PwaUpdateNotice'
 
-// The admin panel is large and only used by club staff, so fans never
-// download it unless they open it.
+// Only Home and the sign-in pages load up front; every other page downloads
+// the first time it is opened, so the app starts fast on slow connections.
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
+const PlayerDetailPage = lazy(() => import('./pages/PlayerDetail'))
+const Fixtures = lazy(() => import('./pages/Fixtures'))
+const Results = lazy(() => import('./pages/Results'))
+const LeagueTable = lazy(() => import('./pages/LeagueTable'))
+const LiveMatch = lazy(() => import('./pages/LiveMatch'))
+const Squad = lazy(() => import('./pages/Squad'))
+const News = lazy(() => import('./pages/News'))
+const FanZone = lazy(() => import('./pages/FanZone'))
+const Membership = lazy(() => import('./pages/Membership'))
+const Profile = lazy(() => import('./pages/Profile'))
+const More = lazy(() => import('./pages/More'))
+const InstallPage = lazy(() => import('./pages/InstallPage'))
 
 export default function App() {
   return (
@@ -36,7 +36,7 @@ export default function App() {
             <ErrorBoundary>
               <>
               <Routes>
-              <Route path="/install" element={<InstallPage />} />
+              <Route path="/install" element={<Suspense fallback={<p className="page-loading">Loading…</p>}><InstallPage /></Suspense>} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />

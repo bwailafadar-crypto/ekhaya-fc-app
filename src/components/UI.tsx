@@ -1,28 +1,23 @@
-import { motion } from 'framer-motion'
-import type { HTMLMotionProps } from 'framer-motion'
 import {
+  type ButtonHTMLAttributes,
   type ComponentType,
   type HTMLAttributes,
   type ReactNode,
 } from 'react'
 
-type CardProps = Omit<HTMLMotionProps<'div'>, 'children'> & { children?: ReactNode; delay?: number }
+type CardProps = HTMLAttributes<HTMLDivElement> & { children?: ReactNode; delay?: number }
 
-export function Card({ children, className = '', delay = 0, ...props }: CardProps) {
+// Animations are plain CSS (see .card / .button in index.css), so the app does
+// not need to download an animation library.
+export function Card({ children, className = '', delay = 0, style, ...props }: CardProps) {
   return (
-    <motion.div
-      className={`card ${className}`.trim()}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.24, delay, ease: 'easeOut' }}
-      {...props}
-    >
+    <div className={`card ${className}`.trim()} style={delay ? { ...style, animationDelay: `${delay}s` } : style} {...props}>
       {children}
-    </motion.div>
+    </div>
   )
 }
 
-type ButtonProps = Omit<HTMLMotionProps<'button'>, 'children'> & {
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children?: ReactNode
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
   icon?: ReactNode
@@ -30,14 +25,10 @@ type ButtonProps = Omit<HTMLMotionProps<'button'>, 'children'> & {
 
 export function Button({ children, className = '', variant = 'primary', icon, ...props }: ButtonProps) {
   return (
-    <motion.button
-      className={`button button-${variant} ${className}`.trim()}
-      whileTap={{ scale: 0.97 }}
-      {...props}
-    >
+    <button className={`button button-${variant} ${className}`.trim()} {...props}>
       {icon}
       {children}
-    </motion.button>
+    </button>
   )
 }
 

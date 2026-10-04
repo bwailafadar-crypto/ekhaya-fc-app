@@ -1,5 +1,5 @@
 import { browserLocalPersistence, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type User, deleteUser, onAuthStateChanged, reload, sendEmailVerification, sendPasswordResetEmail, setPersistence, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
-import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocFromCache, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { auth, db } from '../firebase'
 import { AuthContext, type AppRole, type AuthContextValue, type SignUpDetails, type UserProfile } from './AuthContext'
@@ -99,7 +99,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return
           }
 
-          setLoading(true)
+          // Show the app straight away from the profile saved on this phone,
+          // then confirm with the server in the background.
+          let shownFromCache = false
+          try {
+            const cached = await getDocFromCache(doc(db, 'users', nextUser.uid))
+            const cachedProfile = readProfile(cached.data())
+            if (cachedProfile && !cachedProfile.disabled && mounted && requestId === profileRequest.current) {
+              setProfile(cachedProfile)
+              setLoading(false)
+              shownFromCache = true
+            }
+          } catch {
+            // Nothing saved yet (first sign-in on this device).
+          }
+          if (!shownFromCache) setLoading(true)
           try {
             const snapshot = await getDoc(doc(db, 'users', nextUser.uid))
             let nextProfile = readProfile(snapshot.data())
@@ -114,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setProfile(nextProfile)
             }
           } catch {
-            if (mounted && requestId === profileRequest.current) setProfile(null)
+            if (mounted && requestId === profileRequest.current && !shownFromCache) setProfile(null)
           } finally {
             if (mounted && requestId === profileRequest.current) setLoading(false)
           }
