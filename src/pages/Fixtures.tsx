@@ -2,7 +2,9 @@ import { CalendarDays } from 'lucide-react'
 import MatchCard from '../components/MatchCard'
 import CompetitionTabs from '../components/CompetitionTabs'
 import { filterLabel, useCompetitionFilter } from '../hooks/useCompetitionFilter'
-import { matchesFilter } from '../utils/competitions'
+import CupCard from '../components/CupCard'
+import { CUPS, matchesFilter } from '../utils/competitions'
+import { cupMatches } from '../utils/cupSeason'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture } from '../types'
@@ -36,12 +38,17 @@ export default function Fixtures() {
     }), 'desc')[0]
   }
 
+  // Picking a cup also shows how Ekhaya's season in it is going (or how it ended).
+  const cupsShown = filter === 'cups' ? CUPS : CUPS.filter((cup) => cup.id === filter)
+
   return <>
     <PageHeader eyebrow={filterLabel(filter)} title="Fixtures" description="Upcoming matches · Malawi time (CAT)" />
     <CompetitionTabs value={filter} onChange={setFilter} />
     {loading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : error ? <EmptyState icon={CalendarDays} title="Fixtures unavailable" description={error} />
         : fixtures.length ? fixtures.map((fixture) => <MatchCard key={fixture.id} fixture={fixture} previousMeeting={previousMeeting(fixture)} />)
+          : cupsShown.length ? <p className="cup-fixtures-empty">No upcoming {filterLabel(filter)} matches. Here is Ekhaya's {cupsShown.length > 1 ? 'cup season' : 'run'} so far:</p>
           : <EmptyState icon={CalendarDays} title="No upcoming fixtures" description={filter === 'all' ? 'New matches will appear here when the club adds them.' : `No ${filterLabel(filter)} matches scheduled yet.`} />}
+    {!loading && !error && cupsShown.map((cup) => <CupCard key={cup.id} cup={cup} matches={cupMatches(items, cup.id)} />)}
   </>
 }

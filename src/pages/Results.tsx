@@ -2,7 +2,9 @@ import { CircleCheck, History } from 'lucide-react'
 import MatchCard from '../components/MatchCard'
 import CompetitionTabs from '../components/CompetitionTabs'
 import { filterLabel, useCompetitionFilter } from '../hooks/useCompetitionFilter'
-import { matchesFilter } from '../utils/competitions'
+import { ChampionsCelebration } from '../components/CupCard'
+import { CUPS, matchesFilter } from '../utils/competitions'
+import { cupMatches, cupStatus } from '../utils/cupSeason'
 import { Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture } from '../types'
@@ -18,9 +20,17 @@ export default function Results() {
     .map(ekhayaOutcome)
     .filter((result): result is 'W' | 'D' | 'L' => result !== null)
 
+  // A cup Ekhaya won gets the trophy celebration at the top of its results.
+  const wonCups = CUPS.filter((cup) => filter === 'cups' || cup.id === filter).flatMap((cup) => {
+    const matches = cupMatches(items, cup.id)
+    const final = matches.find((match) => /^final$/i.test(match.round ?? ''))
+    return final && cupStatus(matches).label.includes('Champions') ? [{ cup, final }] : []
+  })
+
   return <>
     <PageHeader eyebrow={filterLabel(filter)} title="Results" description="Latest completed matches" />
     <CompetitionTabs value={filter} onChange={setFilter} />
+    {!loading && wonCups.map(({ cup, final }) => <ChampionsCelebration key={cup.id} cup={cup} final={final} />)}
     {!loading && !error && form.length > 0 && (
       <Card className="form-card">
         <div className="form-summary-heading"><span>EKHAYA FC</span><span>LAST {form.length}</span></div>
