@@ -39,6 +39,17 @@ jobs:
             exit 1
           fi
           printf '%s\n' "$APP_ENV" > .env
+          # Refuse to publish a broken app: every Firebase setting must be present.
+          missing=""
+          for key in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID VITE_FIREBASE_MESSAGING_SENDER_ID; do
+            grep -Eq "^$key=.+" .env || missing="$missing $key"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::APP_ENV secret is missing:$missing. Paste ALL lines from: grep '^VITE_' .env"
+            exit 1
+          fi
+          grep -Eq '^VITE_FIREBASE_API_KEY=AIza' .env || { echo "::error::VITE_FIREBASE_API_KEY in APP_ENV does not look right (it should start with AIza)."; exit 1; }
+          echo "App settings OK ($(grep -c '^VITE_' .env) lines)"
           mkdir -p "$HOME/ekhaya-keys"
           printf '%s' "$FIREBASE_SA" > "$HOME/ekhaya-keys/firebase-sa.json"
           chmod 600 "$HOME/ekhaya-keys/firebase-sa.json"
