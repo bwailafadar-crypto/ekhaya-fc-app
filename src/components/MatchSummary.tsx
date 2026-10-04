@@ -35,14 +35,15 @@ export default function MatchSummary({ fixture, compact = false }: { fixture: Fi
   return (
     <section className={`match-summary${compact ? ' match-summary-compact' : ''}`} aria-label="Full-time summary">
       <div className="match-summary-head">
-        <span className="page-eyebrow">Full time</span>
+        <span className="page-eyebrow">Full time{fixture.round ? ` · ${fixture.competition} ${fixture.round}` : ''}</span>
         <h2>{fixture.home} <em>{home}–{away}</em> {fixture.away}</h2>
       </div>
       {goals.length > 0 ? <div className="match-summary-goals">
         <div><span className="match-summary-team">{fixture.home}</span><ul>{sideGoals(fixture.home).map(goalLine)}</ul></div>
         <Goal size={16} aria-hidden="true" />
         <div><span className="match-summary-team">{fixture.away}</span><ul>{sideGoals(fixture.away).map(goalLine)}</ul></div>
-      </div> : !events.loading && <p className="match-summary-note">{home + away === 0 ? 'A goalless draw.' : 'Goal details were not recorded for this match.'}</p>}
+      </div> : !events.loading && !fixture.note && <p className="match-summary-note">{home + away === 0 ? 'A goalless draw.' : 'Goal details were not recorded for this match.'}</p>}
+      {fixture.note && <p className="match-summary-note">{fixture.note}</p>}
       {!compact && cards.length > 0 && <ul className="match-summary-cards">{cards.map((event) => <li key={event.id}><Square size={12} className={event.card === 'red' ? 'card-red' : 'card-yellow'} aria-label={`${event.card === 'red' ? 'Red' : 'Yellow'} card`} /> {event.minute}' {event.playerName || event.team}</li>)}</ul>}
       {!fixture.isTest && (leader || totalPredictions > 0) && <div className="match-summary-extras">
         {leader && <span><Star size={14} aria-hidden="true" /> Fans' man of the match: <strong>{leader.name}</strong>{leaderVotes ? ` (${leaderVotes} vote${leaderVotes === 1 ? '' : 's'})` : ''}</span>}

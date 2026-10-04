@@ -1,5 +1,8 @@
 import { CalendarDays } from 'lucide-react'
 import MatchCard from '../components/MatchCard'
+import CompetitionTabs from '../components/CompetitionTabs'
+import { filterLabel, useCompetitionFilter } from '../hooks/useCompetitionFilter'
+import { matchesFilter } from '../utils/competitions'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture } from '../types'
@@ -20,7 +23,8 @@ function teamKey(name: string) {
 
 export default function Fixtures() {
   const { items, loading, error } = useFirestoreCollection<Fixture>('fixtures')
-  const fixtures = sortByDate(items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')
+  const [filter, setFilter] = useCompetitionFilter()
+  const fixtures = sortByDate(items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest && matchesFilter(fixture.competition, filter)), 'asc')
   const completed = items.filter((fixture) => fixture.status === 'finished' && !fixture.isTest
     && fixture.homeScore != null && fixture.awayScore != null)
 
@@ -33,10 +37,11 @@ export default function Fixtures() {
   }
 
   return <>
-    <PageHeader eyebrow="TNM Super League" title="Fixtures" description="Upcoming matches · Malawi time (CAT)" />
+    <PageHeader eyebrow={filterLabel(filter)} title="Fixtures" description="Upcoming matches · Malawi time (CAT)" />
+    <CompetitionTabs value={filter} onChange={setFilter} />
     {loading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : error ? <EmptyState icon={CalendarDays} title="Fixtures unavailable" description={error} />
         : fixtures.length ? fixtures.map((fixture) => <MatchCard key={fixture.id} fixture={fixture} previousMeeting={previousMeeting(fixture)} />)
-          : <EmptyState icon={CalendarDays} title="No upcoming fixtures" description="New matches will appear here when the club adds them." />}
+          : <EmptyState icon={CalendarDays} title="No upcoming fixtures" description={filter === 'all' ? 'New matches will appear here when the club adds them.' : `No ${filterLabel(filter)} matches scheduled yet.`} />}
   </>
 }

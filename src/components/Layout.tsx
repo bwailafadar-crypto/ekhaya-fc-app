@@ -23,12 +23,12 @@ const tabs = [
 const titles: Record<string, string> = {
   '/': 'Home', '/fixtures': 'Fixtures', '/results': 'Results',
   '/table': 'League Table', '/live': 'Live Match', '/squad': 'Squad',
-  '/news': 'News', '/fanzone': 'Fan Zone', '/community': 'Fan Family', '/membership': 'Membership',
+  '/news': 'News', '/fanzone': 'Fan Zone', '/community': 'Fan Family', '/competitions': 'Competitions', '/membership': 'Membership',
   '/profile': 'Fan Profile', '/more': 'More', '/admin': 'Admin',
 }
 
 // Pages reached from the More tab keep the More tab lit.
-const MORE_PAGES = ['/more', '/results', '/squad', '/news', '/fanzone', '/community', '/membership', '/profile', '/admin']
+const MORE_PAGES = ['/more', '/competitions', '/results', '/squad', '/news', '/fanzone', '/community', '/membership', '/profile', '/admin']
 // Pages where the bars must never slide away (live scores, admin tools).
 const PINNED = ['/live', '/admin']
 

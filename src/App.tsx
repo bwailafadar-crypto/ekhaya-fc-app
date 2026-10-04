@@ -27,6 +27,7 @@ const Profile = lazy(() => import('./pages/Profile'))
 const More = lazy(() => import('./pages/More'))
 const InstallPage = lazy(() => import('./pages/InstallPage'))
 const Community = lazy(() => import('./pages/Community'))
+const Competitions = lazy(() => import('./pages/Competitions'))
 
 export default function App() {
   return (
@@ -56,6 +57,7 @@ export default function App() {
                 <Route path="/news/:id" element={<News />} />
                 <Route path="/fanzone" element={<FanZone />} />
                 <Route path="/community" element={<Community />} />
+                <Route path="/competitions" element={<Competitions />} />
                 <Route path="/membership" element={<Membership />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/more" element={<More />} />

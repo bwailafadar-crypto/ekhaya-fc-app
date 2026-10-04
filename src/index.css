@@ -1337,3 +1337,42 @@ select.auth-input { appearance: auto; }
   .topbar, .bottom-nav, .nav-pill { transition: none; }
   .nav-item.active .nav-icon { animation: none; }
 }
+
+/* ===== Competitions: league & cups (update 43) ===== */
+.comp-tabs { margin: -4px 0 14px; display: grid; gap: 8px; }
+.comp-tabs-row { display: flex; gap: 6px; padding: 4px; border-radius: 14px; background: rgb(255 255 255 / 55%); border: 1px solid var(--glass-line); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); overflow-x: auto; scrollbar-width: none; }
+.comp-tabs-row::-webkit-scrollbar { display: none; }
+.comp-tabs-row button { flex: 1 0 auto; min-height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background 200ms ease, color 200ms ease, box-shadow 200ms ease; }
+.comp-tabs-row button.active { color: #2A2108; background: linear-gradient(135deg, rgb(248 228 160), rgb(222 186 76)); box-shadow: 0 4px 12px rgb(201 162 39 / 30%), inset 0 1px 0 rgb(255 255 255 / 70%); }
+.comp-tabs-sub { background: transparent; border: 0; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.comp-tabs-sub button { flex: 0 0 auto; min-height: 32px; border: 1px solid var(--glass-line); background: rgb(255 255 255 / 60%); font-size: 12px; }
+.comp-tabs-big button { min-height: 42px; font-size: 14px; }
+.match-card-cup { display: inline-flex; align-items: center; gap: 5px; color: var(--gold-dark); font-weight: 700; }
+.match-card-note { margin: 8px 0 0; padding: 7px 10px; border-radius: 9px; background: rgb(248 237 200 / 60%); color: #6B5410; font-size: 12px; font-weight: 600; text-align: center; }
+.cup-card-head { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+.cup-card-head > div { flex: 1; min-width: 0; }
+.cup-card-head h2 { margin: 0; font-size: 19px; }
+.cup-card-head span { color: var(--muted); font-size: 11px; font-weight: 600; }
+.cup-card-icon { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 13px; display: grid; place-items: center; color: #2A2108; background: linear-gradient(135deg, #F3D97A, #C9A227); box-shadow: 0 6px 14px rgb(201 162 39 / 30%); }
+.cup-card-icon-league { background: linear-gradient(135deg, #FFFFFF, #EDE6D2); color: var(--gold-dark); }
+.cup-card-champions { border-color: rgb(201 162 39 / 60%); box-shadow: 0 14px 34px rgb(201 162 39 / 25%); }
+.cup-card-banner { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; text-align: center; font-family: 'Oswald', sans-serif; font-size: 16px; color: #2A2108; background: linear-gradient(120deg, #F8E4A0, #E2BE4E, #F8E4A0); background-size: 200% 100%; animation: champ-shine 4s ease-in-out infinite; }
+@keyframes champ-shine { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.cup-road { margin: 0 0 12px; padding: 0; list-style: none; display: grid; gap: 8px; }
+.cup-road li { padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; border-radius: 12px; background: rgb(255 255 255 / 65%); border: 1px solid var(--glass-line); border-left: 4px solid #CFC7B4; }
+.cup-road li.cup-road-w { border-left-color: #2E9E50; }
+.cup-road li.cup-road-d { border-left-color: #C9A227; }
+.cup-road li.cup-road-l { border-left-color: #D04545; }
+.cup-road-round { grid-column: 1 / -1; color: var(--gold-dark); font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+.cup-road-match { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; font-size: 14px; }
+.cup-road-match > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cup-road-score { font-family: 'Oswald', sans-serif; font-size: 18px; }
+.cup-road-note { grid-column: 1 / -1; color: #6B5410; font-size: 12px; font-weight: 600; }
+.league-record { margin-bottom: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.league-record div { padding: 10px 4px; border-radius: 12px; text-align: center; background: rgb(255 255 255 / 65%); border: 1px solid var(--glass-line); }
+.league-record strong { display: block; font-family: 'Oswald', sans-serif; font-size: 22px; }
+.league-record span { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.league-links { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.league-links a { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 11px; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 700; background: rgb(255 255 255 / 70%); border: 1px solid var(--glass-line); }
+@media (prefers-reduced-motion: reduce) { .cup-card-banner { animation: none; } }
+.fan-zone .cup-card-banner { color: #241B05; font-weight: 600; letter-spacing: .2px; }

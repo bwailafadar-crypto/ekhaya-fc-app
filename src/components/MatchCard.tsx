@@ -1,4 +1,5 @@
-import { MapPin } from 'lucide-react'
+import { MapPin, Trophy } from 'lucide-react'
+import { isCupCompetition } from '../utils/competitions'
 import type { Fixture } from '../types'
 import { ekhayaOutcome, formatMalawiDate, formatMalawiTime } from '../utils/football'
 import TeamLogo from './TeamLogo'
@@ -14,7 +15,10 @@ export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixtu
   return (
     <Card className="match-card">
       <div className="match-card-meta">
-        <span>{fixture.competition}</span>
+        <span className={isCupCompetition(fixture.competition) ? 'match-card-cup' : undefined}>
+          {isCupCompetition(fixture.competition) && <Trophy size={12} aria-hidden="true" />}
+          {fixture.competition}{fixture.round ? ` · ${fixture.round}` : ''}
+        </span>
         {outcome
           ? <Badge variant={outcome === 'W' ? 'success' : outcome === 'D' ? 'default' : 'danger'}>{outcome}</Badge>
           : fixture.status === 'live' ? <Badge variant="live">LIVE</Badge> : <span className="match-status">{fixture.status === 'finished' ? 'FT' : 'FIXTURE'}</span>}
@@ -30,6 +34,7 @@ export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixtu
           <span>{fixture.away}</span>
         </div>
       </div>
+      {fixture.note && <p className="match-card-note">{fixture.note}</p>}
       {previousMeeting && previousMeeting.homeScore != null && previousMeeting.awayScore != null && <div className="match-previous-result">
         <span>Previous meeting</span>
         <strong>{previousMeeting.home} {previousMeeting.homeScore} - {previousMeeting.awayScore} {previousMeeting.away}</strong>

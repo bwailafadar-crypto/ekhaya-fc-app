@@ -23,6 +23,10 @@ export interface Fixture {
   id: string
   competition: string
   season?: string
+  /** Cup round, e.g. "Quarter-final · 1st leg" or "Final". */
+  round?: string | null
+  /** Extra result detail, e.g. aggregate score or penalties. */
+  note?: string | null
   date: string
   venue: string | null
   home: string

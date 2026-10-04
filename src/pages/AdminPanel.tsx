@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from 'react'
+import { COMPETITIONS } from '../utils/competitions'
 import { collection, deleteDoc, doc, documentId as firestoreDocumentId, getDoc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
 import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, Trash2, UserRound, Users, Vote } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -177,6 +178,8 @@ function Field({
   required = false,
   min,
   max,
+  list,
+  placeholder,
 }: {
   label: string
   name: string
@@ -185,8 +188,10 @@ function Field({
   required?: boolean
   min?: number
   max?: number
+  list?: string
+  placeholder?: string
 }) {
-  return <label className="admin-field"><span>{label}</span><input name={name} type={type} defaultValue={defaultValue ?? ''} required={required} min={min} max={max} /></label>
+  return <label className="admin-field"><span>{label}</span><input name={name} type={type} defaultValue={defaultValue ?? ''} required={required} min={min} max={max} list={list} placeholder={placeholder} /></label>
 }
 
 function messageFrom(error: unknown) {
@@ -730,6 +735,8 @@ export default function AdminPanel() {
         id,
         competition: String(form.get('competition') ?? '').trim(),
         season: String(form.get('season') ?? '').trim(),
+        round: String(form.get('round') ?? '').trim() || null,
+        note: String(form.get('note') ?? '').trim().slice(0, 200) || null,
         date: dateInput ? `${dateInput}:00+02:00` : '',
         home: String(form.get('home') ?? '').trim(),
         away: String(form.get('away') ?? '').trim(),
@@ -883,7 +890,7 @@ export default function AdminPanel() {
               : <Card className="admin-card">
                 <div className="admin-card-heading"><h2>Fixture and result</h2><select aria-label="Choose fixture" value={selectedFixtureId} onChange={(event) => setSelectedFixtureId(event.target.value)}><option value="">Add a fixture</option>{fixtures.items.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.date.slice(0, 10)} · {fixture.home} v {fixture.away}</option>)}</select></div>
                 <form className="admin-form" key={selectedFixture?.id ?? 'new-fixture'} onSubmit={saveFixture}>
-                  <div className="admin-form-grid"><Field label="Competition" name="competition" defaultValue={selectedFixture?.competition ?? 'TNM Super League'} required /><Field label="Season" name="season" defaultValue={selectedFixture?.season ?? '2026'} required /><Field label="Date and CAT kick-off" name="date" type="datetime-local" defaultValue={selectedFixture?.date?.slice(0, 16)} required /><Field label="Venue" name="venue" defaultValue={selectedFixture?.venue} /><Field label="Home team" name="home" defaultValue={selectedFixture?.home} required /><Field label="Away team" name="away" defaultValue={selectedFixture?.away} required /></div>
+                  <div className="admin-form-grid"><Field label="Competition" name="competition" defaultValue={selectedFixture?.competition ?? 'TNM Super League'} required list="competition-options" /><datalist id="competition-options">{COMPETITIONS.map((item) => <option key={item.id} value={item.name} />)}</datalist><Field label="Cup round (cups only)" name="round" defaultValue={selectedFixture?.round} placeholder="e.g. Quarter-final · 1st leg" /><Field label="Result note (optional)" name="note" defaultValue={selectedFixture?.note} placeholder="e.g. Won 4–3 on penalties" /><Field label="Season" name="season" defaultValue={selectedFixture?.season ?? '2026'} required /><Field label="Date and CAT kick-off" name="date" type="datetime-local" defaultValue={selectedFixture?.date?.slice(0, 16)} required /><Field label="Venue" name="venue" defaultValue={selectedFixture?.venue} /><Field label="Home team" name="home" defaultValue={selectedFixture?.home} required /><Field label="Away team" name="away" defaultValue={selectedFixture?.away} required /></div>
                   <div className="admin-actions"><Button type="submit" disabled={saving}>{saving ? 'Saving...' : selectedFixture ? 'Save fixture' : 'Add fixture'}</Button>{selectedFixture && <Button type="button" variant="danger" onClick={() => void deleteFixture()}>Delete fixture</Button>}</div>
                 </form>
               </Card>}

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { isCupCompetition } from '../utils/competitions'
 import LineupPitch from '../components/LineupPitch'
 import MatchSummary from '../components/MatchSummary'
 import { collection, deleteField, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
@@ -591,15 +592,17 @@ export default function LiveMatch() {
         const playerRefs = [...playerIds].map((id) => doc(db, 'players', id))
         const playerSnapshots = await Promise.all(playerRefs.map((ref) => transaction.get(ref)))
         const tableRows = standingsSnapshots.map((item) => ({ ref: item.ref, data: item.data() as Standing }))
-        const homeRow = tableRows.find((row) => sameTeam(row.data.team, fixture.home))
-        const awayRow = tableRows.find((row) => sameTeam(row.data.team, fixture.away))
-        if (!homeRow || !awayRow) throw new Error('Both clubs need a standings row before the result can be finalized.')
+        // Cup matches (Airtel Top 8, Castel Cup) never change the league table.
+        const isCup = isCupCompetition(fixture.competition)
+        const homeRow = isCup ? undefined : tableRows.find((row) => sameTeam(row.data.team, fixture.home))
+        const awayRow = isCup ? undefined : tableRows.find((row) => sameTeam(row.data.team, fixture.away))
+        if (!isCup && (!homeRow || !awayRow)) throw new Error('Both clubs need a standings row before the result can be finalized.')
 
         const homeGoals = Number(fixture.homeScore ?? 0)
         const awayGoals = Number(fixture.awayScore ?? 0)
         const outcome = homeGoals === awayGoals ? 'D' : homeGoals > awayGoals ? 'W' : 'L'
         const awayOutcome = outcome === 'W' ? 'L' : outcome === 'L' ? 'W' : 'D'
-        const nextRows = tableRows.map((row) => {
+        const nextRows = !homeRow || !awayRow ? [] : tableRows.map((row) => {
           if (row.ref.path === homeRow.ref.path) return { ...row, data: applyResult(row.data, homeGoals, awayGoals, outcome, fixtureSnapshot.id) }
           if (row.ref.path === awayRow.ref.path) return { ...row, data: applyResult(row.data, awayGoals, homeGoals, awayOutcome, fixtureSnapshot.id) }
           return row
@@ -663,7 +666,7 @@ export default function LiveMatch() {
           }
           if (Object.keys(delta).length > 0) playerDeltas[id] = delta
         }
-        const standingChanges = [
+        const standingChanges = !homeRow || !awayRow ? [] : [
           standingChange(homeRow.data, homeGoals, awayGoals, outcome),
           standingChange(awayRow.data, awayGoals, homeGoals, awayOutcome),
         ]
@@ -674,13 +677,13 @@ export default function LiveMatch() {
           finishedAt: serverTimestamp(), updatedAt: serverTimestamp(),
         })
         nextRows.forEach((row, index) => {
-          if (row.data.position !== index + 1 || row.ref.path === homeRow.ref.path || row.ref.path === awayRow.ref.path) {
+          if (row.data.position !== index + 1 || row.ref.path === homeRow?.ref.path || row.ref.path === awayRow?.ref.path) {
             transaction.update(row.ref, { ...row.data, position: index + 1, updatedAt: serverTimestamp() })
           }
         })
         for (const [id, stats] of playerUpdates) transaction.update(doc(db, 'players', id), { stats, updatedAt: serverTimestamp() })
       })
-      setMessage('Match ended. The result, standings and player statistics have been updated.')
+      setMessage(isCupCompetition(selectedFixture.competition) ? 'Match ended. The cup result and player statistics have been updated (the league table is not affected).' : 'Match ended. The result, standings and player statistics have been updated.')
     } catch (error) {
       reportError(error)
     } finally {

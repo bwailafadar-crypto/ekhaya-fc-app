@@ -1,0 +1,54 @@
+# Loads cup results (Airtel Top 8, Castel Cup) from ekhaya-data.json into the app.
+# Run it from the Actions tab: first with "preview", then with "apply".
+name: Update cup results
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'preview = show changes only, apply = save them'
+        type: choice
+        options: [preview, apply]
+        default: preview
+      confirm_code:
+        description: 'Your squad code (the SQUAD_CODE secret). Needed for apply.'
+        required: false
+        default: ''
+
+jobs:
+  cups:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Check squad code
+        if: inputs.mode == 'apply'
+        env:
+          GIVEN: ${{ inputs.confirm_code }}
+          EXPECTED: ${{ secrets.SQUAD_CODE }}
+        run: |
+          # Only the superadmin knows this code, so other admins with the alerts key
+          # cannot change results through this workflow.
+          if [ -z "$EXPECTED" ] || [ "$GIVEN" != "$EXPECTED" ]; then
+            echo "::error::Wrong or missing squad code. Add a SQUAD_CODE secret and enter it to apply changes."
+            exit 1
+          fi
+      - name: Update cup results
+        run: |
+          ARGS=""
+          [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
+          node scripts/sync-cups.cjs $ARGS
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
