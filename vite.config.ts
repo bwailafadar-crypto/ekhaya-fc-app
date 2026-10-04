@@ -32,8 +32,8 @@ export default defineConfig({
       name: 'Ekhaya FC',
       short_name: 'Ekhaya FC',
       description: 'The official Ekhaya FC supporters app.',
-      theme_color: '#0E0E0E',
-      background_color: '#0E0E0E',
+      theme_color: '#FBFAF6',
+      background_color: '#FBFAF6',
       display: 'standalone',
       orientation: 'portrait',
       icons: [

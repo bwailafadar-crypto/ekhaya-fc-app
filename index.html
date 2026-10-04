@@ -5,9 +5,9 @@
     <link rel="icon" type="image/png" href="./team-logos/ekhaya-fc.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0E0E0E" />
+    <meta name="theme-color" content="#FBFAF6" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Ekhaya FC" />
     <title>Ekhaya FC</title>
     <script>
@@ -20,7 +20,7 @@
     <div id="root"></div>
     <!-- Rescue screen: shown only if the app has not appeared after 10 seconds
          or failed to start, so fans never get stuck on a blank white page. -->
-    <div id="boot-rescue" hidden style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#1C1C1C;background:#FBFAF6">
+    <div id="boot-rescue" style="position:fixed;inset:0;z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#1C1C1C;background:#FBFAF6">
       <img src="./team-logos/ekhaya-fc.png" alt="Ekhaya FC" width="96" height="96" style="object-fit:contain" />
       <strong style="font-size:18px">Ekhaya FC is taking longer than usual</strong>
       <span style="max-width:320px;color:#6F6B62;font-size:14px;line-height:1.5">Your connection may be slow. Tap Reload. If that does not help, tap Reset app.</span>
@@ -35,7 +35,7 @@
           var root = document.getElementById('root')
           if (root && root.hasChildNodes()) return
           document.getElementById('boot-error').textContent = errors.length ? 'Details: ' + errors.slice(0, 2).join(' | ') : ''
-          document.getElementById('boot-rescue').hidden = false
+          document.getElementById('boot-rescue').style.display = 'flex'
         }
         window.addEventListener('error', function (e) { errors.push(String(e.message || (e.target && e.target.src) || 'error')); setTimeout(show, 2500) }, true)
         window.addEventListener('unhandledrejection', function (e) { errors.push(String((e.reason && e.reason.message) || e.reason)); setTimeout(show, 2500) })
