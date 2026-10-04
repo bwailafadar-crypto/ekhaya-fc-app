@@ -1263,3 +1263,13 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
   .auth-plane-away { opacity: 0; }
   .auth-send-check { opacity: 1; }
 }
+
+/* ===== Real flying plane (update 39) ===== */
+.flight-layer { position: fixed; inset: 0; z-index: 80; pointer-events: none; overflow: hidden; }
+.flight-sky { position: absolute; inset: 0; width: 100%; height: 100%; }
+.flight-trail { fill: none; stroke: #C9A23A; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 0.1 7; opacity: 0; }
+.flight-plane { position: absolute; left: 0; top: 0; width: 30px; height: 30px; opacity: 0; offset-rotate: auto; offset-distance: 0%; will-change: offset-distance, transform; filter: drop-shadow(0 6px 6px rgb(120 90 20 / 30%)); }
+.flight-plane svg { width: 100%; height: 100%; display: block; }
+.auth-runway { width: 18px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, currentColor 50%, transparent); opacity: .45; animation: runway 900ms linear infinite; }
+.auth-send.is-crash { animation: none; }
+@keyframes runway { from { transform: translateX(-6px); } to { transform: translateX(6px); } }

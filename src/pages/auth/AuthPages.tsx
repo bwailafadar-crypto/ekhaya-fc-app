@@ -1,6 +1,6 @@
 import { FirebaseError } from 'firebase/app'
 import { ArrowLeft, Check, Eye, EyeOff, LoaderCircle, Send, ShieldCheck, X } from 'lucide-react'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/UI'
 import { useAuth } from '../../auth/AuthContext'
@@ -142,29 +142,173 @@ function SubmitButton({ busy, idleLabel, busyLabel }: { busy: boolean; idleLabel
   )
 }
 
-type SendStatus = 'idle' | 'sending' | 'success' | 'error'
+type SendStatus = 'idle' | 'sending' | 'crash' | 'success' | 'error'
+
+/** True when this phone can draw the free-flying plane (and the fan has not asked for less motion). */
+function canFly() {
+  try {
+    return typeof window !== 'undefined'
+      && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      && CSS.supports('offset-path', 'path("M 0 0 L 1 1")')
+      && typeof Element.prototype.animate === 'function'
+  } catch {
+    return false
+  }
+}
+
+const HOLD_MS = 1500
+
+/** A paper plane that leaves the button and flies over the screen along real curved paths. */
+function PlaneFlight({ status, from }: { status: SendStatus; from: RefObject<HTMLElement | null> }) {
+  const planeRef = useRef<HTMLDivElement | null>(null)
+  const trailRef = useRef<SVGPathElement | null>(null)
+  const maskRef = useRef<SVGPathElement | null>(null)
+  const geo = useRef({ cx: 0, cy: 0, r: 44, w: 0, bx: 0, by: 0 })
+  const hold = useRef<Animation | null>(null)
+  const running = useRef<Animation[]>([])
+  const run = useRef(0)
+
+  // The sky layer is added straight to the page (outside React) so it can fly over everything.
+  useLayoutEffect(() => {
+    const layer = document.createElement('div')
+    layer.className = 'flight-layer'
+    layer.setAttribute('aria-hidden', 'true')
+    layer.innerHTML = `<svg class="flight-sky"><defs><mask id="flight-trail-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%"><path fill="none" stroke="#fff" stroke-width="10" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></mask></defs><path class="flight-trail" mask="url(#flight-trail-mask)"/></svg><div class="flight-plane"><svg viewBox="0 0 32 32"><path d="M3 5 L30 16 L3 27 L9 16 Z" fill="#E8C55A"/><path d="M9 16 L30 16 L12 23 Z" fill="#B8902A"/><path d="M3 5 L30 16 L3 27 L9 16 Z M9 16 L30 16" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg></div>`
+    document.body.appendChild(layer)
+    planeRef.current = layer.querySelector<HTMLDivElement>('.flight-plane')
+    trailRef.current = layer.querySelector<SVGPathElement>('.flight-trail')
+    maskRef.current = layer.querySelector<SVGPathElement>('mask path')
+    return () => {
+      running.current.forEach((a) => a.cancel())
+      running.current = []
+      layer.remove()
+    }
+  }, [])
+
+  useLayoutEffect(() => {
+    const plane = planeRef.current
+    const trail = trailRef.current
+    const mask = maskRef.current
+    const anchor = from.current
+    if (!plane || !trail || !mask || !anchor) return
+    const token = ++run.current
+    const g = geo.current
+
+    const track = (a: Animation) => { running.current.push(a); return a }
+    const stop = () => { running.current.forEach((a) => a.cancel()); running.current = []; hold.current = null }
+
+    const fly = (d: string, duration: number, easing: string, frames: Keyframe[], withTrail: boolean) => {
+      plane.style.setProperty('offset-path', `path("${d}")`)
+      const a = track(plane.animate(frames, { duration, easing, fill: 'forwards' }))
+      if (withTrail) {
+        trail.setAttribute('d', d)
+        mask.setAttribute('d', d)
+        track(mask.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration, easing, fill: 'forwards' }))
+        track(trail.animate([{ opacity: 1 }, { opacity: 1, offset: 0.6 }, { opacity: 0 }], { duration: duration + 700, fill: 'forwards' }))
+      }
+      return a
+    }
+
+    // Where the plane is now, and which way it is heading.
+    const here = () => {
+      const box = plane.getBoundingClientRect()
+      const p = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+      const h = hold.current
+      if (!h) return { p: { x: g.cx + g.r, y: g.cy }, t: { x: 0, y: -1 } }
+      const f = ((Number(h.currentTime) || 0) % HOLD_MS) / HOLD_MS
+      const a = f * Math.PI * 2
+      return { p, t: { x: -Math.sin(a), y: -Math.cos(a) } }
+    }
+
+    if (status === 'sending') {
+      stop()
+      const icon = anchor.getBoundingClientRect()
+      const button = anchor.closest('button')?.getBoundingClientRect() ?? icon
+      const x0 = icon.left + icon.width / 2
+      const y0 = icon.top + icon.height / 2
+      g.w = window.innerWidth
+      g.r = 44
+      g.cx = Math.min(Math.max(g.w / 2, g.r + 24), g.w - g.r - 24)
+      g.cy = Math.max(g.r + 30, y0 - 200)
+      g.bx = button.left + button.width / 2
+      g.by = button.top + 4
+      // Take off: a short roll along the button, then climb into a holding circle.
+      const takeoff = `M ${x0} ${y0} C ${x0 + 60} ${y0 - 4}, ${g.cx + g.r + 20} ${g.cy + 110}, ${g.cx + g.r} ${g.cy}`
+      const climb = fly(takeoff, 750, 'cubic-bezier(.45,0,.25,1)', [
+        { offsetDistance: '0%', opacity: 1, transform: 'scale(.75)' },
+        { offsetDistance: '100%', opacity: 1, transform: 'scale(1.15)' },
+      ], true)
+      climb.finished.then(() => {
+        if (run.current !== token) return
+        const { cx, cy, r } = g
+        // Circle the sky while we wait for the answer.
+        plane.style.setProperty('offset-path', `path("M ${cx + r} ${cy} A ${r} ${r} 0 1 0 ${cx - r} ${cy} A ${r} ${r} 0 1 0 ${cx + r} ${cy}")`)
+        hold.current = track(plane.animate([
+          { offsetDistance: '0%', opacity: 1, transform: 'scale(1.15)' },
+          { offsetDistance: '100%', opacity: 1, transform: 'scale(1.15)' },
+        ], { duration: HOLD_MS, iterations: Infinity }))
+      }).catch(() => undefined)
+      return
+    }
+
+    if (status === 'success') {
+      const { p, t } = here()
+      stop()
+      // Bank away and shoot off the top-right of the screen, getting smaller in the distance.
+      const away = `M ${p.x} ${p.y} C ${p.x + t.x * 80} ${p.y + t.y * 80}, ${g.w * 0.7} ${p.y + 40}, ${g.w + 70} ${-70}`
+      fly(away, 900, 'cubic-bezier(.55,0,.9,.55)', [
+        { offsetDistance: '0%', opacity: 1, transform: 'scale(1.15)' },
+        { offsetDistance: '100%', opacity: 0.9, transform: 'scale(.45)' },
+      ], true)
+      return
+    }
+
+    if (status === 'crash') {
+      const { p, t } = here()
+      stop()
+      // Engine trouble: wobble, then nose-dive into the button.
+      const dive = `M ${p.x} ${p.y} C ${p.x + t.x * 60} ${p.y + t.y * 60}, ${g.bx + 80} ${g.by - 150}, ${g.bx} ${g.by}`
+      fly(dive, 650, 'cubic-bezier(.6,0,1,.6)', [
+        { offsetDistance: '0%', opacity: 1, transform: 'scale(1.15) rotate(0deg)' },
+        { offsetDistance: '45%', opacity: 1, transform: 'scale(1.05) rotate(-18deg)', offset: 0.4 },
+        { offsetDistance: '100%', opacity: 1, transform: 'scale(.9) rotate(25deg)', offset: 0.9 },
+        { offsetDistance: '100%', opacity: 0, transform: 'scale(.3) rotate(60deg)' },
+      ], true)
+      return
+    }
+
+    stop()
+  }, [status, from])
+
+  return null
+}
 
 /**
- * Telegram-style send button: a paper plane cruises while signing in, flies
- * away and the button turns green on success, or turns red and shakes on failure.
+ * Telegram-style send button. On phones that support it the plane takes off,
+ * circles while signing in, then either flies away (green) or crashes (red).
  */
 function SendButton({ status, label }: { status: SendStatus; label: string }) {
-  const text = status === 'sending' ? 'Signing in…' : status === 'success' ? 'Welcome!' : status === 'error' ? 'Try again' : label
+  const [flying] = useState(canFly)
+  const iconRef = useRef<HTMLSpanElement>(null)
+  const text = status === 'sending' || status === 'crash' ? 'Signing in…' : status === 'success' ? 'Welcome!' : status === 'error' ? 'Try again' : label
+  const planeAway = flying && (status === 'sending' || status === 'crash')
   return (
     <button
       type="submit"
-      className={`button button-primary auth-submit auth-send is-${status}`}
-      disabled={status === 'sending' || status === 'success'}
-      aria-busy={status === 'sending'}
+      className={`button button-primary auth-submit auth-send is-${status}${flying ? ' is-flying' : ''}`}
+      disabled={status === 'sending' || status === 'crash' || status === 'success'}
+      aria-busy={status === 'sending' || status === 'crash'}
     >
       <span className="auth-submit-label">
-        <span className="auth-send-icon" aria-hidden="true">
-          {status === 'success' ? <><Send className="auth-plane auth-plane-away" size={18} /><Check className="auth-send-check" size={19} strokeWidth={3} /></>
+        <span className="auth-send-icon" aria-hidden="true" ref={iconRef}>
+          {status === 'success' ? <>{!flying && <Send className="auth-plane auth-plane-away" size={18} />}<Check className="auth-send-check" size={19} strokeWidth={3} /></>
             : status === 'error' ? <X className="auth-send-check" size={19} strokeWidth={3} />
+            : planeAway ? <span className="auth-runway" />
             : <Send className="auth-plane" size={18} />}
         </span>
         <span aria-live="polite">{text}</span>
       </span>
+      {flying && <PlaneFlight status={status} from={iconRef} />}
     </button>
   )
 }
@@ -231,14 +375,20 @@ export function LoginPage() {
       const from = (location.state as { from?: string } | null)?.from
       window.setTimeout(() => navigate(from?.startsWith('/') ? from : '/', { replace: true }), 1100)
     } catch (reason) {
-      setError(getErrorMessage(reason))
-      setStatus('error')
-      window.setTimeout(() => setStatus((current) => (current === 'error' ? 'idle' : current)), 1800)
+      const message = getErrorMessage(reason)
+      // Let the plane crash into the button first, then show red.
+      const crashMs = canFly() ? 650 : 0
+      setStatus('crash')
+      window.setTimeout(() => {
+        setError(message)
+        setStatus('error')
+        window.setTimeout(() => setStatus((current) => (current === 'error' ? 'idle' : current)), 1800)
+      }, crashMs)
     }
   }
 
   return (
-    <AuthShell title="Welcome back" intro="Sign in to follow the club and connect with Ekhaya supporters." holdRedirect={status === 'sending' || status === 'success'}>
+    <AuthShell title="Welcome back" intro="Sign in to follow the club and connect with Ekhaya supporters." holdRedirect={status === 'sending' || status === 'crash' || status === 'success'}>
       {accountBlocked && <p className="auth-error" role="alert">This account has been blocked by the club. Contact Ekhaya FC if you think this is a mistake.</p>}
       <GoogleSignIn onError={setError} />
       <form className="auth-form" onSubmit={handleSubmit}>
