@@ -56,6 +56,10 @@ export default defineConfig({
       navigateFallback: 'index.html',
       navigateFallbackDenylist: [/^\/\.netlify\/functions\//, /firestore\.googleapis\.com/],
       cleanupOutdatedCaches: true,
+      // A new deploy takes over open tabs immediately instead of waiting for
+      // every tab to close; PwaUpdateNotice then reloads onto it.
+      skipWaiting: true,
+      clientsClaim: true,
     },
   })],
   base: './',

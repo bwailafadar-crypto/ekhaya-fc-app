@@ -2,47 +2,71 @@ import { RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { registerSW } from 'virtual:pwa-register'
 
+const CHECK_EVERY_MS = 5 * 60 * 1000
+
+/**
+ * Keeps every fan on the latest version without changing the link.
+ * The service worker installs a new deploy in the background; once it is
+ * active, the page reloads itself when the fan is not looking (app in the
+ * background), or shows a bar they can tap to reload straight away.
+ */
 export default function PwaUpdateNotice() {
-  const [updateAvailable, setUpdateAvailable] = useState(false)
-  const activateUpdate = useRef<ReturnType<typeof registerSW> | null>(null)
+  const [updateReady, setUpdateReady] = useState(false)
+  const updateReadyRef = useRef(false)
 
   useEffect(() => {
     if ('cordova' in window || !('serviceWorker' in navigator)) return
 
     let timer: number | undefined
-    let checkForUpdate: (() => void) | undefined
+    let registration: ServiceWorkerRegistration | undefined
 
-    activateUpdate.current = registerSW({
+    const checkForUpdate = () => {
+      if (registration && navigator.onLine) void registration.update().catch(() => undefined)
+    }
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden' && updateReadyRef.current) {
+        // Swap to the new version while the fan is away from the screen.
+        window.location.reload()
+        return
+      }
+      if (document.visibilityState === 'visible') checkForUpdate()
+    }
+
+    registerSW({
       immediate: true,
-      onNeedReload: () => setUpdateAvailable(true),
-      onRegisteredSW: (_url, registration) => {
-        if (!registration) return
-        // Look for a new deploy every 30 minutes and whenever the app comes
-        // back to the foreground, so fans get changes on the same link.
-        checkForUpdate = () => {
-          if (navigator.onLine) void registration.update().catch(() => undefined)
+      // Called when a newly deployed version has taken over.
+      onNeedReload: () => {
+        if (document.visibilityState === 'hidden') {
+          window.location.reload()
+          return
         }
-        timer = window.setInterval(checkForUpdate, 30 * 60 * 1000)
-        document.addEventListener('visibilitychange', onVisible)
+        updateReadyRef.current = true
+        setUpdateReady(true)
+      },
+      onRegisteredSW: (_url, reg) => {
+        if (!reg) return
+        registration = reg
+        checkForUpdate()
+        timer = window.setInterval(checkForUpdate, CHECK_EVERY_MS)
       },
     })
 
-    function onVisible() {
-      if (document.visibilityState === 'visible') checkForUpdate?.()
-    }
-
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('online', checkForUpdate)
     return () => {
       if (timer) window.clearInterval(timer)
-      document.removeEventListener('visibilitychange', onVisible)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('online', checkForUpdate)
     }
   }, [])
 
-  if (!updateAvailable) return null
+  if (!updateReady) return null
 
   return (
-    <button className="pwa-update-toast" type="button" onClick={() => void activateUpdate.current?.(true)}>
+    <button className="pwa-update-toast" type="button" onClick={() => window.location.reload()}>
       <RefreshCw size={15} aria-hidden="true" />
-      <span>New version available - tap to refresh</span>
+      <span>New version ready - tap to update</span>
     </button>
   )
 }
