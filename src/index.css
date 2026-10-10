@@ -1432,3 +1432,13 @@ select.auth-input { appearance: auto; }
 .health-errors small { color: var(--muted); }
 .club-notice { margin: 8px 16px 0; padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 700; color: #2A2108; background: linear-gradient(120deg, #F8E4A0, #E2BE4E); box-shadow: 0 6px 16px rgb(201 162 39 / 25%); }
 .env-badge { padding: 3px 8px; border-radius: 6px; color: #fff; background: #D04545; font-size: 10px; letter-spacing: .8px; }
+
+/* ===== Practice match (update 51) ===== */
+.practice-bar { margin: -4px 0 12px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; border-radius: 14px; background: rgb(255 255 255 / 60%); border: 1px dashed rgb(201 162 39 / 55%); }
+.practice-bar > span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.practice-bar .button { width: auto; min-height: 38px; }
+.practice-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 6px; color: #fff; background: #6B4FD8; font-size: 10px; font-weight: 800; letter-spacing: .5px; }
+.signout-notice { margin-bottom: 12px; padding: 12px; display: grid; gap: 6px; border-radius: 12px; background: #FFF4E5; border: 1px solid #F0B45A; color: #5A3A04; font-size: 13px; }
+.signout-notice pre { margin: 0; padding: 8px; max-height: 120px; overflow: auto; white-space: pre-wrap; word-break: break-word; border-radius: 8px; background: rgb(255 255 255 / 70%); font-size: 11px; }
+.signout-notice div { display: flex; gap: 8px; }
+.signout-notice button { padding: 6px 12px; border: 1px solid #F0B45A; border-radius: 8px; background: #fff; font-weight: 700; font-size: 12px; }

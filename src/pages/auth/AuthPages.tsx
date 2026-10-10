@@ -6,6 +6,7 @@ import { Button } from '../../components/UI'
 import { useAuth } from '../../auth/AuthContext'
 import { isAndroidApp } from '../../utils/appShell'
 import { BRANCHES, saveBranch } from '../../utils/community'
+import { clearSignOutReport, readSignOutReport } from '../../utils/authDiagnostics'
 import { auth } from '../../firebase'
 
 const GOOGLE_SIGNIN_ENABLED = import.meta.env.VITE_ENABLE_GOOGLE_SIGNIN === 'true'
@@ -357,6 +358,25 @@ function AuthShell({
   )
 }
 
+/** Shown when the app signed someone out by itself, with details to send to the club. */
+function SignOutNotice() {
+  const [report, setReport] = useState(readSignOutReport)
+  const [copied, setCopied] = useState(false)
+  if (!report) return null
+  const details = [`Signed out at ${report.at} on ${report.path || '/'} (${report.online ? 'online' : 'offline'})`, report.agent, ...report.events].join('\n')
+  return (
+    <div className="signout-notice" role="alert">
+      <strong>You were signed out unexpectedly</strong>
+      <span>Sign in again. If it keeps happening, tap Copy details and send them to the club.</span>
+      <pre>{report.events.slice(-4).join('\n') || 'No error was recorded.'}</pre>
+      <div>
+        <button type="button" onClick={() => { void navigator.clipboard?.writeText(details).then(() => setCopied(true)).catch(() => setCopied(false)) }}>{copied ? 'Copied ✓' : 'Copy details'}</button>
+        <button type="button" onClick={() => { clearSignOutReport(); setReport(null) }}>Dismiss</button>
+      </div>
+    </div>
+  )
+}
+
 export function LoginPage() {
   const { signIn, accountBlocked } = useAuth()
   const navigate = useNavigate()
@@ -391,6 +411,7 @@ export function LoginPage() {
 
   return (
     <AuthShell title="Welcome back" intro="Sign in to follow the club and connect with Ekhaya supporters." holdRedirect={status === 'sending' || status === 'crash' || status === 'success'}>
+      <SignOutNotice />
       {accountBlocked && <p className="auth-error" role="alert">This account has been blocked by the club. Contact Ekhaya FC if you think this is a mistake.</p>}
       <GoogleSignIn onError={setError} />
       <form className="auth-form" onSubmit={handleSubmit}>

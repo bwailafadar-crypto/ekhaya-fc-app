@@ -1,5 +1,6 @@
 import { browserPopupRedirectResolver, createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type User, deleteUser, onAuthStateChanged, reload, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth'
 import { setLogUser } from '../utils/logger'
+import { markExpectedSignOut, noteAuthEvent, recordSignOut } from '../utils/authDiagnostics'
 import { doc, getDoc, getDocFromCache, serverTimestamp, setDoc } from 'firebase/firestore'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { auth, db } from '../firebase'
@@ -82,8 +83,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (import.meta.env.VITE_ENABLE_GOOGLE_SIGNIN === 'true') {
       void getRedirectResult(auth, browserPopupRedirectResolver).catch((error: unknown) => { if (mounted) setGoogleError(error) })
     }
+    let previousUser: { uid: string; email: string | null } | null = null
     const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
       window.clearTimeout(startupTimer)
+      noteAuthEvent(nextUser ? `signed in ${nextUser.uid.slice(0, 6)}` : 'signed out')
+      if (previousUser && !nextUser) recordSignOut(previousUser.uid, previousUser.email)
+      previousUser = nextUser ? { uid: nextUser.uid, email: nextUser.email } : null
       const requestId = ++profileRequest.current
       if (!mounted) return
       setUser(nextUser)
@@ -120,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let nextProfile = readProfile(snapshot.data())
         if (!snapshot.exists() && !signingUp.current) nextProfile = await createGoogleProfile(nextUser)
         if (nextProfile?.disabled) {
+          markExpectedSignOut()
           await firebaseSignOut(auth)
           if (mounted) setAccountBlocked(true)
           return
@@ -242,6 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
+    markExpectedSignOut()
     await firebaseSignOut(auth)
   }, [])
 
