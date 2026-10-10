@@ -2,7 +2,6 @@ import { CalendarDays, Home, Menu, Radio, Trophy } from 'lucide-react'
 import { Suspense, useEffect, useState, type CSSProperties } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ToastProvider } from './Toast'
-import VerificationBanner from './VerificationBanner'
 import TeamLogo from './TeamLogo'
 import AdminAlerts from './AdminAlerts'
 import ForegroundAlerts from './ForegroundAlerts'
@@ -102,7 +101,6 @@ export default function Layout() {
 
         <ConnectionBanner />
         {notice && <p className="club-notice" role="status">{notice}</p>}
-        <VerificationBanner />
         <ForegroundAlerts />
         <AdminAlertRelay />
         <AlertsPrompt />

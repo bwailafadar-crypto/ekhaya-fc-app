@@ -3,6 +3,7 @@ import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
 import { LeaderboardBadge } from '../components/Leaderboard'
+import VerificationBanner from '../components/VerificationBanner'
 import LogoutButton from '../components/LogoutButton'
 import PushSettings from '../components/PushSettings'
 import TeamLogo from '../components/TeamLogo'
@@ -65,6 +66,8 @@ export default function Profile() {
         <h2>{fullName}</h2>
         <p>{user?.email}</p>
       </Card>
+      {/* Email check lives here now, not at the top of every page. */}
+      <VerificationBanner />
       <LeaderboardBadge />
       <section className="digital-membership-card" aria-label="Digital membership card">
         <div className="digital-membership-header"><TeamLogo name="Ekhaya FC" crest /><div><span>EKHAYA FC</span><strong>OFFICIAL SUPPORTER CLUB</strong></div><span className={`digital-membership-status digital-membership-${status}`}>{status === 'active' ? 'ACTIVE' : status.toUpperCase()}</span></div>
