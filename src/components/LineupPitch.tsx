@@ -40,7 +40,7 @@ export default function LineupPitch({ starters, bench }: { starters: Player[]; b
         })}
       </div>
       {unplaced.length > 0 && <div className="lineup-list"><h3>Also starting</h3><p>{unplaced.map((player) => `${player.number ? `${player.number}. ` : ''}${player.name}`).join(' · ')}</p></div>}
-      {bench.length > 0 && <div className="lineup-list"><h3>Substitutes</h3><p>{bench.map((player) => `${player.number ? `${player.number}. ` : ''}${player.name}`).join(' · ')}</p></div>}
+      {bench.length > 0 && <div className="lineup-list"><h3>Subs</h3><ul className="lineup-subs">{bench.map((player) => <li key={player.id}><em className="sub-tag">SUB</em>{player.number ? `${player.number}. ` : ''}{player.name}</li>)}</ul></div>}
     </div>
   )
 }

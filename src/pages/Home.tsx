@@ -13,6 +13,8 @@ import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { usePublishedNews } from '../hooks/usePublishedNews'
 import type { Fixture, MatchEvent, Player } from '../types'
 import { useLiveDocs } from '../hooks/useLiveDocs'
+import { useMyDoc } from '../hooks/useCounts'
+import PlayerAvatar from '../components/PlayerAvatar'
 import { sortByDate } from '../utils/football'
 import { matchMinute } from '../utils/matchClock'
 
@@ -87,8 +89,14 @@ export default function Home() {
 function LatestGoal({ fixtureId }: { fixtureId: string }) {
   const events = useLiveDocs<Omit<MatchEvent, 'id'>>(['fixtures', fixtureId, 'events'])
   const goal = events.items.filter((event) => event.kind === 'goal').sort((a, b) => b.minute - a.minute)[0]
+  // The scorer's photo (one small read, only when an Ekhaya player scored).
+  const scorer = useMyDoc<Player>(goal?.playerId ? ['players', goal.playerId] : null).data
   if (!goal) return null
-  return <span className="home-live-goal">⚽ {goal.minute}' {goal.playerName || goal.team}</span>
+  const isClubGoal = /ekhaya/i.test(goal.team)
+  return <span className={`home-live-goal${isClubGoal ? ' home-live-goal-club' : ''}`}>
+    {scorer ? <PlayerAvatar player={{ ...scorer, id: goal.playerId ?? '' }} /> : <span className="home-live-goal-ball" aria-hidden="true">⚽</span>}
+    <span><b>{isClubGoal ? 'GOAL!' : 'Goal'} {goal.minute}'</b> {goal.playerName || goal.team}</span>
+  </span>
 }
 
 // Players (with photos) are only downloaded when a confirmed line-up is shown.

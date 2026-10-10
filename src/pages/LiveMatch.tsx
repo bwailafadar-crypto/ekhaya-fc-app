@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { isCupCompetition } from '../utils/competitions'
+import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import LineupPitch from '../components/LineupPitch'
 import MatchSummary from '../components/MatchSummary'
 import { collection, deleteField, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
-import { Activity, Clock3, CornerUpLeft, Goal, MessageSquareText, Radio, ShieldAlert, Square, SquareArrowOutUpRight, Trash2, Users, Zap } from 'lucide-react'
+import { Activity, Clock3, CornerUpLeft, FlaskConical, Goal, MessageSquareText, Radio, ShieldAlert, Square, SquareArrowOutUpRight, Trash2, Users, Zap } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useAuth } from '../auth/AuthContext'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
@@ -66,6 +66,9 @@ function EventForm({
   const isClubSide = sameTeam(teamName, CLUB_NAME)
   const matchdayIds = [...(fixture.startingPlayerIds ?? []), ...(fixture.benchPlayerIds ?? [])]
   const sidePlayers = players.filter((player) => player.team === 'senior' && (!matchdayIds.length || matchdayIds.includes(player.id)))
+  const subIds = fixture.benchPlayerIds ?? []
+  const offPlayers = sidePlayers.filter((player) => !subIds.includes(player.id) || !(fixture.startingPlayerIds ?? []).length)
+  const onPlayers = subIds.length ? sidePlayers.filter((player) => subIds.includes(player.id)) : sidePlayers
 
   return <form className="live-event-form" key={`${fixture.id}-${kind}-${defaultSide}-${defaultCard}`} onSubmit={onSubmit}>
     <input type="hidden" name="kind" value={kind} />
@@ -76,8 +79,8 @@ function EventForm({
     {kind === 'commentary' ? <label className="admin-field"><span>Commentary</span><textarea name="text" rows={2} maxLength={180} placeholder="Chance for Stambuli!" required /></label>
       : kind === 'substitution' ? <div className="live-form-grid">
       {isClubSide ? <>
-        <label className="admin-field"><span>Player off</span><select name="playerOff" required defaultValue=""><option value="" disabled>Choose player</option>{sidePlayers.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></label>
-        <label className="admin-field"><span>Player on</span><select name="playerOn" required defaultValue=""><option value="" disabled>Choose player</option>{sidePlayers.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></label>
+        <label className="admin-field"><span>Player off</span><select name="playerOff" required defaultValue=""><option value="" disabled>Choose player</option>{offPlayers.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></label>
+        <label className="admin-field"><span>Player on (sub)</span><select name="playerOn" required defaultValue=""><option value="" disabled>Choose sub</option>{onPlayers.map((player) => <option key={player.id} value={player.id}>{player.name} · Sub</option>)}</select></label>
       </> : <><label className="admin-field"><span>Player off</span><input name="playerOffName" required /></label><label className="admin-field"><span>Player on</span><input name="playerOnName" required /></label></>}
     </div> : <div className="live-form-grid">
       {isClubSide ? <label className="admin-field"><span>{kind === 'goal' ? 'Scorer' : 'Player'}</span><select name="player" required defaultValue=""><option value="" disabled>Choose player</option>{sidePlayers.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></label>
@@ -109,10 +112,13 @@ export default function LiveMatch() {
   const [message, setMessage] = useState('')
   const [problem, setProblem] = useState('')
 
-  const availableFixtures = fixturesResult.items.filter((fixture) => !fixture.isTest)
+  // Practice matches are only ever visible to admins.
+  const availableFixtures = fixturesResult.items.filter((fixture) => !fixture.isTest || isAdmin)
   const fixtures = [
-    ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'live'), 'asc'),
-    ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'upcoming'), 'asc'),
+    ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'live' && !fixture.isTest), 'asc'),
+    ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'live' && fixture.isTest), 'asc'),
+    ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'upcoming' && fixture.isTest), 'asc'),
+    ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc'),
     ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'finished'), 'desc'),
   ]
   const selectedFixture = fixtures.find((fixture) => fixture.id === selectedId)
@@ -123,9 +129,14 @@ export default function LiveMatch() {
   const startingPlayers = selectedFixture
     ? lineupDraft && lineupDraft.fixtureId === selectedFixture.id ? lineupDraft.playerIds : selectedFixture.startingPlayerIds ?? []
     : []
-  const benchPlayers = selectedFixture
-    ? benchDraft && benchDraft.fixtureId === selectedFixture.id ? benchDraft.playerIds : selectedFixture.benchPlayerIds ?? []
+  // Every senior player who does not start is a sub, unless an admin leaves them out
+  // (injured, suspended). The draft stores who is left OUT, so new players join the bench.
+  const nonStarters = playersResult.items.filter((player) => player.team === 'senior' && !startingPlayers.includes(player.id)).map((player) => player.id)
+  const savedBench = selectedFixture?.benchPlayerIds ?? []
+  const leftOut = selectedFixture
+    ? benchDraft && benchDraft.fixtureId === selectedFixture.id ? benchDraft.playerIds : savedBench.length ? nonStarters.filter((id) => !savedBench.includes(id)) : []
     : []
+  const benchPlayers = nonStarters.filter((id) => !leftOut.includes(id))
   const events = selectedFixture && eventState?.fixtureId === selectedFixture.id ? (eventState?.items ?? []) : []
   const eventsLoading = Boolean(selectedFixture && eventState?.fixtureId !== selectedFixture.id)
   const eventsError = selectedFixture && eventState?.fixtureId === selectedFixture.id ? eventState?.error ?? null : null
@@ -172,21 +183,14 @@ export default function LiveMatch() {
         : currentIds.length < 11 ? [...currentIds, playerId] : currentIds
       return { fixtureId: selectedFixture.id, playerIds: nextIds }
     })
-    setBenchDraft((current) => ({
-      fixtureId: selectedFixture.id,
-      playerIds: (current?.fixtureId === selectedFixture.id ? current.playerIds : selectedFixture.benchPlayerIds ?? []).filter((id) => id !== playerId),
-    }))
   }
 
   function toggleBenchPlayer(playerId: string) {
     if (!selectedFixture) return
+    // Ticked = on the bench as a sub; unticked = left out of the squad today.
     setBenchDraft((current) => {
-      const currentIds = current?.fixtureId === selectedFixture.id
-        ? current.playerIds
-        : selectedFixture.benchPlayerIds ?? []
-      const nextIds = currentIds.includes(playerId)
-        ? currentIds.filter((id) => id !== playerId)
-        : currentIds.length < 7 ? [...currentIds, playerId] : currentIds
+      const currentIds = current?.fixtureId === selectedFixture.id ? current.playerIds : leftOut
+      const nextIds = currentIds.includes(playerId) ? currentIds.filter((id) => id !== playerId) : [...currentIds, playerId]
       return { fixtureId: selectedFixture.id, playerIds: nextIds }
     })
   }
@@ -208,6 +212,48 @@ export default function LiveMatch() {
         transaction.update(fixtureRef, { startingPlayerIds: startingPlayers, benchPlayerIds: benchPlayers, lineupConfirmed: true, updatedAt: serverTimestamp() })
       })
       setMessage('Starting XI and bench confirmed for fans.')
+    } catch (error) {
+      reportError(error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** A private rehearsal: admins only, no alerts, never touches the table, stats or leaderboard. */
+  async function createPracticeMatch() {
+    setBusy(true)
+    setProblem('')
+    try {
+      const id = `practice-${Date.now()}`
+      await setDoc(doc(db, 'fixtures', id), {
+        id, isTest: true, competition: 'Practice match', season: new Date().getFullYear().toString(),
+        date: new Date(Date.now() + 5 * 60 * 1000).toISOString(), home: CLUB_NAME, away: 'Practice XI',
+        venue: 'Training ground', status: 'upcoming', homeScore: null, awayScore: null,
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+      })
+      setSelectedId(id)
+      setActiveTab('timeline')
+      setQuickAction(null)
+      setMessage('Practice match created. Pick 11 starters, then Kick off. Fans cannot see it and no alerts are sent.')
+    } catch (error) {
+      reportError(error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function deletePracticeMatch() {
+    if (!selectedFixture?.isTest || !window.confirm('Delete this practice match and everything recorded in it?')) return
+    setBusy(true)
+    setProblem('')
+    try {
+      for (const sub of ['events', 'reactions']) {
+        const snapshot = await getDocs(collection(db, 'fixtures', selectedFixture.id, sub))
+        await Promise.all(snapshot.docs.map((item) => deleteDoc(item.ref)))
+      }
+      await deleteDoc(doc(db, 'fixtures', selectedFixture.id))
+      setSelectedId('')
+      setMessage('Practice match deleted.')
     } catch (error) {
       reportError(error)
     } finally {
@@ -305,6 +351,56 @@ export default function LiveMatch() {
         next[side][key] = Math.max(0, Number(next[side][key] ?? 0) + change)
         transaction.update(fixtureRef, { matchStats: next, updatedAt: serverTimestamp() })
       })
+    } catch (error) {
+      reportError(error)
+    }
+  }
+
+  /** A shot is either on or off target; total shots always = on + off. */
+  async function changeShot(side: 'home' | 'away', onTarget: boolean, change: -1 | 1) {
+    if (!selectedFixture) return
+    try {
+      await runTransaction(db, async (transaction) => {
+        const fixtureRef = doc(db, 'fixtures', selectedFixture.id)
+        const snapshot = await transaction.get(fixtureRef)
+        if (!snapshot.exists() || snapshot.data().status !== 'live') throw new Error('Match stats are only available during a live match.')
+        const current = (snapshot.data().matchStats ?? { home: { ...EMPTY_MATCH_STATS }, away: { ...EMPTY_MATCH_STATS } }) as { home: MatchStats; away: MatchStats }
+        const next = { home: { ...EMPTY_MATCH_STATS, ...current.home }, away: { ...EMPTY_MATCH_STATS, ...current.away } }
+        const stats = next[side]
+        const on = Number(stats.shotsOnTarget ?? 0)
+        const off = Math.max(0, Number(stats.shots ?? 0) - on)
+        const nextOn = onTarget ? Math.max(0, on + change) : on
+        const nextOff = onTarget ? off : Math.max(0, off + change)
+        stats.shotsOnTarget = nextOn
+        stats.shots = nextOn + nextOff
+        transaction.update(fixtureRef, { matchStats: next, updatedAt: serverTimestamp() })
+      })
+    } catch (error) {
+      reportError(error)
+    }
+  }
+
+  /** Puts the clock on a given minute (e.g. it was started late), and it keeps running from there. */
+  async function setClockMinute(minute: number) {
+    if (!selectedFixture || !Number.isFinite(minute)) return
+    setProblem('')
+    try {
+      await runTransaction(db, async (transaction) => {
+        const fixtureRef = doc(db, 'fixtures', selectedFixture.id)
+        const snapshot = await transaction.get(fixtureRef)
+        const fixture = snapshot.data() as Fixture | undefined
+        if (!snapshot.exists() || !fixture || fixture.status !== 'live') throw new Error('The clock can only be changed during a live match.')
+        const secondHalf = fixture.period === 'second-half'
+        if (!secondHalf && fixture.period !== 'first-half') throw new Error('Start the half first, then set the clock.')
+        const lowest = secondHalf ? 46 : 1
+        const highest = secondHalf ? 130 : 60
+        const target = Math.min(highest, Math.max(lowest, Math.round(minute)))
+        const halfStart = secondHalf ? Number(fixture.firstHalfSeconds ?? 45 * 60) : 0
+        const minuteInHalf = target - (secondHalf ? 45 : 0)
+        // One second into the chosen minute, so the clock shows exactly that minute now.
+        transaction.update(fixtureRef, { clockElapsedSeconds: halfStart + (minuteInHalf - 1) * 60 + 1, periodStartedAt: serverTimestamp(), updatedAt: serverTimestamp() })
+      })
+      setMessage(`Clock set to ${Math.round(minute)}'.`)
     } catch (error) {
       reportError(error)
     }
@@ -593,7 +689,9 @@ export default function LiveMatch() {
         const playerSnapshots = await Promise.all(playerRefs.map((ref) => transaction.get(ref)))
         const tableRows = standingsSnapshots.map((item) => ({ ref: item.ref, data: item.data() as Standing }))
         // Cup matches (Airtel Top 8, Castel Cup) never change the league table.
-        const isCup = isCupCompetition(fixture.competition)
+        // Practice matches never change the table or player stats.
+        const isPractice = Boolean(fixture.isTest)
+        const isCup = isPractice || isCupCompetition(fixture.competition)
         const homeRow = isCup ? undefined : tableRows.find((row) => sameTeam(row.data.team, fixture.home))
         const awayRow = isCup ? undefined : tableRows.find((row) => sameTeam(row.data.team, fixture.away))
         if (!isCup && (!homeRow || !awayRow)) throw new Error('Both clubs need a standings row before the result can be finalized.')
@@ -673,17 +771,20 @@ export default function LiveMatch() {
         transaction.update(fixtureRef, {
           status: 'finished', period: 'full-time', minute: finalMinute,
           clockElapsedSeconds: clockSeconds, periodStartedAt: deleteField(), statsApplied: true, statsSkipped: false,
-          statsAppliedChanges: { standings: standingChanges, players: playerDeltas },
+          statsAppliedChanges: { standings: standingChanges, players: isPractice ? {} : playerDeltas },
           finishedAt: serverTimestamp(), updatedAt: serverTimestamp(),
         })
         nextRows.forEach((row, index) => {
-          if (row.data.position !== index + 1 || row.ref.path === homeRow?.ref.path || row.ref.path === awayRow?.ref.path) {
-            transaction.update(row.ref, { ...row.data, position: index + 1, updatedAt: serverTimestamp() })
+          // previousPosition drives the ▲ ▼ arrows on the league table.
+          const oldPosition = Number(row.data.position ?? index + 1)
+          const staleArrow = row.data.previousPosition != null && row.data.previousPosition !== oldPosition
+          if (oldPosition !== index + 1 || staleArrow || row.ref.path === homeRow?.ref.path || row.ref.path === awayRow?.ref.path) {
+            transaction.update(row.ref, { ...row.data, position: index + 1, previousPosition: oldPosition, updatedAt: serverTimestamp() })
           }
         })
-        for (const [id, stats] of playerUpdates) transaction.update(doc(db, 'players', id), { stats, updatedAt: serverTimestamp() })
+        if (!isPractice) for (const [id, stats] of playerUpdates) transaction.update(doc(db, 'players', id), { stats, updatedAt: serverTimestamp() })
       })
-      setMessage(isCupCompetition(selectedFixture.competition) ? 'Match ended. The cup result and player statistics have been updated (the league table is not affected).' : 'Match ended. The result, standings and player statistics have been updated.')
+      setMessage(selectedFixture.isTest ? 'Practice match ended. Nothing was added to the table, player stats or fans\' apps.' : isCupCompetition(selectedFixture.competition) ? 'Match ended. The cup result and player statistics have been updated (the league table is not affected).' : 'Match ended. The result, standings and player statistics have been updated.')
     } catch (error) {
       reportError(error)
     } finally {
@@ -798,6 +899,9 @@ export default function LiveMatch() {
   if (fixturesResult.error) return <EmptyState icon={Radio} title="Live match unavailable" description={fixturesResult.error} />
   if (!selectedFixture) return <>
     <PageHeader eyebrow="Match centre" title="Live match" />
+    {isAdmin && <div className="practice-bar"><span><FlaskConical size={15} aria-hidden="true" /> Rehearse match day safely</span><Button type="button" variant="secondary" disabled={busy} onClick={() => void createPracticeMatch()} icon={<FlaskConical size={15} />}>Start practice match</Button></div>}
+    {message && <p className="live-feedback" role="status">{message}</p>}
+    {problem && <p className="live-error" role="alert"><ShieldAlert size={15} />{problem}</p>}
     <EmptyState icon={Activity} title="No match to follow" description="Live match updates will appear here when a fixture is selected." />
   </>
 
@@ -821,9 +925,14 @@ export default function LiveMatch() {
 
   return <>
     <PageHeader eyebrow="Match centre" title="Live match" description="The clock runs locally. Match updates sync only when staff post an action." />
-    {fixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab('timeline'); setQuickAction(null) }}>{fixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.home} v {fixture.away} · {fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
+    {isAdmin && <div className="practice-bar">
+      {selectedFixture?.isTest
+        ? <><span><FlaskConical size={15} aria-hidden="true" /> You are in a practice match</span><Button type="button" variant="ghost" disabled={busy} onClick={() => void deletePracticeMatch()} icon={<Trash2 size={15} />}>Delete practice</Button></>
+        : <><span><FlaskConical size={15} aria-hidden="true" /> Rehearse match day safely</span><Button type="button" variant="secondary" disabled={busy} onClick={() => void createPracticeMatch()} icon={<FlaskConical size={15} />}>Start practice match</Button></>}
+    </div>}
+    {fixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab('timeline'); setQuickAction(null) }}>{fixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.isTest ? '🧪 Practice: ' : ''}{fixture.home} v {fixture.away} · {fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
     <section className={`matchday-scoreboard${isLive ? ' matchday-scoreboard-live' : ''}`} aria-label="Match scoreboard">
-      <div className="matchday-scoreboard-top"><span>{selectedFixture.competition}</span><div>{isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
+      <div className="matchday-scoreboard-top"><span>{selectedFixture.isTest ? <span className="practice-badge"><FlaskConical size={12} aria-hidden="true" /> PRACTICE · only admins see this</span> : competitionLabel(selectedFixture.competition)}</span><div>{isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
       <div className="matchday-teams">
         <div className="matchday-team"><TeamLogo name={selectedFixture.home} crest /><strong>{selectedFixture.home}</strong></div>
         <div className="matchday-score"><strong>{selectedFixture.status === 'upcoming' ? 'vs' : `${homeScore} – ${awayScore}`}</strong>{isLive && <span>{matchMinute(selectedFixture, clockNow)}</span>}{selectedFixture.period === 'half-time' && <span>HALF-TIME</span>}{selectedFixture.period === 'full-time' && <span>FULL-TIME</span>}</div>
@@ -837,8 +946,8 @@ export default function LiveMatch() {
     {selectedFixture.status === 'upcoming' && <section className="matchday-countdown"><Clock3 size={17} /><div><span>Kick-off countdown</span><strong>{countdown}</strong></div><span>{selectedFixture.lineupConfirmed ? 'Lineup confirmed' : 'Lineup to be confirmed'}</span></section>}
 
     {isAdmin && selectedFixture.status === 'upcoming' && <Card className="admin-card live-admin-card">
-      <div className="matchday-admin-heading"><h2>Matchday squad</h2><span>{startingPlayers.length}/11 starters · {benchPlayers.length}/7 bench</span></div>
-      {hasClubTeam ? playersResult.loading ? <Skeleton className="live-player-skeleton" /> : <div className="matchday-squad-grid"><section><h3>Starting XI</h3><div className="starting-player-list">{clubPlayers.map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={startingPlayers.includes(player.id)} onChange={() => toggleStartingPlayer(player.id)} /><span>{player.name}</span><small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section><section><h3>Bench</h3><div className="starting-player-list">{clubPlayers.filter((player) => !startingPlayers.includes(player.id)).map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={benchPlayers.includes(player.id)} onChange={() => toggleBenchPlayer(player.id)} /><span>{player.name}</span><small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section></div> : <p className="live-help">This fixture does not include Ekhaya FC. Its result can still be followed here.</p>}
+      <div className="matchday-admin-heading"><h2>Matchday squad</h2><span>{startingPlayers.length}/11 starters · {benchPlayers.length} subs</span></div>
+      {hasClubTeam ? playersResult.loading ? <Skeleton className="live-player-skeleton" /> : <div className="matchday-squad-grid"><section><h3>Starting XI</h3><div className="starting-player-list">{clubPlayers.map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={startingPlayers.includes(player.id)} onChange={() => toggleStartingPlayer(player.id)} /><span>{player.name}</span><small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section><section><h3>Subs <small className="squad-hint">everyone not starting · untick anyone not available</small></h3><div className="starting-player-list">{clubPlayers.filter((player) => !startingPlayers.includes(player.id)).map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={benchPlayers.includes(player.id)} onChange={() => toggleBenchPlayer(player.id)} /><span>{player.name}</span>{benchPlayers.includes(player.id) ? <em className="sub-tag">SUB</em> : <em className="out-tag">OUT</em>}<small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section></div> : <p className="live-help">This fixture does not include Ekhaya FC. Its result can still be followed here.</p>}
       {hasClubTeam && <Button type="button" variant="secondary" disabled={busy || startingPlayers.length !== 11 || playersResult.loading} onClick={() => void confirmLineup()}>Confirm lineup</Button>}
       <Button type="button" disabled={busy || (hasClubTeam && (startingPlayers.length !== 11 || playersResult.loading))} onClick={() => void startMatch()} icon={<Zap size={17} />}>Kick off</Button>
     </Card>}
@@ -848,6 +957,13 @@ export default function LiveMatch() {
         {selectedFixture.period === 'first-half' && <Button type="button" variant="secondary" disabled={busy} onClick={() => void setMatchPeriod('half-time')}>Half-time</Button>}
         {selectedFixture.period === 'half-time' && <Button type="button" disabled={busy} onClick={() => void setMatchPeriod('second-half')}>Start 2nd half</Button>}
         {selectedFixture.period === 'second-half' && <Button type="button" variant="danger" disabled={busy} onClick={() => void endMatch()}>Full-time</Button>}
+        {activePeriod(selectedFixture.period) && <form className="clock-controls" onSubmit={(event) => { event.preventDefault(); const value = Number(new FormData(event.currentTarget).get('minute')); void setClockMinute(value) }}>
+          <span>Clock</span>
+          <button type="button" aria-label="Clock back one minute" disabled={busy} onClick={() => void setClockMinute(currentEventMinute(selectedFixture, clockNow) - 1)}>−1′</button>
+          <input name="minute" type="number" inputMode="numeric" min={1} max={130} placeholder={String(currentEventMinute(selectedFixture, clockNow))} aria-label="Set match minute" />
+          <button type="submit" disabled={busy}>Set</button>
+          <button type="button" aria-label="Clock forward one minute" disabled={busy} onClick={() => void setClockMinute(currentEventMinute(selectedFixture, clockNow) + 1)}>+1′</button>
+        </form>}
         {activePeriod(selectedFixture.period) && <div className="added-time-controls"><span>Added time <b>+{selectedFixture.addedTime ?? 0}</b></span>{[1, 2, 3].map((amount) => <button key={amount} type="button" className={selectedFixture.addedTime === amount ? 'selected' : ''} onClick={() => void setAddedTime(amount)}>+{amount}</button>)}</div>}
       </div>
       <div className="matchpad-actions">{QUICK_ACTIONS.map(({ action, label, icon: Icon }) => <button type="button" key={action} className={`matchpad-action${quickAction === action ? ' active' : ''} matchpad-${action}`} onClick={() => setQuickAction((current) => current === action ? null : action)}><Icon size={20} /><span>{label}</span></button>)}<button type="button" className="matchpad-action matchpad-undo" disabled={busy || !events.length} onClick={() => void undoLastEvent()}><CornerUpLeft size={20} /><span>Undo last</span></button></div>
@@ -860,7 +976,7 @@ export default function LiveMatch() {
           <button type="button" aria-label="Increase opponent score" disabled={busy} onClick={() => void setOpponentScore(opponentScore + 1)}>+</button>
         </div>
       </section>
-      <div className="matchday-quick-stats"><div className="matchday-stats-heading"><h2>Match stats</h2><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div>{(['shots', 'shotsOnTarget', 'corners', 'fouls', 'offsides'] as Array<keyof MatchStats>).map((key) => <div className="quick-stat-row" key={key}><span>{key === 'shotsOnTarget' ? 'On target' : key[0].toUpperCase() + key.slice(1)}</span>{(['home', 'away'] as const).map((side) => <div key={side}><button type="button" aria-label={`Remove ${key} for ${side}`} onClick={() => void changeQuickStat(side, key, -1)}>−</button><strong>{(side === 'home' ? homeStats : awayStats)[key]}</strong><button type="button" aria-label={`Add ${key} for ${side}`} onClick={() => void changeQuickStat(side, key, 1)}>+</button></div>)}</div>)}</div>
+      <div className="matchday-quick-stats"><div className="matchday-stats-heading"><h2>Match stats</h2><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div>{([true, false] as const).map((onTarget) => <div className="quick-stat-row" key={onTarget ? 'on' : 'off'}><span>{onTarget ? 'Shots on target' : 'Shots off target'}</span>{(['home', 'away'] as const).map((side) => { const stats = side === 'home' ? homeStats : awayStats; const value = onTarget ? stats.shotsOnTarget : Math.max(0, stats.shots - stats.shotsOnTarget); return <div key={side}><button type="button" aria-label={`Remove shot ${onTarget ? 'on' : 'off'} target for ${side}`} onClick={() => void changeShot(side, onTarget, -1)}>−</button><strong>{value}</strong><button type="button" aria-label={`Add shot ${onTarget ? 'on' : 'off'} target for ${side}`} onClick={() => void changeShot(side, onTarget, 1)}>+</button></div> })}</div>)}<div className="quick-stat-row quick-stat-total"><span>Total shots</span><div><strong>{homeStats.shots}</strong></div><div><strong>{awayStats.shots}</strong></div></div>{(['corners', 'fouls', 'offsides'] as Array<keyof MatchStats>).map((key) => <div className="quick-stat-row" key={key}><span>{key[0].toUpperCase() + key.slice(1)}</span>{(['home', 'away'] as const).map((side) => <div key={side}><button type="button" aria-label={`Remove ${key} for ${side}`} onClick={() => void changeQuickStat(side, key, -1)}>−</button><strong>{(side === 'home' ? homeStats : awayStats)[key]}</strong><button type="button" aria-label={`Add ${key} for ${side}`} onClick={() => void changeQuickStat(side, key, 1)}>+</button></div>)}</div>)}</div>
       <Button type="button" variant="ghost" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button>
     </section>}
 
@@ -870,13 +986,13 @@ export default function LiveMatch() {
 
     <div className="matchday-tabs" role="tablist" aria-label="Match details">{(['timeline', 'lineups', 'stats'] as const).map((tab) => <button type="button" role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? 'active' : ''} key={tab} onClick={() => setActiveTab(tab)}>{tab[0].toUpperCase() + tab.slice(1)}</button>)}</div>
     {activeTab === 'timeline' && <>
-      {eventsLoading ? <Skeleton className="live-player-skeleton" /> : <section className="live-timeline"><div className="live-section-heading"><h2>Timeline</h2><span>{events.length} updates</span></div>{events.length ? events.map((matchEvent) => <article className="live-event" key={matchEvent.id}><strong>{matchEvent.minute}'</strong><span className={`live-event-mark live-event-${matchEvent.kind}`}>{matchEvent.kind === 'goal' ? <Goal size={15} /> : matchEvent.kind === 'card' ? <Square size={14} /> : matchEvent.kind === 'commentary' ? <MessageSquareText size={14} /> : <Users size={14} />}</span><div><p>{eventDescription(matchEvent)}</p><small>{matchEvent.team}</small>{isAdmin && isLive && <details className="match-event-edit"><summary>Edit event</summary><form className="match-event-editor" onSubmit={(event) => void editMatchEvent(matchEvent, event)}>
+      {eventsLoading ? <Skeleton className="live-player-skeleton" /> : <section className="live-timeline"><div className="live-section-heading"><h2>Timeline</h2><span>{events.length} updates</span></div>{events.length ? events.map((matchEvent) => <article className="live-event" key={matchEvent.id}><strong>{matchEvent.minute}'</strong><span className={`live-event-mark live-event-${matchEvent.kind}${matchEvent.kind === 'card' ? ` live-event-card-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} aria-label={matchEvent.kind === 'card' ? `${matchEvent.card === 'red' ? 'Red' : 'Yellow'} card` : undefined}>{matchEvent.kind === 'goal' ? <Goal size={15} /> : matchEvent.kind === 'card' ? <i className="card-shape" /> : matchEvent.kind === 'commentary' ? <MessageSquareText size={14} /> : <Users size={14} />}</span><div><p>{eventDescription(matchEvent)}</p><small>{matchEvent.team}</small>{isAdmin && isLive && <details className="match-event-edit"><summary>Edit event</summary><form className="match-event-editor" onSubmit={(event) => void editMatchEvent(matchEvent, event)}>
         <div className="live-form-grid"><label className="admin-field"><span>Type</span><select name="kind" defaultValue={matchEvent.kind}><option value="goal">Goal</option><option value="card">Card</option><option value="substitution">Sub</option><option value="commentary">Commentary</option></select></label><label className="admin-field"><span>Team</span><select name="side" defaultValue={sameTeam(matchEvent.team, selectedFixture.home) ? 'home' : 'away'}><option value="home">{selectedFixture.home}</option><option value="away">{selectedFixture.away}</option></select></label><label className="admin-field"><span>Minute</span><input name="minute" type="number" min={1} max={130} defaultValue={matchEvent.minute} /></label></div>
         <input className="match-event-edit-input" name="playerName" defaultValue={matchEvent.playerName ?? ''} placeholder="Scorer / player name" /><input className="match-event-edit-input" name="assistPlayerName" defaultValue={matchEvent.assistPlayerName ?? ''} placeholder="Assist name" /><div className="live-form-grid"><input className="match-event-edit-input" name="subbedOutPlayerName" defaultValue={matchEvent.subbedOutPlayerName ?? ''} placeholder="Player off" /><input className="match-event-edit-input" name="subbedInPlayerName" defaultValue={matchEvent.subbedInPlayerName ?? ''} placeholder="Player on" /></div><label className="admin-field"><span>Commentary</span><input name="text" defaultValue={matchEvent.text ?? ''} maxLength={180} /></label><label className="admin-field"><span>Card</span><select name="card" defaultValue={matchEvent.card ?? 'yellow'}><option value="yellow">Yellow</option><option value="red">Red</option></select></label><div className="admin-actions"><Button type="submit" variant="secondary" disabled={busy}>Save event</Button><button type="button" className="match-event-delete" disabled={busy} onClick={() => void deleteMatchEvent(matchEvent.id)}><Trash2 size={15} />Delete</button></div></form></details>}</div></article>) : <div className="live-timeline-empty">{isLive ? 'No updates yet. The match is ready.' : 'No match events recorded.'}</div>}</section>}
       {isLive && <section className="matchday-reactions" aria-label="Match reactions">{['⚽', '🔥', '👏', '😱'].map((emoji) => <button type="button" key={emoji} aria-label={`React ${emoji}`} aria-pressed={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji)} className={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji) ? 'selected' : ''} onClick={() => void reactToMatch(emoji)}><span>{emoji}</span><strong>{reactions.filter((reaction) => reaction.emoji === emoji).length}</strong></button>)}</section>}
     </>}
     {activeTab === 'lineups' && <section className="matchday-lineups"><div className="matchday-section-title"><h2>Lineups</h2>{selectedFixture.status === 'upcoming' && <Badge variant="gold">{homeLineup.length ? 'CONFIRMED' : 'AWAITING'}</Badge>}</div>{homeLineup.length ? <LineupPitch starters={homeLineup} bench={benchLineup} /> : <p className="live-timeline-empty">The confirmed Ekhaya XI will appear here before kick-off.</p>}</section>}
-    {activeTab === 'stats' && <section className="matchday-stats-view"><div className="matchday-section-title"><h2>Match stats</h2><span>Live comparison</span></div>{(['shots', 'shotsOnTarget', 'corners', 'fouls', 'offsides'] as Array<keyof MatchStats>).map((key) => { const home = homeStats[key]; const away = awayStats[key]; const total = Math.max(1, home, away); return <div className="match-stat-compare" key={key}><div><strong>{home}</strong><span>{key === 'shotsOnTarget' ? 'Shots on target' : key[0].toUpperCase() + key.slice(1)}</span><strong>{away}</strong></div><div className="match-stat-bars"><i style={{ width: `${home / total * 50}%` }} /><i style={{ width: `${away / total * 50}%` }} /></div></div> })}<div className="matchday-stat-legend"><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div></section>}
+    {activeTab === 'stats' && <section className="matchday-stats-view"><div className="matchday-section-title"><h2>Match stats</h2><span>Live comparison</span></div>{(['shots', 'shotsOnTarget', 'shotsOffTarget', 'corners', 'fouls', 'offsides'] as const).map((key) => { const value = (stats: MatchStats) => key === 'shotsOffTarget' ? Math.max(0, stats.shots - stats.shotsOnTarget) : stats[key]; const home = value(homeStats); const away = value(awayStats); const total = Math.max(1, home, away); return <div className="match-stat-compare" key={key}><div><strong>{home}</strong><span>{key === 'shotsOnTarget' ? 'Shots on target' : key === 'shotsOffTarget' ? 'Shots off target' : key[0].toUpperCase() + key.slice(1)}</span><strong>{away}</strong></div><div className="match-stat-bars"><i style={{ width: `${home / total * 50}%` }} /><i style={{ width: `${away / total * 50}%` }} /></div></div> })}<div className="matchday-stat-legend"><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div></section>}
     {isFinished && <MatchSummary fixture={selectedFixture} />}
     {standingsResult.error && isAdmin && <p className="live-error">Standings could not be loaded: {standingsResult.error}</p>}
   </>

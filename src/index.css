@@ -1442,3 +1442,30 @@ select.auth-input { appearance: auto; }
 .signout-notice pre { margin: 0; padding: 8px; max-height: 120px; overflow: auto; white-space: pre-wrap; word-break: break-word; border-radius: 8px; background: rgb(255 255 255 / 70%); font-size: 11px; }
 .signout-notice div { display: flex; gap: 8px; }
 .signout-notice button { padding: 6px 12px; border: 1px solid #F0B45A; border-radius: 8px; background: #fff; font-weight: 700; font-size: 12px; }
+
+/* ===== Match day polish (update 53) ===== */
+.home-live-goal { display: inline-flex; align-items: center; gap: 8px; }
+.home-live-goal .player-avatar { width: 30px; height: 30px; font-size: 11px; border: 2px solid #fff; box-shadow: 0 2px 6px rgb(0 0 0 / 18%); }
+.home-live-goal-club { animation: goal-pop 600ms cubic-bezier(.2, .9, .3, 1.4); }
+.home-live-goal-ball { font-size: 18px; }
+@keyframes goal-pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.live-event-card-yellow .live-event-mark, .live-event-mark.live-event-card-yellow { background: #FFF6CC; }
+.live-event-mark.live-event-card-red { background: #FDE2E2; }
+.card-shape { display: block; width: 10px; height: 14px; border-radius: 2px; box-shadow: 0 1px 2px rgb(0 0 0 / 25%); transform: rotate(8deg); }
+.live-event-card-yellow .card-shape { background: #F5C518; }
+.live-event-card-red .card-shape { background: #D32F2F; }
+.standings-position { white-space: nowrap; }
+.pos-up, .pos-down { margin-left: 3px; font-size: 9px; vertical-align: middle; }
+.pos-up { color: #2E9E50; }
+.pos-down { color: #D04545; }
+.clock-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; font-weight: 700; color: var(--muted); }
+.clock-controls input { width: 64px; min-height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+.clock-controls button { min-height: 34px; padding: 0 10px; border: 1px solid var(--glass-line); border-radius: 8px; background: rgb(255 255 255 / 80%); font-weight: 700; }
+.quick-stat-total strong { color: var(--muted); }
+.sub-tag, .out-tag { margin-left: auto; margin-right: 6px; padding: 1px 6px; border-radius: 5px; font-size: 9px; font-style: normal; font-weight: 800; letter-spacing: .5px; }
+.sub-tag { color: #2A2108; background: #F3D97A; }
+.out-tag { color: #fff; background: #9A968C; }
+.squad-hint { display: block; color: var(--muted); font-size: 10px; font-weight: 600; text-transform: none; }
+.lineup-subs { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; }
+.lineup-subs li { display: flex; align-items: center; gap: 6px; }
+.lineup-subs .sub-tag { margin: 0; }

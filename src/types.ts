@@ -201,6 +201,8 @@ export interface Standing {
   points: number
   form: Array<'W' | 'D' | 'L'>
   formHistory?: Array<{ fixtureId: string; result: 'W' | 'D' | 'L' }>
+  /** Position before the latest result (for the up/down arrows). */
+  previousPosition?: number
 }
 
 export type TableRow = Standing
