@@ -102,3 +102,12 @@ test('formations: keeper first, then lines from defence to attack', async () => 
   // Every formation uses exactly 10 outfield players.
   for (const f of FORMATIONS) assert.equal(f.split('-').map(Number).reduce((a, b) => a + b, 0), 10, f)
 })
+
+test('team sheet: 11 places in formation order, drawn where the coach put them', async () => {
+  const { slotRoles, linesBySlot } = await import('../../src/utils/formations.ts')
+  assert.deepEqual(slotRoles('4-3-3'), ['GK', 'DEF', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'FWD', 'FWD', 'FWD'])
+  assert.deepEqual(slotRoles('4-2-3-1').filter((r) => r === 'MID').length, 5)
+  assert.equal(slotRoles('5-4-1').length, 11)
+  const xi = Array.from({ length: 11 }, (_, i) => `p${i}`)
+  assert.deepEqual(linesBySlot(xi, '4-4-2'), [['p0'], ['p1', 'p2', 'p3', 'p4'], ['p5', 'p6', 'p7', 'p8'], ['p9', 'p10']])
+})

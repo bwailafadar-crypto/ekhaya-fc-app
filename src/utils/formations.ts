@@ -33,3 +33,25 @@ export function arrangeFormation<T extends { position?: string | null }>(starter
   if (start < outfield.length) result[result.length - 1].push(...outfield.slice(start))
   return result
 }
+
+export type SlotRole = 'GK' | 'DEF' | 'MID' | 'FWD'
+
+/** The 11 places on the team sheet for a formation: GK, then defence to attack. */
+export function slotRoles(formation: Formation): SlotRole[] {
+  const lines = formation.split('-').map(Number)
+  const roles: SlotRole[] = ['GK']
+  lines.forEach((size, index) => {
+    const role: SlotRole = index === 0 ? 'DEF' : index === lines.length - 1 ? 'FWD' : 'MID'
+    for (let i = 0; i < size; i += 1) roles.push(role)
+  })
+  return roles
+}
+
+/** Splits an XI already in team-sheet order (GK first) into formation lines. */
+export function linesBySlot<T>(starters: T[], formation: Formation): T[][] {
+  const lines = formation.split('-').map(Number)
+  const result: T[][] = [starters.slice(0, 1)]
+  let start = 1
+  for (const size of lines) { result.push(starters.slice(start, start + size)); start += size }
+  return result
+}

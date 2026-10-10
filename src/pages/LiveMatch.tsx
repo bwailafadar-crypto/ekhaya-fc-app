@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import PlayerAvatar from '../components/PlayerAvatar'
-import { DEFAULT_FORMATION, FORMATIONS, isFormation, type Formation } from '../utils/formations'
+import { DEFAULT_FORMATION, FORMATIONS, isFormation, slotRoles, type Formation } from '../utils/formations'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import LineupPitch from '../components/LineupPitch'
 import MatchSummary from '../components/MatchSummary'
@@ -129,9 +129,14 @@ export default function LiveMatch() {
     ?? fixtures.find((fixture) => fixture.status === 'upcoming')
     ?? fixtures[0]
   const players = [...playersResult.items].sort((a, b) => a.name.localeCompare(b.name))
-  const startingPlayers = selectedFixture
-    ? lineupDraft && lineupDraft.fixtureId === selectedFixture.id ? lineupDraft.playerIds : selectedFixture.startingPlayerIds ?? []
-    : []
+  // The Starting XI is 11 fixed places (GK, defence, midfield, attack); '' = empty place.
+  const startingSlots: string[] = (() => {
+    const saved = selectedFixture
+      ? lineupDraft && lineupDraft.fixtureId === selectedFixture.id ? lineupDraft.playerIds : selectedFixture.startingPlayerIds ?? []
+      : []
+    return Array.from({ length: 11 }, (_, index) => saved[index] ?? '')
+  })()
+  const startingPlayers = startingSlots.filter(Boolean)
   // Every senior player who does not start is a sub, unless an admin leaves them out
   // (injured, suspended). The draft stores who is left OUT, so new players join the bench.
   const nonStarters = playersResult.items.filter((player) => player.team === 'senior' && !startingPlayers.includes(player.id)).map((player) => player.id)
@@ -176,17 +181,14 @@ export default function LiveMatch() {
     return () => window.clearInterval(timer)
   }, [selectedFixture?.id, selectedFixture?.status])
 
-  function toggleStartingPlayer(playerId: string) {
+  /** Puts a player in one of the 11 places. Picking someone already in the XI swaps them. */
+  function setStartingSlot(index: number, playerId: string) {
     if (!selectedFixture) return
-    setLineupDraft((current) => {
-      const currentIds = current?.fixtureId === selectedFixture.id
-        ? current.playerIds
-        : selectedFixture.startingPlayerIds ?? []
-      const nextIds = currentIds.includes(playerId)
-        ? currentIds.filter((id) => id !== playerId)
-        : currentIds.length < 11 ? [...currentIds, playerId] : currentIds
-      return { fixtureId: selectedFixture.id, playerIds: nextIds }
-    })
+    const next = [...startingSlots]
+    const existing = playerId ? next.indexOf(playerId) : -1
+    if (existing >= 0 && existing !== index) next[existing] = next[index]
+    next[index] = playerId
+    setLineupDraft({ fixtureId: selectedFixture.id, playerIds: next })
   }
 
   function toggleBenchPlayer(playerId: string) {
@@ -213,7 +215,7 @@ export default function LiveMatch() {
         const fixtureRef = doc(db, 'fixtures', selectedFixture.id)
         const snapshot = await transaction.get(fixtureRef)
         if (!snapshot.exists() || snapshot.data().status !== 'upcoming') throw new Error('Lineups can only be confirmed before kick-off.')
-        transaction.update(fixtureRef, { startingPlayerIds: startingPlayers, benchPlayerIds: benchPlayers, formation, lineupConfirmed: true, updatedAt: serverTimestamp() })
+        transaction.update(fixtureRef, { startingPlayerIds: startingSlots.filter(Boolean), benchPlayerIds: benchPlayers, formation, lineupConfirmed: true, updatedAt: serverTimestamp() })
       })
       setMessage('Starting XI and subs confirmed for fans.')
     } catch (error) {
@@ -953,7 +955,7 @@ export default function LiveMatch() {
     {isAdmin && selectedFixture.status === 'upcoming' && <Card className="admin-card live-admin-card">
       <div className="matchday-admin-heading"><h2>Matchday squad</h2><span>{startingPlayers.length}/11 starters · {benchPlayers.length} subs</span></div>
       {hasClubTeam && <label className="admin-field formation-picker"><span>Formation</span><select value={formation} onChange={(event) => setFormationDraft({ fixtureId: selectedFixture.id, value: event.target.value as Formation })}>{FORMATIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
-      {hasClubTeam ? playersResult.loading ? <Skeleton className="live-player-skeleton" /> : <div className="matchday-squad-grid"><section><h3>Starting XI</h3><div className="starting-player-list">{clubPlayers.map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={startingPlayers.includes(player.id)} onChange={() => toggleStartingPlayer(player.id)} /><PlayerAvatar player={player} /><span>{player.name}{player.position ? <i className="squad-pos">{player.position}</i> : null}</span><small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section><section><h3>Subs <small className="squad-hint">everyone not starting · untick anyone not available</small></h3><div className="starting-player-list">{clubPlayers.filter((player) => !startingPlayers.includes(player.id)).map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={benchPlayers.includes(player.id)} onChange={() => toggleBenchPlayer(player.id)} /><PlayerAvatar player={player} /><span>{player.name}{player.position ? <i className="squad-pos">{player.position}</i> : null}</span>{benchPlayers.includes(player.id) ? <em className="sub-tag">SUB</em> : <em className="out-tag">OUT</em>}<small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section></div> : <p className="live-help">This fixture does not include Ekhaya FC. Its result can still be followed here.</p>}
+      {hasClubTeam ? playersResult.loading ? <Skeleton className="live-player-skeleton" /> : <div className="matchday-squad-grid"><section><h3>Starting XI <small className="squad-hint">{formation} · tap a place to choose the player</small></h3><ol className="xi-sheet">{slotRoles(formation).map((role, index) => { const chosen = clubPlayers.find((player) => player.id === startingSlots[index]); return <li key={index} className={`xi-slot xi-${role.toLowerCase()}${chosen ? ' filled' : ''}`}><span className="xi-role">{role}</span>{chosen ? <PlayerAvatar player={chosen} /> : <span className="xi-empty-avatar" aria-hidden="true">+</span>}<select aria-label={`${role} place ${index + 1}`} value={startingSlots[index]} onChange={(event) => setStartingSlot(index, event.target.value)}><option value="">Choose {role === 'GK' ? 'goalkeeper' : role === 'DEF' ? 'defender' : role === 'MID' ? 'midfielder' : 'forward'}…</option>{[...clubPlayers].sort((a, b) => Number(b.position === role) - Number(a.position === role) || a.name.localeCompare(b.name)).map((player) => <option key={player.id} value={player.id}>{player.number != null ? `#${player.number} ` : ''}{player.name}{player.position ? ` · ${player.position}` : ''}{startingSlots.includes(player.id) && startingSlots[index] !== player.id ? ' (in XI)' : ''}</option>)}</select>{chosen && <button type="button" className="xi-clear" aria-label={`Remove ${chosen.name}`} onClick={() => setStartingSlot(index, '')}>×</button>}</li> })}</ol></section><section><h3>Subs <small className="squad-hint">everyone not starting · untick anyone not available</small></h3><div className="starting-player-list">{clubPlayers.filter((player) => !startingPlayers.includes(player.id)).map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={benchPlayers.includes(player.id)} onChange={() => toggleBenchPlayer(player.id)} /><PlayerAvatar player={player} /><span>{player.name}{player.position ? <i className="squad-pos">{player.position}</i> : null}</span>{benchPlayers.includes(player.id) ? <em className="sub-tag">SUB</em> : <em className="out-tag">OUT</em>}<small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section></div> : <p className="live-help">This fixture does not include Ekhaya FC. Its result can still be followed here.</p>}
       {hasClubTeam && <Button type="button" variant="secondary" disabled={busy || startingPlayers.length !== 11 || playersResult.loading} onClick={() => void confirmLineup()}>Confirm lineup</Button>}
       <Button type="button" disabled={busy || (hasClubTeam && (startingPlayers.length !== 11 || playersResult.loading))} onClick={() => void startMatch()} icon={<Zap size={17} />}>Kick off</Button>
     </Card>}

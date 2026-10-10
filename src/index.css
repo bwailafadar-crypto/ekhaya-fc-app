@@ -1489,3 +1489,17 @@ select.auth-input { appearance: auto; }
 .starting-player .player-avatar { width: 34px; height: 34px; font-size: 11px; }
 .squad-pos { margin-left: 6px; padding: 1px 5px; border-radius: 4px; color: var(--muted); background: #EFEEE9; font-size: 9px; font-style: normal; font-weight: 800; }
 .starting-player-list { max-height: 420px; }
+
+/* ===== Starting XI team sheet: 11 places (update 57) ===== */
+.xi-sheet { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 6px; }
+.xi-slot { display: grid; grid-template-columns: 38px 34px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 12px; background: rgb(255 255 255 / 65%); border: 1px dashed rgb(201 162 39 / 45%); }
+.xi-slot.filled { border-style: solid; border-color: var(--glass-line); background: #fff; }
+.xi-role { text-align: center; padding: 3px 0; border-radius: 6px; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: .4px; }
+.xi-gk .xi-role { background: #E69A1A; }
+.xi-def .xi-role { background: #2F6FD0; }
+.xi-mid .xi-role { background: #2E9E50; }
+.xi-fwd .xi-role { background: #D04545; }
+.xi-slot .player-avatar, .xi-empty-avatar { width: 34px; height: 34px; font-size: 11px; }
+.xi-empty-avatar { display: grid; place-items: center; border-radius: 50%; color: var(--gold-dark); background: #F7F1DE; font-weight: 800; }
+.xi-slot select { width: 100%; min-width: 0; min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 9px; background: #FCFBF8; font-size: 13px; font-weight: 600; }
+.xi-clear { width: 28px; height: 28px; border: 0; border-radius: 50%; color: var(--muted); background: #EFEEE9; font-size: 16px; line-height: 1; }

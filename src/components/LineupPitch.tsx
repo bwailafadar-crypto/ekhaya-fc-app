@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Player } from '../types'
-import { arrangeFormation, isFormation } from '../utils/formations'
+import { isFormation, linesBySlot } from '../utils/formations'
 
 const ROWS: Array<{ key: NonNullable<Player['position']>; label: string }> = [
   { key: 'FWD', label: 'Forwards' },
@@ -38,7 +38,9 @@ function PitchPlayer({ player }: { player: Player }) {
 export default function LineupPitch({ starters, bench, formation }: { starters: Player[]; bench: Player[]; formation?: string | null }) {
   const useFormation = isFormation(formation) && starters.length >= 11
   // Attack at the top, goalkeeper at the bottom.
-  const lines = useFormation ? arrangeFormation(starters, formation).reverse() : null
+  // The XI is saved in team-sheet order (GK, defence, midfield, attack), so each
+  // player appears exactly where the coach put them. Attack is drawn at the top.
+  const lines = useFormation ? linesBySlot(starters, formation).reverse() : null
   const unplaced = useFormation ? [] : starters.filter((player) => !player.position)
   return (
     <div className="lineup">
