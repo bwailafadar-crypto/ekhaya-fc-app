@@ -49,6 +49,8 @@ export interface Fixture {
   startingPlayerIds?: string[]
   benchPlayerIds?: string[]
   lineupConfirmed?: boolean
+  /** Line-up shape, e.g. '4-3-3'. */
+  formation?: string
   statsApplied?: boolean
   /** Fan Zone: admin closed man-of-the-match voting for this match. */
   motmClosed?: boolean

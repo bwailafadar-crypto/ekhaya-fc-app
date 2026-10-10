@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { DEFAULT_FORMATION, FORMATIONS, isFormation, type Formation } from '../utils/formations'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import LineupPitch from '../components/LineupPitch'
 import MatchSummary from '../components/MatchSummary'
@@ -103,6 +104,7 @@ export default function LiveMatch() {
   const [selectedId, setSelectedId] = useState('')
   const [lineupDraft, setLineupDraft] = useState<{ fixtureId: string; playerIds: string[] } | null>(null)
   const [benchDraft, setBenchDraft] = useState<{ fixtureId: string; playerIds: string[] } | null>(null)
+  const [formationDraft, setFormationDraft] = useState<{ fixtureId: string; value: Formation } | null>(null)
   const [eventState, setEventState] = useState<{ fixtureId: string; items: MatchEvent[]; error: string | null } | null>(null)
   const [reactionState, setReactionState] = useState<{ fixtureId: string; items: Array<{ uid: string; emoji: string }> } | null>(null)
   const [quickAction, setQuickAction] = useState<QuickAction | null>(null)
@@ -137,6 +139,7 @@ export default function LiveMatch() {
     ? benchDraft && benchDraft.fixtureId === selectedFixture.id ? benchDraft.playerIds : savedBench.length ? nonStarters.filter((id) => !savedBench.includes(id)) : []
     : []
   const benchPlayers = nonStarters.filter((id) => !leftOut.includes(id))
+  const formation: Formation = selectedFixture && formationDraft?.fixtureId === selectedFixture.id ? formationDraft.value : isFormation(selectedFixture?.formation) ? selectedFixture.formation : DEFAULT_FORMATION
   const events = selectedFixture && eventState?.fixtureId === selectedFixture.id ? (eventState?.items ?? []) : []
   const eventsLoading = Boolean(selectedFixture && eventState?.fixtureId !== selectedFixture.id)
   const eventsError = selectedFixture && eventState?.fixtureId === selectedFixture.id ? eventState?.error ?? null : null
@@ -209,7 +212,7 @@ export default function LiveMatch() {
         const fixtureRef = doc(db, 'fixtures', selectedFixture.id)
         const snapshot = await transaction.get(fixtureRef)
         if (!snapshot.exists() || snapshot.data().status !== 'upcoming') throw new Error('Lineups can only be confirmed before kick-off.')
-        transaction.update(fixtureRef, { startingPlayerIds: startingPlayers, benchPlayerIds: benchPlayers, lineupConfirmed: true, updatedAt: serverTimestamp() })
+        transaction.update(fixtureRef, { startingPlayerIds: startingPlayers, benchPlayerIds: benchPlayers, formation, lineupConfirmed: true, updatedAt: serverTimestamp() })
       })
       setMessage('Starting XI and bench confirmed for fans.')
     } catch (error) {
@@ -284,6 +287,7 @@ export default function LiveMatch() {
           eventCount: 0,
           startingPlayerIds: hasClubTeam ? startingPlayers : [],
           benchPlayerIds: hasClubTeam ? benchPlayers : [], lineupConfirmed: hasClubTeam,
+          ...(hasClubTeam ? { formation } : {}),
           liveStartedAt: kickoffAt, updatedAt: serverTimestamp(),
         })
       })
@@ -947,6 +951,7 @@ export default function LiveMatch() {
 
     {isAdmin && selectedFixture.status === 'upcoming' && <Card className="admin-card live-admin-card">
       <div className="matchday-admin-heading"><h2>Matchday squad</h2><span>{startingPlayers.length}/11 starters · {benchPlayers.length} subs</span></div>
+      {hasClubTeam && <label className="admin-field formation-picker"><span>Formation</span><select value={formation} onChange={(event) => setFormationDraft({ fixtureId: selectedFixture.id, value: event.target.value as Formation })}>{FORMATIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
       {hasClubTeam ? playersResult.loading ? <Skeleton className="live-player-skeleton" /> : <div className="matchday-squad-grid"><section><h3>Starting XI</h3><div className="starting-player-list">{clubPlayers.map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={startingPlayers.includes(player.id)} onChange={() => toggleStartingPlayer(player.id)} /><span>{player.name}</span><small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section><section><h3>Subs <small className="squad-hint">everyone not starting · untick anyone not available</small></h3><div className="starting-player-list">{clubPlayers.filter((player) => !startingPlayers.includes(player.id)).map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={benchPlayers.includes(player.id)} onChange={() => toggleBenchPlayer(player.id)} /><span>{player.name}</span>{benchPlayers.includes(player.id) ? <em className="sub-tag">SUB</em> : <em className="out-tag">OUT</em>}<small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section></div> : <p className="live-help">This fixture does not include Ekhaya FC. Its result can still be followed here.</p>}
       {hasClubTeam && <Button type="button" variant="secondary" disabled={busy || startingPlayers.length !== 11 || playersResult.loading} onClick={() => void confirmLineup()}>Confirm lineup</Button>}
       <Button type="button" disabled={busy || (hasClubTeam && (startingPlayers.length !== 11 || playersResult.loading))} onClick={() => void startMatch()} icon={<Zap size={17} />}>Kick off</Button>
@@ -991,7 +996,7 @@ export default function LiveMatch() {
         <input className="match-event-edit-input" name="playerName" defaultValue={matchEvent.playerName ?? ''} placeholder="Scorer / player name" /><input className="match-event-edit-input" name="assistPlayerName" defaultValue={matchEvent.assistPlayerName ?? ''} placeholder="Assist name" /><div className="live-form-grid"><input className="match-event-edit-input" name="subbedOutPlayerName" defaultValue={matchEvent.subbedOutPlayerName ?? ''} placeholder="Player off" /><input className="match-event-edit-input" name="subbedInPlayerName" defaultValue={matchEvent.subbedInPlayerName ?? ''} placeholder="Player on" /></div><label className="admin-field"><span>Commentary</span><input name="text" defaultValue={matchEvent.text ?? ''} maxLength={180} /></label><label className="admin-field"><span>Card</span><select name="card" defaultValue={matchEvent.card ?? 'yellow'}><option value="yellow">Yellow</option><option value="red">Red</option></select></label><div className="admin-actions"><Button type="submit" variant="secondary" disabled={busy}>Save event</Button><button type="button" className="match-event-delete" disabled={busy} onClick={() => void deleteMatchEvent(matchEvent.id)}><Trash2 size={15} />Delete</button></div></form></details>}</div></article>) : <div className="live-timeline-empty">{isLive ? 'No updates yet. The match is ready.' : 'No match events recorded.'}</div>}</section>}
       {isLive && <section className="matchday-reactions" aria-label="Match reactions">{['⚽', '🔥', '👏', '😱'].map((emoji) => <button type="button" key={emoji} aria-label={`React ${emoji}`} aria-pressed={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji)} className={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji) ? 'selected' : ''} onClick={() => void reactToMatch(emoji)}><span>{emoji}</span><strong>{reactions.filter((reaction) => reaction.emoji === emoji).length}</strong></button>)}</section>}
     </>}
-    {activeTab === 'lineups' && <section className="matchday-lineups"><div className="matchday-section-title"><h2>Lineups</h2>{selectedFixture.status === 'upcoming' && <Badge variant="gold">{homeLineup.length ? 'CONFIRMED' : 'AWAITING'}</Badge>}</div>{homeLineup.length ? <LineupPitch starters={homeLineup} bench={benchLineup} /> : <p className="live-timeline-empty">The confirmed Ekhaya XI will appear here before kick-off.</p>}</section>}
+    {activeTab === 'lineups' && <section className="matchday-lineups"><div className="matchday-section-title"><h2>Lineups</h2>{selectedFixture.status === 'upcoming' && <Badge variant="gold">{homeLineup.length ? 'CONFIRMED' : 'AWAITING'}</Badge>}</div>{homeLineup.length ? <LineupPitch starters={homeLineup} bench={benchLineup} formation={selectedFixture.formation} /> : <p className="live-timeline-empty">The confirmed Ekhaya XI will appear here before kick-off.</p>}</section>}
     {activeTab === 'stats' && <section className="matchday-stats-view"><div className="matchday-section-title"><h2>Match stats</h2><span>Live comparison</span></div>{(['shots', 'shotsOnTarget', 'shotsOffTarget', 'corners', 'fouls', 'offsides'] as const).map((key) => { const value = (stats: MatchStats) => key === 'shotsOffTarget' ? Math.max(0, stats.shots - stats.shotsOnTarget) : stats[key]; const home = value(homeStats); const away = value(awayStats); const total = Math.max(1, home, away); return <div className="match-stat-compare" key={key}><div><strong>{home}</strong><span>{key === 'shotsOnTarget' ? 'Shots on target' : key === 'shotsOffTarget' ? 'Shots off target' : key[0].toUpperCase() + key.slice(1)}</span><strong>{away}</strong></div><div className="match-stat-bars"><i style={{ width: `${home / total * 50}%` }} /><i style={{ width: `${away / total * 50}%` }} /></div></div> })}<div className="matchday-stat-legend"><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div></section>}
     {isFinished && <MatchSummary fixture={selectedFixture} />}
     {standingsResult.error && isAdmin && <p className="live-error">Standings could not be loaded: {standingsResult.error}</p>}

@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { buildMatchSnapshot, buildTeamsSnapshot, fingerprint, SNAPSHOT_MAX_BYTES } from '../../src/data/snapshotPayload.ts'
 import type { Fixture } from '../../src/types.ts'
 import { matchAlerts, newsAlert } from '../../src/utils/alertRules.ts'
-import { competitionOf, isCupCompetition, matchesFilter } from '../../src/utils/competitions.ts'
+import { competitionLabel, competitionOf, isCupCompetition, matchesFilter } from '../../src/utils/competitions.ts'
 import { cupStatus } from '../../src/utils/cupSeason.ts'
 import { ekhayaOutcome } from '../../src/utils/football.ts'
 import { rankPredictions } from '../../src/utils/leaderboardCalc.ts'
@@ -20,6 +20,10 @@ test('competitions: cups are recognised, everything else is league', () => {
   assert.ok(matchesFilter('Airtel Top 8', 'cups'))
   assert.ok(!matchesFilter('TNM Super League', 'cups'))
   assert.ok(matchesFilter('anything', 'all'))
+  // Matches saved under the league's old name show its current name.
+  assert.equal(competitionLabel('TNM Super League'), 'FDH Championship')
+  assert.equal(competitionLabel('FDH Championship'), 'FDH Championship')
+  assert.equal(competitionLabel('Airtel Top 8'), 'Airtel Top 8')
 })
 
 test('results: W/D/L from Ekhaya\'s point of view', () => {
@@ -81,4 +85,20 @@ test('shared snapshot: switches itself off when too big (fans read directly)', (
   assert.equal(buildTeamsSnapshot([{ id: 't', logoDataUrl: big }]).doc.disabled, true)
   assert.equal(buildMatchSnapshot({ fixtures: [{ id: 'a', note: big }], standings: [] }).doc.disabled, true)
   assert.equal(buildTeamsSnapshot([{ id: 't', name: 'Ekhaya FC' }]).doc.disabled, undefined)
+})
+
+test('formations: keeper first, then lines from defence to attack', async () => {
+  const { arrangeFormation, FORMATIONS } = await import('../../src/utils/formations.ts')
+  const xi = [
+    { id: 'f1', position: 'FWD' }, { id: 'g', position: 'GK' }, { id: 'd1', position: 'DEF' }, { id: 'm1', position: 'MID' },
+    { id: 'd2', position: 'DEF' }, { id: 'm2', position: 'MID' }, { id: 'd3', position: 'DEF' }, { id: 'f2', position: 'FWD' },
+    { id: 'm3', position: 'MID' }, { id: 'd4', position: 'DEF' }, { id: 'u', position: null },
+  ]
+  const lines = arrangeFormation(xi, '4-3-3')
+  assert.deepEqual(lines.map((line) => line.length), [1, 4, 3, 3])
+  assert.equal(lines[0][0].id, 'g')
+  assert.deepEqual(lines[1].map((p) => p.id), ['d1', 'd2', 'd3', 'd4'])
+  assert.deepEqual(arrangeFormation(xi, '3-5-2').map((line) => line.length), [1, 3, 5, 2])
+  // Every formation uses exactly 10 outfield players.
+  for (const f of FORMATIONS) assert.equal(f.split('-').map(Number).reduce((a, b) => a + b, 0), 10, f)
 })

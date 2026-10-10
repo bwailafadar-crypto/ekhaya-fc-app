@@ -1469,3 +1469,18 @@ select.auth-input { appearance: auto; }
 .lineup-subs { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; }
 .lineup-subs li { display: flex; align-items: center; gap: 6px; }
 .lineup-subs .sub-tag { margin: 0; }
+
+/* ===== Formations + tappable players (update 55) ===== */
+.pitch-player { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.pitch-player:active .pitch-shirt { transform: scale(.94); }
+.pitch-shirt { position: relative; width: 42px; height: 42px; border-radius: 50%; overflow: visible; transition: transform 120ms ease; }
+.pitch-shirt img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.pitch-initials { font-size: 13px; }
+.pitch-number { position: absolute; right: -6px; bottom: -4px; min-width: 18px; height: 18px; padding: 0 4px; display: grid; place-items: center; border-radius: 9px; color: #fff; background: #1C1C1C; border: 1.5px solid #fff; font-family: 'Oswald', sans-serif; font-size: 10px; line-height: 1; }
+.lineup-formation { margin: 0 0 8px; text-align: center; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+.lineup-formation strong { color: var(--gold-dark); font-family: 'Oswald', sans-serif; font-size: 16px; }
+.lineup-tip { margin: 6px 0 0; text-align: center; color: var(--muted); font-size: 11px; }
+.lineup-subs a { color: inherit; text-decoration: none; font-weight: 600; }
+.lineup-subs a:active { color: var(--gold-dark); }
+.formation-picker { margin-bottom: 12px; }
+.formation-picker select { font-size: 15px; font-weight: 700; }

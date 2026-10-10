@@ -105,5 +105,5 @@ function NextLineup({ fixture }: { fixture: Fixture }) {
   const pick = (ids: string[] | undefined) => (ids ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
   const starters = pick(fixture.startingPlayerIds)
   if (!starters.length) return null
-  return <details className="home-lineup" open><summary>Starting XI confirmed</summary><LineupPitch starters={starters} bench={pick(fixture.benchPlayerIds)} /></details>
+  return <details className="home-lineup" open><summary>Starting XI confirmed</summary><LineupPitch starters={starters} bench={pick(fixture.benchPlayerIds)} formation={fixture.formation} /></details>
 }
