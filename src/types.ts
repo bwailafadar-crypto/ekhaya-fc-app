@@ -51,6 +51,8 @@ export interface Fixture {
   lineupConfirmed?: boolean
   /** Line-up shape, e.g. '4-3-3'. */
   formation?: string
+  /** True while an admin is correcting a finished match. */
+  editing?: boolean
   statsApplied?: boolean
   /** Fan Zone: admin closed man-of-the-match voting for this match. */
   motmClosed?: boolean

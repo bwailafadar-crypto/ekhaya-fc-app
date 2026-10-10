@@ -15,7 +15,7 @@ import type { Fixture, MatchEvent, Player } from '../types'
 import { useLiveDocs } from '../hooks/useLiveDocs'
 import { useMyDoc } from '../hooks/useCounts'
 import PlayerAvatar from '../components/PlayerAvatar'
-import { sortByDate } from '../utils/football'
+import { isLiveNow, isPlayed, sortByDate } from '../utils/football'
 import { matchMinute } from '../utils/matchClock'
 
 export default function Home() {
@@ -27,9 +27,9 @@ export default function Home() {
   const competitions = useFlag('competitions')
   const newsResult = usePublishedNews()
   const [clockNow, setClockNow] = useState(0)
-  const liveMatch = fixturesResult.items.find((fixture) => fixture.status === 'live' && !fixture.isTest)
+  const liveMatch = fixturesResult.items.find((fixture) => isLiveNow(fixture) && !fixture.isTest)
   const upcoming = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')[0]
-  const lastResult = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'finished' && !fixture.isTest), 'desc')[0]
+  const lastResult = sortByDate(fixturesResult.items.filter((fixture) => isPlayed(fixture) && !fixture.isTest), 'desc')[0]
   const latestNews = newsResult.items.slice(0, 3)
 
   const liveMatchId = liveMatch?.id

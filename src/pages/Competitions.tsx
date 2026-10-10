@@ -6,11 +6,11 @@ import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture, Standing } from '../types'
 import { CUPS, competitionOf } from '../utils/competitions'
 import { SEASON, cupMatches, inSeason, isEkhaya, opponent } from '../utils/cupSeason'
-import { ekhayaOutcome, formatMalawiDate, sortByDate } from '../utils/football'
+import { ekhayaOutcome, formatMalawiDate, isPlayed, sortByDate } from '../utils/football'
 
 function LeagueCard({ fixtures, standings, loading }: { fixtures: Fixture[]; standings: Standing[]; loading: boolean }) {
   const row = standings.find((item) => item.id === 'ekhaya-fc' || isEkhaya(item.team))
-  const played = fixtures.filter((fixture) => fixture.status === 'finished')
+  const played = fixtures.filter(isPlayed)
   const outcomes = played.map(ekhayaOutcome)
   const count = (value: 'W' | 'D' | 'L') => outcomes.filter((item) => item === value).length
   const next = sortByDate(fixtures.filter((fixture) => fixture.status === 'upcoming'), 'asc')[0]

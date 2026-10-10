@@ -14,7 +14,7 @@ import { db } from '../firebase'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { useCounts, useMyDoc } from '../hooks/useCounts'
 import type { Fixture, MotmVote, Player, Poll, PollVote, ScorePrediction } from '../types'
-import { formatMalawiDate, formatMalawiTime, sortByDate } from '../utils/football'
+import { formatMalawiDate, formatMalawiTime, isPlayed, sortByDate } from '../utils/football'
 
 const MAX_GOALS = 20
 
@@ -268,7 +268,7 @@ export default function FanZone() {
   const polls = useFirestoreCollection<Poll>('polls')
   const real = fixtures.items.filter((fixture) => !fixture.isTest)
   const nextMatch = sortByDate(real.filter((fixture) => fixture.status === 'upcoming'), 'asc')[0]
-  const lastMatch = sortByDate(real.filter((fixture) => fixture.status === 'finished'), 'desc')[0]
+  const lastMatch = sortByDate(real.filter(isPlayed), 'desc')[0]
   const sortedPolls = polls.items.slice().sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0))
   const openPolls = sortedPolls.filter((poll) => poll.status === 'open')
   const closedPolls = sortedPolls.filter((poll) => poll.status !== 'open').slice(0, 3)

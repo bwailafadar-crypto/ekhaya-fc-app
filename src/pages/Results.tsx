@@ -8,12 +8,12 @@ import { cupMatches, cupStatus } from '../utils/cupSeason'
 import { Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture } from '../types'
-import { ekhayaOutcome, sortByDate } from '../utils/football'
+import { ekhayaOutcome, isPlayed, sortByDate } from '../utils/football'
 
 export default function Results() {
   const { items, loading, error } = useFirestoreCollection<Fixture>('fixtures')
   const [filter, setFilter] = useCompetitionFilter()
-  const results = sortByDate(items.filter((fixture) => fixture.status === 'finished' && !fixture.isTest && matchesFilter(fixture.competition, filter)), 'desc')
+  const results = sortByDate(items.filter((fixture) => isPlayed(fixture) && !fixture.isTest && matchesFilter(fixture.competition, filter)), 'desc')
   const form = results
     .filter((fixture) => fixture.home.toLowerCase() === 'ekhaya fc' || fixture.away.toLowerCase() === 'ekhaya fc')
     .slice(0, 5)

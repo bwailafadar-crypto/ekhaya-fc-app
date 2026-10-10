@@ -3,6 +3,7 @@
 import { collection, doc, getDocs, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../firebase'
 import type { Fixture } from '../types'
+import { isPlayed } from './football'
 import { rankPredictions, type ScoredPrediction } from './leaderboardCalc'
 
 export const LEADERBOARD_TOP = 100
@@ -28,7 +29,7 @@ async function doRecalculate(force: boolean) {
   const fixtures = await getDocs(collection(db, 'fixtures'))
   const finished = fixtures.docs
     .map((item) => ({ ...(item.data() as Fixture), id: item.id }))
-    .filter((fixture) => fixture.status === 'finished' && !fixture.isTest)
+    .filter((fixture) => isPlayed(fixture) && !fixture.isTest)
   if (!force) {
     // Same results within the same 10 minutes: another admin is already on it.
     const results = finished.map((fixture) => `${fixture.id}:${fixture.homeScore ?? 0}-${fixture.awayScore ?? 0}`).sort().join('|')

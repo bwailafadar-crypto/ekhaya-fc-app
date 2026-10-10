@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import { buildMatchSnapshot, buildTeamsSnapshot, fingerprint, SNAPSHOT_MAX_BYTES } from '../../src/data/snapshotPayload.ts'
 import type { Fixture } from '../../src/types.ts'
 import { matchAlerts, newsAlert } from '../../src/utils/alertRules.ts'
+import { isLiveNow, isPlayed } from '../../src/utils/football.ts'
 import { competitionLabel, competitionOf, isCupCompetition, matchesFilter } from '../../src/utils/competitions.ts'
 import { cupStatus } from '../../src/utils/cupSeason.ts'
 import { ekhayaOutcome } from '../../src/utils/football.ts'
@@ -58,6 +59,10 @@ test('alerts: kick-off, goal and full time fire once, test matches never', () =>
   assert.match(matchAlerts({ ...base, status: 'live' }, { ...base, status: 'finished' })[0]?.title ?? '', /^Full time/)
   assert.equal(matchAlerts({ ...base, status: 'upcoming' }, { ...base, status: 'live', isTest: true }).length, 0)
   assert.equal(matchAlerts(undefined, { ...base, status: 'finished' }).length, 0)
+  // Editing a finished match never alerts fans: reopening, goals while editing, or saving.
+  assert.equal(matchAlerts({ ...base, status: 'finished' }, { ...base, status: 'live', editing: true }).length, 0)
+  assert.equal(matchAlerts({ ...base, status: 'live', editing: true, homeScore: 0 }, { ...base, status: 'live', editing: true, homeScore: 1 }).length, 0)
+  assert.equal(matchAlerts({ ...base, status: 'live', editing: true }, { ...base, status: 'finished' }).length, 0)
   assert.ok(newsAlert({ status: 'draft' }, { id: 'n', status: 'published', title: 'Hi' }))
   assert.equal(newsAlert({ status: 'published' }, { id: 'n', status: 'published', title: 'Hi' }), null)
 })
@@ -110,4 +115,12 @@ test('team sheet: 11 places in formation order, drawn where the coach put them',
   assert.equal(slotRoles('5-4-1').length, 11)
   const xi = Array.from({ length: 11 }, (_, i) => `p${i}`)
   assert.deepEqual(linesBySlot(xi, '4-4-2'), [['p0'], ['p1', 'p2', 'p3', 'p4'], ['p5', 'p6', 'p7', 'p8'], ['p9', 'p10']])
+})
+
+test('a match being edited after full time still counts as a result for fans', () => {
+  const f = { id: 'x', home: 'Ekhaya FC', away: 'Blue Eagles', date: '2026-10-01T13:00:00Z', competition: 'FDH Championship' }
+  assert.equal(isPlayed({ ...f, status: 'live', editing: true }), true)
+  assert.equal(isLiveNow({ ...f, status: 'live', editing: true }), false)
+  assert.equal(isLiveNow({ ...f, status: 'live' }), true)
+  assert.equal(isPlayed({ ...f, status: 'live' }), false)
 })

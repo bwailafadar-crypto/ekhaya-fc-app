@@ -8,7 +8,7 @@ import { cupMatches } from '../utils/cupSeason'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture } from '../types'
-import { sortByDate } from '../utils/football'
+import { isPlayed, sortByDate } from '../utils/football'
 
 const teamAliases: Record<string, string> = {
   'big bullets': 'fcb nyasa big bullets',
@@ -27,7 +27,7 @@ export default function Fixtures() {
   const { items, loading, error } = useFirestoreCollection<Fixture>('fixtures')
   const [filter, setFilter] = useCompetitionFilter()
   const fixtures = sortByDate(items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest && matchesFilter(fixture.competition, filter)), 'asc')
-  const completed = items.filter((fixture) => fixture.status === 'finished' && !fixture.isTest
+  const completed = items.filter((fixture) => isPlayed(fixture) && !fixture.isTest
     && fixture.homeScore != null && fixture.awayScore != null)
 
   function previousMeeting(fixture: Fixture) {

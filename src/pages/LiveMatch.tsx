@@ -777,7 +777,7 @@ export default function LiveMatch() {
         ]
         transaction.update(fixtureRef, {
           status: 'finished', period: 'full-time', minute: finalMinute,
-          clockElapsedSeconds: clockSeconds, periodStartedAt: deleteField(), statsApplied: true, statsSkipped: false,
+          clockElapsedSeconds: clockSeconds, periodStartedAt: deleteField(), statsApplied: true, statsSkipped: false, editing: deleteField(),
           statsAppliedChanges: { standings: standingChanges, players: isPractice ? {} : playerDeltas },
           finishedAt: serverTimestamp(), updatedAt: serverTimestamp(),
         })
@@ -799,12 +799,21 @@ export default function LiveMatch() {
     }
   }
 
-  async function resetMatch() {
+  /**
+   * mode 'reset': back to upcoming, events deleted.
+   * mode 'edit': reopen a finished match for corrections. Events, score, line-up and
+   * stats are kept; its table and player-stat changes are taken back out, and are
+   * applied again (with the corrections) when the admin taps Save changes.
+   */
+  async function resetMatch(mode: 'reset' | 'edit' = 'reset') {
     if (!selectedFixture || selectedFixture.status === 'upcoming') return
+    if (mode === 'edit' && selectedFixture.status !== 'finished') return
     const applied = Boolean(selectedFixture.statsApplied)
-    if (!window.confirm(applied
-      ? 'Reset this match? Its standings and player-stat changes will be reversed, then its events deleted.'
-      : 'Reset this match? Its events will be deleted and its score cleared.')) return
+    if (!window.confirm(mode === 'edit'
+      ? 'Edit this match? You can change scorers, minutes, cards, the score and stats, then tap Save changes. Fans get no alerts while you edit.'
+      : applied
+        ? 'Reset this match? Its standings and player-stat changes will be reversed, then its events deleted.'
+        : 'Reset this match? Its events will be deleted and its score cleared.')) return
     setBusy(true)
     setProblem('')
     try {
@@ -866,7 +875,14 @@ export default function LiveMatch() {
           reversedRows.sort((a, b) => b.data.points - a.data.points || b.data.goalDifference - a.data.goalDifference || b.data.goalsFor - a.data.goalsFor || a.data.position - b.data.position)
         }
 
-        transaction.update(fixtureRef, {
+        if (mode === 'edit') {
+          // Back to a paused second half (clock frozen), marked as a correction.
+          transaction.update(fixtureRef, {
+            status: 'live', period: 'second-half', editing: true, periodStartedAt: deleteField(),
+            clockElapsedSeconds: Math.max(Number(fixture.clockElapsedSeconds ?? 0), 90 * 60),
+            statsApplied: false, statsAppliedChanges: deleteField(), statsSkipped: deleteField(), updatedAt: serverTimestamp(),
+          })
+        } else transaction.update(fixtureRef, {
           status: 'upcoming', homeScore: deleteField(), awayScore: deleteField(), minute: deleteField(),
           eventCount: deleteField(), startingPlayerIds: deleteField(), liveStartedAt: deleteField(), finishedAt: deleteField(),
           motmClosed: deleteField(), motmTally: deleteField(), motmWinnerId: deleteField(), motmWinnerVotes: deleteField(), motmTotalVotes: deleteField(),
@@ -874,7 +890,7 @@ export default function LiveMatch() {
           period: deleteField(), clockElapsedSeconds: deleteField(), firstHalfSeconds: deleteField(), addedTime: deleteField(), matchStats: deleteField(),
           statsApplied: false, statsAppliedChanges: deleteField(), statsSkipped: deleteField(), updatedAt: serverTimestamp(),
         })
-        eventDocs.forEach((snapshot) => { if (snapshot.exists()) transaction.delete(snapshot.ref) })
+        if (mode === 'reset') eventDocs.forEach((snapshot) => { if (snapshot.exists()) transaction.delete(snapshot.ref) })
         if (fixture.statsApplied && changes) {
           reversedRows.forEach((row, index) => {
             if (row.data.position !== index + 1 || changes.standings.some((item) => item.standingId === row.ref.id)) {
@@ -894,7 +910,9 @@ export default function LiveMatch() {
       })
       setLineupDraft(null)
       setBenchDraft(null)
-      setMessage('Match reset to upcoming. Its events and any applied stat changes were removed.')
+      setMessage(mode === 'edit'
+        ? 'Editing the result. Change anything below, then tap Save changes. The table and player stats update when you save.'
+        : 'Match reset to upcoming. Its events and any applied stat changes were removed.')
     } catch (error) {
       reportError(error)
     } finally {
@@ -912,8 +930,9 @@ export default function LiveMatch() {
     <EmptyState icon={Activity} title="No match to follow" description="Live match updates will appear here when a fixture is selected." />
   </>
 
-  const isLive = selectedFixture.status === 'live'
-  const isFinished = selectedFixture.status === 'finished'
+  // While staff edit a finished match, fans keep seeing it as full time.
+  const isLive = selectedFixture.status === 'live' && (isAdmin || !selectedFixture.editing)
+  const isFinished = selectedFixture.status === 'finished' || (selectedFixture.status === 'live' && !isLive)
   const homeScore = selectedFixture.homeScore ?? 0
   const awayScore = selectedFixture.awayScore ?? 0
   const opponentScore = sameTeam(selectedFixture.home, CLUB_NAME) ? awayScore : homeScore
@@ -937,9 +956,9 @@ export default function LiveMatch() {
         ? <><span><FlaskConical size={15} aria-hidden="true" /> You are in a practice match</span><Button type="button" variant="ghost" disabled={busy} onClick={() => void deletePracticeMatch()} icon={<Trash2 size={15} />}>Delete practice</Button></>
         : <><span><FlaskConical size={15} aria-hidden="true" /> Rehearse match day safely</span><Button type="button" variant="secondary" disabled={busy} onClick={() => void createPracticeMatch()} icon={<FlaskConical size={15} />}>Start practice match</Button></>}
     </div>}
-    {fixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab('timeline'); setQuickAction(null) }}>{fixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.isTest ? '🧪 Practice: ' : ''}{fixture.home} v {fixture.away} · {fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
+    {fixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab('timeline'); setQuickAction(null) }}>{fixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.isTest ? '🧪 Practice: ' : ''}{fixture.home} v {fixture.away} · {fixture.editing ? 'FT · editing' : fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
     <section className={`matchday-scoreboard${isLive ? ' matchday-scoreboard-live' : ''}`} aria-label="Match scoreboard">
-      <div className="matchday-scoreboard-top"><span>{selectedFixture.isTest ? <span className="practice-badge"><FlaskConical size={12} aria-hidden="true" /> PRACTICE · only admins see this</span> : competitionLabel(selectedFixture.competition)}</span><div>{isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
+      <div className="matchday-scoreboard-top"><span>{selectedFixture.isTest ? <span className="practice-badge"><FlaskConical size={12} aria-hidden="true" /> PRACTICE · only admins see this</span> : competitionLabel(selectedFixture.competition)}</span><div>{isLive && selectedFixture.editing ? <Badge variant="gold">EDITING</Badge> : isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
       <div className="matchday-teams">
         <div className="matchday-team"><TeamLogo name={selectedFixture.home} crest /><strong>{selectedFixture.home}</strong></div>
         <div className="matchday-score"><strong>{selectedFixture.status === 'upcoming' ? 'vs' : `${homeScore} – ${awayScore}`}</strong>{isLive && <span>{matchMinute(selectedFixture, clockNow)}</span>}{selectedFixture.period === 'half-time' && <span>HALF-TIME</span>}{selectedFixture.period === 'full-time' && <span>FULL-TIME</span>}</div>
@@ -960,11 +979,12 @@ export default function LiveMatch() {
       <Button type="button" disabled={busy || (hasClubTeam && (startingPlayers.length !== 11 || playersResult.loading))} onClick={() => void startMatch()} icon={<Zap size={17} />}>Kick off</Button>
     </Card>}
 
+    {isAdmin && isLive && selectedFixture.editing && <p className="editing-banner">✏️ Editing a finished match. Fans see this as full time (score updates as you fix it) and get no alerts. When you are done, tap <strong>Save changes</strong>.</p>}
     {isAdmin && isLive && <section className="matchday-console">
       <div className="matchday-period-controls"><div><span className="matchday-period-label">{selectedFixture.period === 'first-half' ? 'FIRST HALF' : selectedFixture.period === 'half-time' ? 'HALF-TIME' : 'SECOND HALF'}</span><strong>{matchMinute(selectedFixture, clockNow)}</strong></div>
         {selectedFixture.period === 'first-half' && <Button type="button" variant="secondary" disabled={busy} onClick={() => void setMatchPeriod('half-time')}>Half-time</Button>}
         {selectedFixture.period === 'half-time' && <Button type="button" disabled={busy} onClick={() => void setMatchPeriod('second-half')}>Start 2nd half</Button>}
-        {selectedFixture.period === 'second-half' && <Button type="button" variant="danger" disabled={busy} onClick={() => void endMatch()}>Full-time</Button>}
+        {selectedFixture.period === 'second-half' && <Button type="button" variant="danger" disabled={busy} onClick={() => void endMatch()}>{selectedFixture.editing ? 'Save changes' : 'Full-time'}</Button>}
         {activePeriod(selectedFixture.period) && <form className="clock-controls" onSubmit={(event) => { event.preventDefault(); const value = Number(new FormData(event.currentTarget).get('minute')); void setClockMinute(value) }}>
           <span>Clock</span>
           <button type="button" aria-label="Clock back one minute" disabled={busy} onClick={() => void setClockMinute(currentEventMinute(selectedFixture, clockNow) - 1)}>−1′</button>
@@ -988,7 +1008,7 @@ export default function LiveMatch() {
       <Button type="button" variant="ghost" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button>
     </section>}
 
-    {isAdmin && isFinished && <Card className="admin-card live-admin-card"><h2>Match finished</h2><p className="live-help">Resetting reverses its recorded table and player-stat changes.</p><Button type="button" variant="danger" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button></Card>}
+    {isAdmin && isFinished && <Card className="admin-card live-admin-card"><h2>Match finished</h2><p className="live-help"><strong>Edit match</strong> to correct scorers, minutes, cards, the score or stats. The table and player stats are fixed when you save. <strong>Reset</strong> wipes the match back to upcoming.</p><div className="finished-actions"><Button type="button" disabled={busy} onClick={() => void resetMatch('edit')}>Edit match</Button><Button type="button" variant="ghost" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button></div></Card>}
     {isLive && !isAdmin && <div className="live-fan-note"><span className="live-pulse-dot" />Live from Chiwembe Stadium</div>}
     {eventsError && <p className="live-error" role="alert"><ShieldAlert size={15} />{eventsError}</p>}
 

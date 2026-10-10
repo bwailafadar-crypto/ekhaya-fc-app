@@ -21,8 +21,18 @@ export function formatMalawiTime(date: string) {
   }).format(new Date(date))
 }
 
+/** A finished match that staff reopened to correct still counts as a result for fans. */
+export function isPlayed(fixture: Fixture) {
+  return fixture.status === 'finished' || (fixture.status === 'live' && Boolean(fixture.editing))
+}
+
+/** Live for fans: a match being edited after full time is not live. */
+export function isLiveNow(fixture: Fixture) {
+  return fixture.status === 'live' && !fixture.editing
+}
+
 export function ekhayaOutcome(fixture: Fixture): 'W' | 'D' | 'L' | null {
-  if (fixture.status !== 'finished' || fixture.homeScore == null || fixture.awayScore == null) return null
+  if (!isPlayed(fixture) || fixture.homeScore == null || fixture.awayScore == null) return null
   const isHome = fixture.home.toLocaleLowerCase() === 'ekhaya fc'
   const isAway = fixture.away.toLocaleLowerCase() === 'ekhaya fc'
   if (!isHome && !isAway) return null

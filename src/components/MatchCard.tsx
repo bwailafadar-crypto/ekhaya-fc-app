@@ -1,7 +1,7 @@
 import { MapPin, Trophy } from 'lucide-react'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import type { Fixture } from '../types'
-import { ekhayaOutcome, formatMalawiDate, formatMalawiTime } from '../utils/football'
+import { ekhayaOutcome, formatMalawiDate, formatMalawiTime, isLiveNow, isPlayed } from '../utils/football'
 import TeamLogo from './TeamLogo'
 import { Badge, Card } from './UI'
 
@@ -21,7 +21,7 @@ export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixtu
         </span>
         {outcome
           ? <Badge variant={outcome === 'W' ? 'success' : outcome === 'D' ? 'default' : 'danger'}>{outcome}</Badge>
-          : fixture.status === 'live' ? <Badge variant="live">LIVE</Badge> : <span className="match-status">{fixture.status === 'finished' ? 'FT' : 'FIXTURE'}</span>}
+          : isLiveNow(fixture) ? <Badge variant="live">LIVE</Badge> : <span className="match-status">{isPlayed(fixture) ? 'FT' : 'FIXTURE'}</span>}
       </div>
       <div className="match-card-teams">
         <div className="match-team">

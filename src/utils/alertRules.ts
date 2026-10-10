@@ -18,7 +18,8 @@ function scoreLine(f: FixtureLike) {
 
 /** Alerts caused by one change to a fixture, each with a unique key for the one-time lock. */
 export function matchAlerts(before: FixtureLike | undefined, after: FixtureLike | undefined): PlannedAlert[] {
-  if (!before || !after || after.isTest || !isClubMatch(after)) return []
+  // Corrections to a finished match never alert fans.
+  if (!before || !after || after.isTest || after.editing || before.editing || !isClubMatch(after)) return []
   const alerts: PlannedAlert[] = []
   // Every kick-off gets its own key, so a reset-and-replayed match alerts again.
   const run = `${after.id}-${after.kickoffAt?.seconds ?? 'k'}`
