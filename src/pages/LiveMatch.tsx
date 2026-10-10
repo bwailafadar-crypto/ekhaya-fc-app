@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import PlayerAvatar from '../components/PlayerAvatar'
 import { DEFAULT_FORMATION, FORMATIONS, isFormation, type Formation } from '../utils/formations'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import LineupPitch from '../components/LineupPitch'
@@ -214,7 +215,7 @@ export default function LiveMatch() {
         if (!snapshot.exists() || snapshot.data().status !== 'upcoming') throw new Error('Lineups can only be confirmed before kick-off.')
         transaction.update(fixtureRef, { startingPlayerIds: startingPlayers, benchPlayerIds: benchPlayers, formation, lineupConfirmed: true, updatedAt: serverTimestamp() })
       })
-      setMessage('Starting XI and bench confirmed for fans.')
+      setMessage('Starting XI and subs confirmed for fans.')
     } catch (error) {
       reportError(error)
     } finally {
@@ -952,7 +953,7 @@ export default function LiveMatch() {
     {isAdmin && selectedFixture.status === 'upcoming' && <Card className="admin-card live-admin-card">
       <div className="matchday-admin-heading"><h2>Matchday squad</h2><span>{startingPlayers.length}/11 starters · {benchPlayers.length} subs</span></div>
       {hasClubTeam && <label className="admin-field formation-picker"><span>Formation</span><select value={formation} onChange={(event) => setFormationDraft({ fixtureId: selectedFixture.id, value: event.target.value as Formation })}>{FORMATIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>}
-      {hasClubTeam ? playersResult.loading ? <Skeleton className="live-player-skeleton" /> : <div className="matchday-squad-grid"><section><h3>Starting XI</h3><div className="starting-player-list">{clubPlayers.map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={startingPlayers.includes(player.id)} onChange={() => toggleStartingPlayer(player.id)} /><span>{player.name}</span><small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section><section><h3>Subs <small className="squad-hint">everyone not starting · untick anyone not available</small></h3><div className="starting-player-list">{clubPlayers.filter((player) => !startingPlayers.includes(player.id)).map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={benchPlayers.includes(player.id)} onChange={() => toggleBenchPlayer(player.id)} /><span>{player.name}</span>{benchPlayers.includes(player.id) ? <em className="sub-tag">SUB</em> : <em className="out-tag">OUT</em>}<small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section></div> : <p className="live-help">This fixture does not include Ekhaya FC. Its result can still be followed here.</p>}
+      {hasClubTeam ? playersResult.loading ? <Skeleton className="live-player-skeleton" /> : <div className="matchday-squad-grid"><section><h3>Starting XI</h3><div className="starting-player-list">{clubPlayers.map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={startingPlayers.includes(player.id)} onChange={() => toggleStartingPlayer(player.id)} /><PlayerAvatar player={player} /><span>{player.name}{player.position ? <i className="squad-pos">{player.position}</i> : null}</span><small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section><section><h3>Subs <small className="squad-hint">everyone not starting · untick anyone not available</small></h3><div className="starting-player-list">{clubPlayers.filter((player) => !startingPlayers.includes(player.id)).map((player) => <label key={player.id} className="starting-player"><input type="checkbox" checked={benchPlayers.includes(player.id)} onChange={() => toggleBenchPlayer(player.id)} /><PlayerAvatar player={player} /><span>{player.name}{player.position ? <i className="squad-pos">{player.position}</i> : null}</span>{benchPlayers.includes(player.id) ? <em className="sub-tag">SUB</em> : <em className="out-tag">OUT</em>}<small>{player.number == null ? '—' : `#${player.number}`}</small></label>)}</div></section></div> : <p className="live-help">This fixture does not include Ekhaya FC. Its result can still be followed here.</p>}
       {hasClubTeam && <Button type="button" variant="secondary" disabled={busy || startingPlayers.length !== 11 || playersResult.loading} onClick={() => void confirmLineup()}>Confirm lineup</Button>}
       <Button type="button" disabled={busy || (hasClubTeam && (startingPlayers.length !== 11 || playersResult.loading))} onClick={() => void startMatch()} icon={<Zap size={17} />}>Kick off</Button>
     </Card>}

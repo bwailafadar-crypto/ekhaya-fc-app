@@ -1484,3 +1484,8 @@ select.auth-input { appearance: auto; }
 .lineup-subs a:active { color: var(--gold-dark); }
 .formation-picker { margin-bottom: 12px; }
 .formation-picker select { font-size: 15px; font-weight: 700; }
+/* Squad picker with photos (update 56) */
+.starting-player { grid-template-columns: 18px 34px minmax(0, 1fr) auto auto; min-height: 48px; font-size: 13px; }
+.starting-player .player-avatar { width: 34px; height: 34px; font-size: 11px; }
+.squad-pos { margin-left: 6px; padding: 1px 5px; border-radius: 4px; color: var(--muted); background: #EFEEE9; font-size: 9px; font-style: normal; font-weight: 800; }
+.starting-player-list { max-height: 420px; }
