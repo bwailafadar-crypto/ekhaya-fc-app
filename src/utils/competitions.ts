@@ -3,7 +3,7 @@ export type CompetitionKind = 'league' | 'cup'
 export type Competition = { id: string; name: string; short: string; kind: CompetitionKind }
 
 export const COMPETITIONS: Competition[] = [
-  { id: 'league', name: 'TNM Super League', short: 'League', kind: 'league' },
+  { id: 'league', name: 'FDH Championship', short: 'League', kind: 'league' },
   { id: 'airtel-top-8', name: 'Airtel Top 8', short: 'Airtel Top 8', kind: 'cup' },
   { id: 'castel-cup', name: 'Castel Cup', short: 'Castel Cup', kind: 'cup' },
 ]
@@ -20,6 +20,11 @@ export function competitionOf(name: string | undefined): Competition {
   if (/top\s*8/.test(value)) return COMPETITIONS[1]
   if (/castel/.test(value)) return COMPETITIONS[2]
   return COMPETITIONS[0]
+}
+
+/** The name fans see. Older matches saved under the league's previous name show the current one. */
+export function competitionLabel(name: string | undefined) {
+  return competitionOf(name).name
 }
 
 export function isCupCompetition(name: string | undefined) {

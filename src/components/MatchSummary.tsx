@@ -1,4 +1,5 @@
 import { Goal, Square, Star, Target } from 'lucide-react'
+import { competitionLabel } from '../utils/competitions'
 import { collection, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useCounts, useMyDoc } from '../hooks/useCounts'
@@ -34,7 +35,7 @@ export default function MatchSummary({ fixture, compact = false }: { fixture: Fi
   return (
     <section className={`match-summary${compact ? ' match-summary-compact' : ''}`} aria-label="Full-time summary">
       <div className="match-summary-head">
-        <span className="page-eyebrow">Full time{fixture.round ? ` · ${fixture.competition} ${fixture.round}` : ''}</span>
+        <span className="page-eyebrow">Full time{fixture.round ? ` · ${competitionLabel(fixture.competition)} ${fixture.round}` : ''}</span>
         <h2>{fixture.home} <em>{home}–{away}</em> {fixture.away}</h2>
       </div>
       {goals.length > 0 ? <div className="match-summary-goals">

@@ -1,5 +1,5 @@
 import { MapPin, Trophy } from 'lucide-react'
-import { isCupCompetition } from '../utils/competitions'
+import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import type { Fixture } from '../types'
 import { ekhayaOutcome, formatMalawiDate, formatMalawiTime } from '../utils/football'
 import TeamLogo from './TeamLogo'
@@ -17,7 +17,7 @@ export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixtu
       <div className="match-card-meta">
         <span className={isCupCompetition(fixture.competition) ? 'match-card-cup' : undefined}>
           {isCupCompetition(fixture.competition) && <Trophy size={12} aria-hidden="true" />}
-          {fixture.competition}{fixture.round ? ` · ${fixture.round}` : ''}
+          {competitionLabel(fixture.competition)}{fixture.round ? ` · ${fixture.round}` : ''}
         </span>
         {outcome
           ? <Badge variant={outcome === 'W' ? 'success' : outcome === 'D' ? 'default' : 'danger'}>{outcome}</Badge>

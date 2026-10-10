@@ -13,7 +13,7 @@ export function useCompetitionFilter(): [CompetitionFilter, (value: CompetitionF
 }
 
 export function filterLabel(value: CompetitionFilter) {
-  if (value === 'league') return 'TNM Super League'
+  if (value === 'league') return 'FDH Championship'
   if (value === 'cups') return 'Cups'
   return CUPS.find((cup) => cup.id === value)?.name ?? 'All competitions'
 }

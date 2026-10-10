@@ -5,22 +5,22 @@ export const HOME_GROUND = 'Chiwembe Stadium'
 
 export const fixtures: Fixture[] = [
   {
-    id: 'f1', competition: 'TNM Super League', date: '2026-09-13T14:30:00',
+    id: 'f1', competition: 'FDH Championship', date: '2026-09-13T14:30:00',
     venue: 'Chiwembe Stadium', home: 'Ekhaya FC', away: 'Civo United',
     status: 'finished', homeScore: 2, awayScore: 1,
   },
   {
-    id: 'f2', competition: 'TNM Super League', date: '2026-09-20T14:30:00',
+    id: 'f2', competition: 'FDH Championship', date: '2026-09-20T14:30:00',
     venue: 'Kamuzu Stadium', home: 'Mighty Wanderers', away: 'Ekhaya FC',
     status: 'finished', homeScore: 1, awayScore: 1,
   },
   {
-    id: 'f3', competition: 'TNM Super League', date: '2026-10-04T14:30:00',
+    id: 'f3', competition: 'FDH Championship', date: '2026-10-04T14:30:00',
     venue: 'Chiwembe Stadium', home: 'Ekhaya FC', away: 'Dedza Dynamos',
     status: 'upcoming',
   },
   {
-    id: 'f4', competition: 'TNM Super League', date: '2026-10-11T14:30:00',
+    id: 'f4', competition: 'FDH Championship', date: '2026-10-11T14:30:00',
     venue: 'Karonga Stadium', home: 'Karonga United', away: 'Ekhaya FC',
     status: 'upcoming',
   },

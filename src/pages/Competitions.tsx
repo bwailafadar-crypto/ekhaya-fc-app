@@ -18,7 +18,7 @@ function LeagueCard({ fixtures, standings, loading }: { fixtures: Fixture[]; sta
     <Card className="fz-card">
       <div className="cup-card-head">
         <span className="cup-card-icon cup-card-icon-league" aria-hidden="true"><Shield size={20} /></span>
-        <div><h2>TNM Super League</h2><span>{SEASON} season</span></div>
+        <div><h2>FDH Championship</h2><span>{SEASON} season</span></div>
         {row && <Badge variant="gold">{row.position}{['st', 'nd', 'rd'][((row.position + 90) % 100 - 10) % 10 - 1] ?? 'th'} · {row.points} pts</Badge>}
       </div>
       {loading ? <Skeleton className="fz-board-skeleton" /> : <>

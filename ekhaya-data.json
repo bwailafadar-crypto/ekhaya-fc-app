@@ -4,7 +4,8 @@
   "Away venues are unknown (null) - fill in via the admin panel.",
   "Player position, DOB, foot, height and stats are null/0 - fill in via the admin panel. Four players have no jersey number yet.",
   "Team logos are null - upload via the admin panel.",
-  "cupFixtures: 2026 Airtel Top 8 results from FAM (fam.mw), Nyasa Big Bullets, Nation Online and Nyasa Times match reports. The final's goal minutes were not published, so its scorers are listed in the note. Kick-off times are approximate (the 1st leg was an evening match). Load with the \"Update cup results\" workflow."
+  "cupFixtures: 2026 Airtel Top 8 results from FAM (fam.mw), Nyasa Big Bullets, Nation Online and Nyasa Times match reports. The final's goal minutes were not published, so its scorers are listed in the note. Kick-off times are approximate (the 1st leg was an evening match). Load with the \"Update cup results\" workflow.",
+  "standings: official FDH Championship table as of 10 Oct 2026 (sent by the club). Load with the \"Update league table\" workflow."
  ],
  "teams": [
   {
@@ -122,8 +123,28 @@
  ],
  "standings": [
   {
-   "id": "blue-eagles",
+   "id": "mighty-wanderers",
    "position": 1,
+   "team": "Mighty Wanderers",
+   "played": 16,
+   "won": 9,
+   "drawn": 5,
+   "lost": 2,
+   "goalsFor": 28,
+   "goalsAgainst": 11,
+   "goalDifference": 17,
+   "points": 32,
+   "form": [
+    "W",
+    "L",
+    "W",
+    "W",
+    "D"
+   ]
+  },
+  {
+   "id": "blue-eagles",
+   "position": 2,
    "team": "Blue Eagles",
    "played": 15,
    "won": 10,
@@ -143,7 +164,7 @@
   },
   {
    "id": "big-bullets",
-   "position": 2,
+   "position": 3,
    "team": "FCB Nyasa Big Bullets",
    "played": 15,
    "won": 8,
@@ -162,48 +183,48 @@
    ]
   },
   {
-   "id": "mighty-wanderers",
-   "position": 3,
-   "team": "Mighty Wanderers",
-   "played": 15,
-   "won": 8,
-   "drawn": 5,
-   "lost": 2,
-   "goalsFor": 27,
-   "goalsAgainst": 11,
-   "goalDifference": 16,
-   "points": 29,
-   "form": [
-    "L",
-    "W",
-    "W",
-    "D",
-    "D"
-   ]
-  },
-  {
    "id": "silver-strikers",
    "position": 4,
    "team": "Silver Strikers",
-   "played": 15,
+   "played": 16,
    "won": 8,
    "drawn": 5,
-   "lost": 2,
+   "lost": 3,
    "goalsFor": 23,
-   "goalsAgainst": 10,
-   "goalDifference": 13,
+   "goalsAgainst": 11,
+   "goalDifference": 12,
    "points": 29,
    "form": [
     "L",
+    "L",
     "D",
     "W",
+    "W"
+   ]
+  },
+  {
+   "id": "chitipa-united",
+   "position": 5,
+   "team": "Chitipa United",
+   "played": 16,
+   "won": 7,
+   "drawn": 3,
+   "lost": 6,
+   "goalsFor": 13,
+   "goalsAgainst": 16,
+   "goalDifference": -3,
+   "points": 24,
+   "form": [
     "W",
-    "D"
+    "D",
+    "D",
+    "W",
+    "L"
    ]
   },
   {
    "id": "masters-fc",
-   "position": 5,
+   "position": 6,
    "team": "Masters FC",
    "played": 15,
    "won": 6,
@@ -222,8 +243,28 @@
    ]
   },
   {
+   "id": "ekhaya-fc",
+   "position": 7,
+   "team": "Ekhaya FC",
+   "played": 16,
+   "won": 5,
+   "drawn": 6,
+   "lost": 5,
+   "goalsFor": 17,
+   "goalsAgainst": 14,
+   "goalDifference": 3,
+   "points": 21,
+   "form": [
+    "W",
+    "D",
+    "L",
+    "L",
+    "D"
+   ]
+  },
+  {
    "id": "moyale-barracks",
-   "position": 6,
+   "position": 8,
    "team": "Moyale Barracks",
    "played": 15,
    "won": 5,
@@ -242,57 +283,17 @@
    ]
   },
   {
-   "id": "chitipa-united",
-   "position": 7,
-   "team": "Chitipa United",
-   "played": 15,
-   "won": 6,
-   "drawn": 3,
-   "lost": 6,
-   "goalsFor": 11,
-   "goalsAgainst": 16,
-   "goalDifference": -5,
-   "points": 21,
-   "form": [
-    "D",
-    "D",
-    "W",
-    "L",
-    "W"
-   ]
-  },
-  {
    "id": "red-lions",
-   "position": 8,
-   "team": "Red Lions",
-   "played": 15,
-   "won": 5,
-   "drawn": 5,
-   "lost": 5,
-   "goalsFor": 12,
-   "goalsAgainst": 13,
-   "goalDifference": -1,
-   "points": 20,
-   "form": [
-    "D",
-    "L",
-    "W",
-    "D",
-    "L"
-   ]
-  },
-  {
-   "id": "mitundu-baptist",
    "position": 9,
-   "team": "Luanar Mitundu",
-   "played": 15,
+   "team": "Red Lions",
+   "played": 16,
    "won": 5,
-   "drawn": 5,
+   "drawn": 6,
    "lost": 5,
-   "goalsFor": 12,
-   "goalsAgainst": 13,
+   "goalsFor": 13,
+   "goalsAgainst": 14,
    "goalDifference": -1,
-   "points": 20,
+   "points": 21,
    "form": [
     "D",
     "D",
@@ -302,8 +303,28 @@
    ]
   },
   {
-   "id": "civo-united",
+   "id": "mitundu-baptist",
    "position": 10,
+   "team": "Luanar Mitundu",
+   "played": 16,
+   "won": 5,
+   "drawn": 6,
+   "lost": 5,
+   "goalsFor": 13,
+   "goalsAgainst": 14,
+   "goalDifference": -1,
+   "points": 21,
+   "form": [
+    "D",
+    "D",
+    "D",
+    "L",
+    "W"
+   ]
+  },
+  {
+   "id": "civo-united",
+   "position": 11,
    "team": "Civil Service United",
    "played": 15,
    "won": 6,
@@ -318,26 +339,6 @@
     "W",
     "W",
     "L",
-    "L"
-   ]
-  },
-  {
-   "id": "ekhaya-fc",
-   "position": 11,
-   "team": "Ekhaya FC",
-   "played": 15,
-   "won": 4,
-   "drawn": 6,
-   "lost": 5,
-   "goalsFor": 15,
-   "goalsAgainst": 14,
-   "goalDifference": 1,
-   "points": 18,
-   "form": [
-    "D",
-    "L",
-    "L",
-    "D",
     "L"
    ]
   },
@@ -385,19 +386,19 @@
    "id": "mafco",
    "position": 14,
    "team": "MAFCO F.C",
-   "played": 15,
+   "played": 16,
    "won": 3,
    "drawn": 4,
-   "lost": 8,
+   "lost": 9,
    "goalsFor": 12,
-   "goalsAgainst": 17,
-   "goalDifference": -5,
+   "goalsAgainst": 19,
+   "goalDifference": -7,
    "points": 13,
    "form": [
     "L",
     "L",
-    "D",
     "L",
+    "D",
     "L"
    ]
   },
@@ -405,20 +406,20 @@
    "id": "kamuzu-barracks",
    "position": 15,
    "team": "Kamuzu Barracks",
-   "played": 15,
+   "played": 16,
    "won": 3,
    "drawn": 3,
-   "lost": 9,
+   "lost": 10,
    "goalsFor": 15,
-   "goalsAgainst": 22,
-   "goalDifference": -7,
+   "goalsAgainst": 24,
+   "goalDifference": -9,
    "points": 12,
    "form": [
     "L",
-    "D",
     "L",
     "D",
-    "W"
+    "L",
+    "D"
    ]
   },
   {
@@ -445,7 +446,7 @@
  "fixtures": [
   {
    "id": "2026-09-06-ekhaya-fc-v-karonga-united",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-09-06T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -457,7 +458,7 @@
   },
   {
    "id": "2026-08-22-creck-sporting-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-08-22T14:30:00+02:00",
    "home": "Creck Sporting",
@@ -469,7 +470,7 @@
   },
   {
    "id": "2026-08-15-silver-strikers-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-08-15T14:30:00+02:00",
    "home": "Silver Strikers",
@@ -481,7 +482,7 @@
   },
   {
    "id": "2026-08-08-ekhaya-fc-v-dedza-dynamos",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-08-08T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -493,7 +494,7 @@
   },
   {
    "id": "2026-07-25-chitipa-united-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-07-25T14:30:00+02:00",
    "home": "Chitipa United",
@@ -505,7 +506,7 @@
   },
   {
    "id": "2026-07-19-ekhaya-fc-v-big-bullets",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-07-19T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -517,7 +518,7 @@
   },
   {
    "id": "2026-07-05-mitundu-baptist-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-07-05T14:30:00+02:00",
    "home": "Luanar Mitundu",
@@ -529,7 +530,7 @@
   },
   {
    "id": "2026-06-28-ekhaya-fc-v-mafco",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-06-28T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -541,7 +542,7 @@
   },
   {
    "id": "2026-06-20-mighty-wanderers-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-06-20T14:30:00+02:00",
    "home": "Mighty Wanderers",
@@ -553,7 +554,7 @@
   },
   {
    "id": "2026-05-30-ekhaya-fc-v-masters-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-05-30T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -565,7 +566,7 @@
   },
   {
    "id": "2026-05-23-kamuzu-barracks-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-05-23T14:30:00+02:00",
    "home": "Kamuzu Barracks",
@@ -577,7 +578,7 @@
   },
   {
    "id": "2026-05-16-ekhaya-fc-v-moyale-barracks",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-05-16T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -589,7 +590,7 @@
   },
   {
    "id": "2026-05-09-civo-united-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-05-09T14:30:00+02:00",
    "home": "Civil Service United",
@@ -601,7 +602,7 @@
   },
   {
    "id": "2026-05-02-ekhaya-fc-v-red-lions",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-05-02T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -613,7 +614,7 @@
   },
   {
    "id": "2026-04-26-blue-eagles-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-04-26T14:30:00+02:00",
    "home": "Blue Eagles",
@@ -625,7 +626,7 @@
   },
   {
    "id": "2026-10-10-ekhaya-fc-v-kamuzu-barracks",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-10-10T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -637,7 +638,7 @@
   },
   {
    "id": "2026-10-18-red-lions-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-10-18T14:30:00+02:00",
    "home": "Red Lions",
@@ -649,7 +650,7 @@
   },
   {
    "id": "2026-10-25-ekhaya-fc-v-blue-eagles",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-10-25T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -661,7 +662,7 @@
   },
   {
    "id": "2026-11-01-mafco-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-11-01T14:30:00+02:00",
    "home": "MAFCO F.C",
@@ -673,7 +674,7 @@
   },
   {
    "id": "2026-11-21-ekhaya-fc-v-civo-united",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-11-21T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -685,7 +686,7 @@
   },
   {
    "id": "2026-11-28-masters-fc-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-11-28T14:30:00+02:00",
    "home": "Masters FC",
@@ -697,7 +698,7 @@
   },
   {
    "id": "2026-12-06-ekhaya-fc-v-mighty-wanderers",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-12-06T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -709,7 +710,7 @@
   },
   {
    "id": "2026-12-12-moyale-barracks-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-12-12T14:30:00+02:00",
    "home": "Moyale Barracks",
@@ -721,7 +722,7 @@
   },
   {
    "id": "2026-12-19-ekhaya-fc-v-mitundu-baptist",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2026-12-19T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -733,7 +734,7 @@
   },
   {
    "id": "2027-01-03-big-bullets-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2027-01-03T14:30:00+02:00",
    "home": "FCB Nyasa Big Bullets",
@@ -745,7 +746,7 @@
   },
   {
    "id": "2027-01-16-ekhaya-fc-v-chitipa-united",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2027-01-16T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -757,7 +758,7 @@
   },
   {
    "id": "2027-01-25-dedza-dynamos-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2027-01-25T14:30:00+02:00",
    "home": "Goshen City Dedza Dynamos",
@@ -769,7 +770,7 @@
   },
   {
    "id": "2027-01-31-ekhaya-fc-v-silver-strikers",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2027-01-31T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -781,7 +782,7 @@
   },
   {
    "id": "2027-02-06-ekhaya-fc-v-creck-sporting",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2027-02-06T14:30:00+02:00",
    "home": "Ekhaya FC",
@@ -793,7 +794,7 @@
   },
   {
    "id": "2027-02-20-karonga-united-v-ekhaya-fc",
-   "competition": "TNM Super League",
+   "competition": "FDH Championship",
    "season": "2026",
    "date": "2027-02-20T14:30:00+02:00",
    "home": "Karonga United",

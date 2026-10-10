@@ -1,0 +1,65 @@
+# Loads the official league table from ekhaya-data.json into the app.
+# Run it from the Actions tab: first with "preview", then with "apply".
+name: Update league table
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'preview = show changes only, apply = save them'
+        type: choice
+        options: [preview, apply]
+        default: preview
+      confirm_code:
+        description: 'Your squad code (the SQUAD_CODE secret). Needed for apply.'
+        required: false
+        default: ''
+
+jobs:
+  table:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Check squad code
+        if: inputs.mode == 'apply'
+        env:
+          GIVEN: ${{ inputs.confirm_code }}
+          EXPECTED: ${{ secrets.SQUAD_CODE }}
+        run: |
+          # Only the superadmin knows this code, so other admins with the alerts key
+          # cannot change results through this workflow.
+          # Spaces and capital letters are ignored (phone keyboards add them).
+          clean() { printf '%s' "$1" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]'; }
+          if [ -z "$(clean "$EXPECTED")" ]; then
+            echo "::error::No SQUAD_CODE secret is saved. Add it in Settings > Secrets and variables > Actions, then run this again."
+            exit 1
+          fi
+          if [ -z "$(clean "$GIVEN")" ]; then
+            echo "::error::You left the squad code box empty. Run again and type your code."
+            exit 1
+          fi
+          if [ "$(clean "$GIVEN")" != "$(clean "$EXPECTED")" ]; then
+            echo "::error::The code you typed does not match the saved SQUAD_CODE. Update the secret to a new code and type exactly that."
+            exit 1
+          fi
+          echo "Squad code accepted."
+      - name: Update league table
+        run: |
+          ARGS=""
+          [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
+          node scripts/sync-table.cjs $ARGS
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
