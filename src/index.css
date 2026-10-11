@@ -1565,3 +1565,37 @@ select.auth-input { appearance: auto; }
 .player-awards a { color: var(--muted); font-size: 12px; text-decoration: none; }
 .matchday-tabs { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 .goal-splash-card .player-avatar-large.player-avatar-fallback { font-size: 40px; }
+
+/* update 62: squad sheet (fill in the whole squad on one screen) */
+.squad-sheet { margin-bottom: 14px; }
+.sq-head { display: flex; align-items: center; gap: 10px; }
+.sq-head > svg { color: var(--gold-dark); }
+.sq-head h2 { font-size: 20px; }
+.sq-head span { color: var(--muted); font-size: 12px; }
+.sq-missing { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
+.sq-filter { margin: 12px 0 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+.sq-filter button { min-height: 34px; padding: 0 12px; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 999px; font: 700 12px 'Inter', sans-serif; cursor: pointer; }
+.sq-filter button.active { background: linear-gradient(120deg, var(--gold-light), var(--gold)); border-color: var(--gold); }
+.sq-done { padding: 12px; text-align: center; color: var(--win); font-weight: 700; }
+.sq-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.sq-row { padding: 10px; display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 14px; }
+.sq-photo { position: relative; flex: 0 0 auto; cursor: pointer; }
+.sq-photo input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.sq-photo .player-avatar { width: 54px; height: 54px; flex-basis: 54px; border: 2px dashed rgb(201 162 39 / 55%); }
+.sq-photo img.player-avatar { border-style: solid; }
+.sq-camera { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; display: grid; place-items: center; color: #fff; background: var(--gold-dark); border: 2px solid #fff; border-radius: 50%; }
+.sq-photo:focus-within .player-avatar { outline: 2px solid var(--gold); outline-offset: 2px; }
+.sq-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 7px; }
+.sq-main strong { font-size: 14px; }
+.sq-pos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.sq-pos button { min-width: 46px; min-height: 32px; padding: 0 8px; color: var(--ink-2); background: #F7F5EE; border: 1px solid var(--line); border-radius: 9px; font: 700 12px 'Inter', sans-serif; cursor: pointer; }
+.sq-pos button.active { color: var(--ink); background: linear-gradient(120deg, var(--gold-light), var(--gold)); border-color: var(--gold); }
+.sq-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sq-fields label { display: flex; align-items: center; gap: 5px; }
+.sq-fields label span { color: var(--muted); font-size: 11px; font-weight: 700; }
+.sq-fields input { min-height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 9px; font: 500 13px 'Inter', sans-serif; background: #fff; }
+.sq-fields input[type=number] { width: 64px; }
+.sq-fields input[type=date] { width: 150px; }
+.sq-status { color: var(--muted); font-size: 11px; font-weight: 700; }
+.sq-ok { display: inline-flex; align-items: center; gap: 3px; color: var(--win); }
+.sq-need { color: var(--gold-dark); font-size: 11px; }

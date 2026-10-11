@@ -11,6 +11,7 @@ import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI
 import { useAuth } from '../auth/AuthContext'
 import TeamLogo from '../components/TeamLogo'
 import NewsArticleEditor from '../components/NewsArticleEditor'
+import SquadSheet from './admin/SquadSheet'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
@@ -836,7 +837,7 @@ export default function AdminPanel() {
         </>
       : section === 'news' ? <NewsArticleEditor />
       : !hasItems && section !== 'players' && section !== 'fixtures' ? <EmptyState icon={ImagePlus} title="No records loaded" description="Seed the club data before editing this section." />
-        : section === 'players' ? <Card className="admin-card">
+        : section === 'players' ? <><SquadSheet players={players.items} /><Card className="admin-card">
           <div className="admin-card-heading"><h2>Player details</h2><select aria-label="Choose player" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}><option value="">Add a player</option>{players.items.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
           <form className="admin-form" key={selectedPlayer?.id ?? 'new-player'} onSubmit={savePlayer}>
             <div className="admin-form-grid">
@@ -865,7 +866,7 @@ export default function AdminPanel() {
               {isSuperadmin && <button type="button" className="fz-admin-delete" aria-label={`Remove ${player.name}`} onClick={() => void deletePlayer(player)}><Trash2 size={14} /></button>}
             </li>)}</ul>
           </div>
-        </Card>
+        </Card></>
           : section === 'teams' ? <>
             <Card className="admin-card logo-import-card">
               <div className="admin-card-heading"><h2>Official club badges</h2></div>
