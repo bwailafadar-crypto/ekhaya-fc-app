@@ -5,6 +5,7 @@
 //   node scripts/check-signin.cjs fan@email.com --reset-link
 //        -> also makes a password reset link you can send the fan on WhatsApp
 const os = require('node:os')
+require('node:dns').setDefaultResultOrder('ipv4first')
 const path = require('node:path')
 const fs = require('node:fs')
 const { initializeApp, cert } = require('firebase-admin/app')

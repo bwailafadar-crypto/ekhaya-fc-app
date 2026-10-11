@@ -4,6 +4,8 @@
 // Prints ✔ (fine), ⚠ (worth a look) or ✖ (broken) for each area, then a list of
 // what to fix. Paste the output to Claude; emails are partly hidden.
 const os = require('node:os')
+// Some home and mobile networks have broken IPv6: always try IPv4 first.
+require('node:dns').setDefaultResultOrder('ipv4first')
 const path = require('node:path')
 const fs = require('node:fs')
 const { initializeApp, cert } = require('firebase-admin/app')
@@ -27,7 +29,13 @@ const hide = (email = '') => String(email).replace(/^(.{2}).*(@.*)$/, '$1***$2')
 const ms = (value) => (value?.toMillis ? value.toMillis() : value ? new Date(value).getTime() : 0)
 const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 60 ? `${m} min ago` : m < 2880 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago` }
 const DAY = 86400000
-const safe = async (label, work) => { try { await work() } catch (error) { bad(`${label}: ${error.message}`) } }
+// One retry after a short pause: the first network call on a slow connection can fail.
+const safe = async (label, work) => {
+  try { await work() } catch {
+    await new Promise((resolve) => setTimeout(resolve, 3000))
+    try { await work() } catch (error) { bad(`${label}: ${error.cause?.code || error.message}`, `${label} (network). Run "npm run health" again; if it repeats, check the laptop's internet.`) }
+  }
+}
 
 async function site() {
   head('1. LIVE WEBSITE')
