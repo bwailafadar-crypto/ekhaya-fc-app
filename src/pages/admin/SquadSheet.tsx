@@ -6,7 +6,7 @@ import { useToast } from '../../components/ToastContext'
 import { Card } from '../../components/UI'
 import { db } from '../../firebase'
 import type { Player } from '../../types'
-import { compressImage } from '../../utils/compressImage'
+import { compressImage, IMAGE_SIZES } from '../../utils/compressImage'
 
 const TODAY = new Date().toISOString().slice(0, 10)
 const POSITIONS = ['GK', 'DEF', 'MID', 'FWD'] as const
@@ -50,7 +50,7 @@ export default function SquadSheet({ players }: { players: Player[] }) {
     input.value = ''
     if (!file) return
     try {
-      await save(player, 'photoDataUrl', await compressImage(file))
+      await save(player, 'photoDataUrl', await compressImage(file, IMAGE_SIZES.player))
       showToast(`Photo saved for ${player.name}.`)
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'This photo could not be used.', 'error')

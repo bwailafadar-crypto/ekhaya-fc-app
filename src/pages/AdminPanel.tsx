@@ -13,8 +13,9 @@ import TeamLogo from '../components/TeamLogo'
 import NewsArticleEditor from '../components/NewsArticleEditor'
 import SquadSheet from './admin/SquadSheet'
 import MemberCardCheck from './admin/MemberCardCheck'
+import ShrinkImages from './admin/ShrinkImages'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import { compressImage } from '../utils/compressImage'
+import { compressImage, IMAGE_SIZES } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
 import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
 
@@ -360,13 +361,13 @@ export default function AdminPanel() {
   const setPlayerPhoto = (dataUrl: string | null) => setPlayerPhotoDraft({ id: playerPhotoId, dataUrl })
   const setTeamLogo = (dataUrl: string | null) => setTeamLogoDraft({ id: teamLogoId, dataUrl })
 
-  async function handleImage(event: ChangeEvent<HTMLInputElement>, setImage: (value: string | null) => void) {
+  async function handleImage(event: ChangeEvent<HTMLInputElement>, setImage: (value: string | null) => void, size: keyof typeof IMAGE_SIZES) {
     const input = event.currentTarget
     const file = input.files?.[0]
     if (!file) return
     setUploading(true)
     try {
-      setImage(await compressImage(file))
+      setImage(await compressImage(file, IMAGE_SIZES[size]))
       showToast('Image ready to save.')
     } catch (error) {
       showToast(messageFrom(error), 'error')
@@ -577,7 +578,7 @@ export default function AdminPanel() {
             if (!response.ok) throw new Error(`HTTP ${response.status}`)
             const blob = await response.blob()
             const file = new File([blob], `${id}.png`, { type: blob.type || 'image/png' })
-            logoDataUrl = await compressImage(file)
+            logoDataUrl = await compressImage(file, IMAGE_SIZES.logo)
             imported += 1
           } catch {
             failed.push(team.name)
@@ -839,7 +840,7 @@ export default function AdminPanel() {
         </>
       : section === 'news' ? <NewsArticleEditor />
       : !hasItems && section !== 'players' && section !== 'fixtures' ? <EmptyState icon={ImagePlus} title="No records loaded" description="Seed the club data before editing this section." />
-        : section === 'players' ? <><SquadSheet players={players.items} /><Card className="admin-card">
+        : section === 'players' ? <><ShrinkImages teams={teams.items} players={players.items} /><SquadSheet players={players.items} /><Card className="admin-card">
           <div className="admin-card-heading"><h2>Player details</h2><select aria-label="Choose player" value={selectedPlayerId} onChange={(event) => setSelectedPlayerId(event.target.value)}><option value="">Add a player</option>{players.items.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
           <form className="admin-form" key={selectedPlayer?.id ?? 'new-player'} onSubmit={savePlayer}>
             <div className="admin-form-grid">
@@ -855,7 +856,7 @@ export default function AdminPanel() {
             <fieldset className="admin-stats"><legend>Season statistics</legend><div className="admin-form-grid">
               {(Object.keys(emptyStats) as Array<keyof PlayerStats>).map((key) => <Field key={key} label={STAT_LABELS[key]} name={key} type="number" min={0} defaultValue={selectedPlayer?.stats?.[key] ?? 0} />)}
             </div></fieldset>
-            <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, setPlayerPhoto)} /><ImagePlus size={17} />Upload player photo <small>Compressed under 200 KB</small></label>
+            <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, setPlayerPhoto, 'player')} /><ImagePlus size={17} />Upload player photo <small>Made small for fans' data</small></label>
             {playerPhoto && <img className="admin-image-preview" src={playerPhoto} alt="Player upload preview" />}
             <div className="admin-actions"><Button type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : selectedPlayer ? 'Save player' : 'Add player'}</Button>{selectedPlayer && isSuperadmin && <Button type="button" variant="danger" onClick={() => void deletePlayer()}>Delete player</Button>}</div>
           </form>
@@ -870,6 +871,7 @@ export default function AdminPanel() {
           </div>
         </Card></>
           : section === 'teams' ? <>
+            <ShrinkImages teams={teams.items} players={players.items} />
             <Card className="admin-card logo-import-card">
               <div className="admin-card-heading"><h2>Official club badges</h2></div>
               <p className="live-help">Import the league badges into Firestore once. Existing uploaded logos are kept; unavailable badges stay as initials.</p>
@@ -884,7 +886,7 @@ export default function AdminPanel() {
             <div className="admin-card-heading"><h2>Team and logo</h2><select aria-label="Choose team" value={selectedTeam?.id ?? ''} onChange={(event) => setSelectedTeamId(event.target.value)}>{teams.items.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></div>
             {selectedTeam && <form className="admin-form" key={selectedTeam.id} onSubmit={saveTeam}>
               <div className="admin-form-grid"><Field label="Team name" name="name" defaultValue={selectedTeam.name} required /><Field label="Short name" name="shortName" defaultValue={selectedTeam.shortName} required /><Field label="Home ground" name="homeGround" defaultValue={selectedTeam.homeGround} /></div>
-              <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, setTeamLogo)} /><ImagePlus size={17} />Upload team logo <small>Compressed under 200 KB</small></label>
+              <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, setTeamLogo, 'logo')} /><ImagePlus size={17} />Upload team logo <small>Made small for fans' data</small></label>
               {teamLogo && <img className="admin-image-preview" src={teamLogo} alt={`${selectedTeam.name} logo preview`} />}
               <div className="admin-actions"><Button type="submit" disabled={saving || uploading || importingLogos}>Save team</Button><Button type="button" variant="ghost" disabled={importingLogos} onClick={() => setTeamLogo(null)}>Remove logo</Button></div>
             </form>}
