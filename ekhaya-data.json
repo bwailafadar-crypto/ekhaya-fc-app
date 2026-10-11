@@ -5,7 +5,7 @@
   "Player position, DOB, foot, height and stats are null/0 - fill in via the admin panel. Four players have no jersey number yet.",
   "Team logos are null - upload via the admin panel.",
   "cupFixtures: 2026 Airtel Top 8 results from FAM (fam.mw), Nyasa Big Bullets, Nation Online and Nyasa Times match reports. The final's goal minutes were not published, so its scorers are listed in the note. Kick-off times are approximate (the 1st leg was an evening match). Load with the \"Update cup results\" workflow.",
-  "standings: official FDH Championship table, week 16 (Sun 11 Oct 2026), from the club. Load with the \"Update league table\" workflow."
+  "standings: official FDH Championship table, week 16 (Sun 11 Oct 2026), from the club. Luanar Mitundu conceded 14 (the club graphic says 13, but goals for and against only balance with 14). Form is stored oldest to newest. Load with the \"Update league table\" workflow."
  ],
  "teams": [
   {
@@ -135,10 +135,10 @@
    "goalDifference": 15,
    "points": 33,
    "form": [
+    "W",
+    "W",
     "D",
     "W",
-    "W",
-    "L",
     "W"
    ]
   },
@@ -155,11 +155,11 @@
    "goalDifference": 17,
    "points": 32,
    "form": [
+    "D",
+    "W",
     "W",
     "L",
-    "W",
-    "W",
-    "D"
+    "W"
    ]
   },
   {
@@ -195,11 +195,11 @@
    "goalDifference": 12,
    "points": 29,
    "form": [
-    "L",
-    "L",
-    "D",
     "W",
-    "W"
+    "W",
+    "D",
+    "L",
+    "L"
    ]
   },
   {
@@ -215,11 +215,11 @@
    "goalDifference": -3,
    "points": 24,
    "form": [
+    "L",
     "W",
     "D",
     "D",
-    "W",
-    "L"
+    "W"
    ]
   },
   {
@@ -235,9 +235,9 @@
    "goalDifference": 0,
    "points": 22,
    "form": [
-    "L",
-    "D",
     "W",
+    "D",
+    "L",
     "D",
     "L"
    ]
@@ -255,36 +255,16 @@
    "goalDifference": 3,
    "points": 21,
    "form": [
-    "W",
     "D",
     "L",
     "L",
-    "D"
-   ]
-  },
-  {
-   "id": "mitundu-baptist",
-   "position": 8,
-   "team": "Luanar Mitundu",
-   "played": 16,
-   "won": 5,
-   "drawn": 6,
-   "lost": 5,
-   "goalsFor": 13,
-   "goalsAgainst": 13,
-   "goalDifference": 0,
-   "points": 21,
-   "form": [
     "D",
-    "D",
-    "D",
-    "L",
     "W"
    ]
   },
   {
    "id": "red-lions",
-   "position": 9,
+   "position": 8,
    "team": "Red Lions",
    "played": 16,
    "won": 5,
@@ -296,9 +276,29 @@
    "points": 21,
    "form": [
     "D",
-    "D",
-    "L",
     "W",
+    "L",
+    "D",
+    "D"
+   ]
+  },
+  {
+   "id": "mitundu-baptist",
+   "position": 9,
+   "team": "Luanar Mitundu",
+   "played": 16,
+   "won": 5,
+   "drawn": 6,
+   "lost": 5,
+   "goalsFor": 13,
+   "goalsAgainst": 14,
+   "goalDifference": -1,
+   "points": 21,
+   "form": [
+    "W",
+    "L",
+    "D",
+    "D",
     "D"
    ]
   },
@@ -335,10 +335,10 @@
    "goalDifference": -5,
    "points": 20,
    "form": [
+    "L",
     "W",
     "W",
-    "L",
-    "L",
+    "W",
     "L"
    ]
   },
@@ -358,7 +358,7 @@
     "D",
     "D",
     "D",
-    "W",
+    "D",
     "W"
    ]
   },
@@ -375,10 +375,10 @@
    "goalDifference": -8,
    "points": 17,
    "form": [
+    "L",
+    "L",
     "D",
-    "L",
-    "L",
-    "W",
+    "D",
     "W"
    ]
   },
@@ -396,9 +396,9 @@
    "points": 13,
    "form": [
     "L",
-    "L",
-    "L",
     "D",
+    "L",
+    "L",
     "L"
    ]
   },
@@ -415,10 +415,10 @@
    "goalDifference": -8,
    "points": 13,
    "form": [
+    "L",
+    "D",
     "W",
     "D",
-    "L",
-    "L",
     "W"
    ]
   },
@@ -435,11 +435,11 @@
    "goalDifference": -9,
    "points": 12,
    "form": [
-    "L",
+    "D",
     "L",
     "D",
     "L",
-    "D"
+    "L"
    ]
   }
  ],

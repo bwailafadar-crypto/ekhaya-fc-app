@@ -1812,3 +1812,4 @@ select.auth-input { appearance: auto; }
 .auth-help small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
 .auth-help-action { min-height: 42px; padding: 8px 12px; display: flex; align-items: center; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 10px; font: 600 13px 'Inter', sans-serif; text-align: left; text-decoration: none; cursor: pointer; }
 .auth-help-action:disabled { color: var(--win); cursor: default; }
+.form-latest-hint { display: block; color: var(--muted); font-size: 8.5px; font-weight: 600; letter-spacing: 0; text-transform: none; }

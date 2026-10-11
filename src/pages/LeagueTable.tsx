@@ -16,7 +16,7 @@ export default function LeagueTable() {
           : <div className="standings-scroll" role="region" aria-label="League standings" tabIndex={0}>
             <table className="standings-table">
               <thead>
-                <tr><th scope="col">Pos</th><th scope="col" className="standings-team-heading">Team</th><th scope="col">P</th><th scope="col">W</th><th scope="col">D</th><th scope="col">L</th><th scope="col">GF</th><th scope="col">GA</th><th scope="col">GD</th><th scope="col">Pts</th><th scope="col">Form</th></tr>
+                <tr><th scope="col">Pos</th><th scope="col" className="standings-team-heading">Team</th><th scope="col">P</th><th scope="col">W</th><th scope="col">D</th><th scope="col">L</th><th scope="col">GF</th><th scope="col">GA</th><th scope="col">GD</th><th scope="col">Pts</th><th scope="col" title="Last 5 matches, latest on the right">Form <small className="form-latest-hint">→ latest</small></th></tr>
               </thead>
               <tbody>
                 {rows.map((row) => {
