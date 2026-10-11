@@ -53,6 +53,8 @@ export interface Fixture {
   formation?: string
   /** True while an admin is correcting a finished match. */
   editing?: boolean
+  /** Editing a result the app never counted (imported): saving leaves the table and stats alone. */
+  editNoStats?: boolean
   statsApplied?: boolean
   /** Fan Zone: admin closed man-of-the-match voting for this match. */
   motmClosed?: boolean

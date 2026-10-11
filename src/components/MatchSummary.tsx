@@ -1,4 +1,6 @@
-import { Goal, Square, Star, Target } from 'lucide-react'
+import { Goal, Pencil, Square, Star, Target } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { competitionLabel } from '../utils/competitions'
 import { collection, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -11,7 +13,9 @@ function sameTeam(a: string, b: string) {
 }
 
 /** Full-time summary: scorers, cards, fans' man of the match and prediction stats. */
-export default function MatchSummary({ fixture, compact = false }: { fixture: Fixture; compact?: boolean }) {
+export default function MatchSummary({ fixture, compact = false, onEdit }: { fixture: Fixture; compact?: boolean; onEdit?: () => void }) {
+  const { role } = useAuth()
+  const canEdit = (role === 'admin' || role === 'superadmin') && !fixture.isTest && (fixture.status === 'finished' || Boolean(fixture.editing))
   const events = useLiveDocs<Omit<MatchEvent, 'id'>>(['fixtures', fixture.id, 'events'])
   const home = fixture.homeScore ?? 0
   const away = fixture.awayScore ?? 0
@@ -37,6 +41,9 @@ export default function MatchSummary({ fixture, compact = false }: { fixture: Fi
       <div className="match-summary-head">
         <span className="page-eyebrow">Full time{fixture.round ? ` · ${competitionLabel(fixture.competition)} ${fixture.round}` : ''}</span>
         <h2>{fixture.home} <em>{home}–{away}</em> {fixture.away}</h2>
+        {canEdit && (onEdit && !fixture.editing
+          ? <button type="button" className="match-summary-edit" onClick={onEdit}><Pencil size={13} aria-hidden="true" /> Edit result</button>
+          : <Link className="match-summary-edit" to={`/live?match=${fixture.id}&edit=1`}><Pencil size={13} aria-hidden="true" /> {fixture.editing ? 'Continue editing' : 'Edit result'}</Link>)}
       </div>
       {goals.length > 0 ? <div className="match-summary-goals">
         <div><span className="match-summary-team">{fixture.home}</span><ul>{sideGoals(fixture.home).map(goalLine)}</ul></div>

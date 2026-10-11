@@ -1599,3 +1599,9 @@ select.auth-input { appearance: auto; }
 .sq-status { color: var(--muted); font-size: 11px; font-weight: 700; }
 .sq-ok { display: inline-flex; align-items: center; gap: 3px; color: var(--win); }
 .sq-need { color: var(--gold-dark); font-size: 11px; }
+
+/* update 63: edit a result straight from the full-time summary */
+.match-summary-head { position: relative; }
+.match-summary-edit { margin-top: 8px; min-height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); background: #fff; border: 1px solid rgb(201 162 39 / 55%); border-radius: 999px; font: 700 12px 'Inter', sans-serif; text-decoration: none; cursor: pointer; }
+.match-summary-edit svg { color: var(--gold-dark); }
+.edit-prompt { margin: 10px 0; padding: 10px 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: rgb(212 175 55 / 14%); border: 1px solid rgb(212 175 55 / 45%); border-radius: 14px; font-size: 13px; }
