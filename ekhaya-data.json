@@ -5,7 +5,7 @@
   "Player position, DOB, foot, height and stats are null/0 - fill in via the admin panel. Four players have no jersey number yet.",
   "Team logos are null - upload via the admin panel.",
   "cupFixtures: 2026 Airtel Top 8 results from FAM (fam.mw), Nyasa Big Bullets, Nation Online and Nyasa Times match reports. The final's goal minutes were not published, so its scorers are listed in the note. Kick-off times are approximate (the 1st leg was an evening match). Load with the \"Update cup results\" workflow.",
-  "standings: official FDH Championship table as of 10 Oct 2026 (sent by the club). Load with the \"Update league table\" workflow."
+  "standings: official FDH Championship table, week 16 (Sun 11 Oct 2026), from the club. Load with the \"Update league table\" workflow."
  ],
  "teams": [
   {
@@ -123,8 +123,28 @@
  ],
  "standings": [
   {
-   "id": "mighty-wanderers",
+   "id": "big-bullets",
    "position": 1,
+   "team": "FCB Nyasa Big Bullets",
+   "played": 16,
+   "won": 9,
+   "drawn": 6,
+   "lost": 1,
+   "goalsFor": 22,
+   "goalsAgainst": 7,
+   "goalDifference": 15,
+   "points": 33,
+   "form": [
+    "D",
+    "W",
+    "W",
+    "L",
+    "W"
+   ]
+  },
+  {
+   "id": "mighty-wanderers",
+   "position": 2,
    "team": "Mighty Wanderers",
    "played": 16,
    "won": 9,
@@ -144,39 +164,19 @@
   },
   {
    "id": "blue-eagles",
-   "position": 2,
+   "position": 3,
    "team": "Blue Eagles",
-   "played": 15,
+   "played": 16,
    "won": 10,
    "drawn": 1,
-   "lost": 4,
+   "lost": 5,
    "goalsFor": 24,
-   "goalsAgainst": 16,
-   "goalDifference": 8,
+   "goalsAgainst": 18,
+   "goalDifference": 6,
    "points": 31,
    "form": [
     "W",
-    "W",
     "L",
-    "W",
-    "W"
-   ]
-  },
-  {
-   "id": "big-bullets",
-   "position": 3,
-   "team": "FCB Nyasa Big Bullets",
-   "played": 15,
-   "won": 8,
-   "drawn": 6,
-   "lost": 1,
-   "goalsFor": 20,
-   "goalsAgainst": 7,
-   "goalDifference": 13,
-   "points": 30,
-   "form": [
-    "W",
-    "D",
     "W",
     "W",
     "L"
@@ -226,20 +226,20 @@
    "id": "masters-fc",
    "position": 6,
    "team": "Masters FC",
-   "played": 15,
+   "played": 16,
    "won": 6,
    "drawn": 4,
-   "lost": 5,
+   "lost": 6,
    "goalsFor": 17,
-   "goalsAgainst": 16,
-   "goalDifference": 1,
+   "goalsAgainst": 17,
+   "goalDifference": 0,
    "points": 22,
    "form": [
-    "D",
     "L",
     "D",
     "W",
-    "D"
+    "D",
+    "L"
    ]
   },
   {
@@ -263,22 +263,22 @@
    ]
   },
   {
-   "id": "moyale-barracks",
+   "id": "mitundu-baptist",
    "position": 8,
-   "team": "Moyale Barracks",
-   "played": 15,
+   "team": "Luanar Mitundu",
+   "played": 16,
    "won": 5,
    "drawn": 6,
-   "lost": 4,
-   "goalsFor": 16,
-   "goalsAgainst": 17,
-   "goalDifference": -1,
+   "lost": 5,
+   "goalsFor": 13,
+   "goalsAgainst": 13,
+   "goalDifference": 0,
    "points": 21,
    "form": [
-    "W",
+    "D",
+    "D",
     "D",
     "L",
-    "D",
     "W"
    ]
   },
@@ -303,41 +303,41 @@
    ]
   },
   {
-   "id": "mitundu-baptist",
+   "id": "moyale-barracks",
    "position": 10,
-   "team": "Luanar Mitundu",
+   "team": "Moyale Barracks",
    "played": 16,
    "won": 5,
    "drawn": 6,
    "lost": 5,
-   "goalsFor": 13,
-   "goalsAgainst": 14,
-   "goalDifference": -1,
+   "goalsFor": 17,
+   "goalsAgainst": 19,
+   "goalDifference": -2,
    "points": 21,
    "form": [
     "D",
-    "D",
-    "D",
     "L",
-    "W"
+    "D",
+    "W",
+    "L"
    ]
   },
   {
    "id": "civo-united",
    "position": 11,
    "team": "Civil Service United",
-   "played": 15,
+   "played": 16,
    "won": 6,
    "drawn": 2,
-   "lost": 7,
+   "lost": 8,
    "goalsFor": 10,
-   "goalsAgainst": 14,
-   "goalDifference": -4,
+   "goalsAgainst": 15,
+   "goalDifference": -5,
    "points": 20,
    "form": [
     "W",
     "W",
-    "W",
+    "L",
     "L",
     "L"
    ]
@@ -346,19 +346,19 @@
    "id": "dedza-dynamos",
    "position": 12,
    "team": "Goshen City Dedza Dynamos",
-   "played": 15,
-   "won": 3,
+   "played": 16,
+   "won": 4,
    "drawn": 6,
    "lost": 6,
-   "goalsFor": 9,
+   "goalsFor": 10,
    "goalsAgainst": 19,
-   "goalDifference": -10,
-   "points": 15,
+   "goalDifference": -9,
+   "points": 18,
    "form": [
     "D",
     "D",
     "D",
-    "D",
+    "W",
     "W"
    ]
   },
@@ -366,19 +366,19 @@
    "id": "karonga-united",
    "position": 13,
    "team": "Karonga United",
-   "played": 15,
-   "won": 3,
+   "played": 16,
+   "won": 4,
    "drawn": 5,
    "lost": 7,
-   "goalsFor": 14,
+   "goalsFor": 15,
    "goalsAgainst": 23,
-   "goalDifference": -9,
-   "points": 14,
+   "goalDifference": -8,
+   "points": 17,
    "form": [
     "D",
-    "D",
     "L",
     "L",
+    "W",
     "W"
    ]
   },
@@ -403,8 +403,28 @@
    ]
   },
   {
-   "id": "kamuzu-barracks",
+   "id": "creck-sporting",
    "position": 15,
+   "team": "Creck Sporting",
+   "played": 16,
+   "won": 3,
+   "drawn": 4,
+   "lost": 9,
+   "goalsFor": 13,
+   "goalsAgainst": 21,
+   "goalDifference": -8,
+   "points": 13,
+   "form": [
+    "W",
+    "D",
+    "L",
+    "L",
+    "W"
+   ]
+  },
+  {
+   "id": "kamuzu-barracks",
+   "position": 16,
    "team": "Kamuzu Barracks",
    "played": 16,
    "won": 3,
@@ -420,26 +440,6 @@
     "D",
     "L",
     "D"
-   ]
-  },
-  {
-   "id": "creck-sporting",
-   "position": 16,
-   "team": "Creck Sporting",
-   "played": 15,
-   "won": 2,
-   "drawn": 4,
-   "lost": 9,
-   "goalsFor": 11,
-   "goalsAgainst": 20,
-   "goalDifference": -9,
-   "points": 10,
-   "form": [
-    "D",
-    "W",
-    "D",
-    "L",
-    "L"
    ]
   }
  ],
