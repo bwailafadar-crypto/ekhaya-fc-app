@@ -1814,3 +1814,11 @@ select.auth-input { appearance: auto; }
 .auth-help-action:disabled { color: var(--win); cursor: default; }
 .form-latest-hint { display: block; color: var(--muted); font-size: 8.5px; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .shrink-images { margin-bottom: 14px; }
+
+/* update 75: Samsung Internet (and some other phone browsers) force their own dark
+   mode on sites that do not handle dark mode. This rule tells them the app handles
+   it itself, by staying white and gold, so they leave the colours alone. */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: only light; }
+  html { background-color: #FBFAF6; }
+}
