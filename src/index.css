@@ -1605,3 +1605,12 @@ select.auth-input { appearance: auto; }
 .match-summary-edit { margin-top: 8px; min-height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); background: #fff; border: 1px solid rgb(201 162 39 / 55%); border-radius: 999px; font: 700 12px 'Inter', sans-serif; text-decoration: none; cursor: pointer; }
 .match-summary-edit svg { color: var(--gold-dark); }
 .edit-prompt { margin: 10px 0; padding: 10px 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: rgb(212 175 55 / 14%); border: 1px solid rgb(212 175 55 / 45%); border-radius: 14px; font-size: 13px; }
+
+/* update 64: tap a match to open it (admins: to edit a result) */
+.match-card-link { display: block; color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.match-card-link + .match-card-link { margin-top: 10px; }
+.match-card-link:active .match-card { transform: scale(.985); }
+.match-card-link .match-card { transition: transform .15s ease, box-shadow .15s ease; }
+.match-card-link:hover .match-card { box-shadow: 0 8px 22px rgb(158 124 18 / 14%); }
+.match-card-link:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 16px; }
+.match-card-edit { margin-top: 10px; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; color: var(--gold-dark); background: rgb(232 201 90 / 16%); border: 1px solid rgb(201 162 39 / 40%); border-radius: 999px; font-size: 11px; font-weight: 700; }
