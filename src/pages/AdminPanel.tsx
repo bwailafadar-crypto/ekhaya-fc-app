@@ -709,10 +709,16 @@ export default function AdminPanel() {
     const goalsFor = numberValue(form.get('goalsFor')) ?? 0
     const goalsAgainst = numberValue(form.get('goalsAgainst')) ?? 0
     const formValues = String(form.get('form') ?? '').toUpperCase().split('').filter((value): value is 'W' | 'D' | 'L' => value === 'W' || value === 'D' || value === 'L').slice(-5)
+    // The ▲ ▼ arrow compares this week's position with last week's.
+    const position = numberValue(form.get('position')) ?? 0
+    const arrow = String(form.get('arrow') ?? 'auto')
+    const lastWeek = numberValue(form.get('previousPosition'))
+    const previousPosition = arrow === 'up' ? position + 1 : arrow === 'down' ? Math.max(1, position - 1) : arrow === 'same' ? position : lastWeek ?? selectedStanding.previousPosition ?? position
     try {
       await setDoc(doc(db, 'standings', selectedStanding.id), {
         ...selectedStanding,
-        position: numberValue(form.get('position')) ?? 0,
+        position,
+        previousPosition,
         team: String(form.get('team') ?? '').trim(),
         played: numberValue(form.get('played')) ?? 0,
         won: numberValue(form.get('won')) ?? 0,
@@ -895,6 +901,10 @@ export default function AdminPanel() {
               <div className="admin-card-heading"><h2>League table row</h2><select aria-label="Choose team row" value={selectedStandingId} onChange={(event) => setSelectedStandingId(event.target.value)}><option value="">Select team</option>{standings.items.map((row) => <option key={row.id} value={row.id}>{row.position ?? 0}. {row.team}</option>)}</select></div>
               {selectedStanding && <form className="admin-form" key={selectedStanding.id} onSubmit={saveStanding}>
                 <div className="admin-form-grid"><Field label="Position" name="position" type="number" min={1} defaultValue={selectedStanding.position ?? 0} required /><Field label="Team" name="team" defaultValue={selectedStanding.team} required /><Field label="Played" name="played" type="number" min={0} defaultValue={selectedStanding.played ?? 0} /><Field label="Won" name="won" type="number" min={0} defaultValue={selectedStanding.won ?? 0} /><Field label="Drawn" name="drawn" type="number" min={0} defaultValue={selectedStanding.drawn ?? 0} /><Field label="Lost" name="lost" type="number" min={0} defaultValue={selectedStanding.lost ?? 0} /><Field label="Goals for" name="goalsFor" type="number" defaultValue={selectedStanding.goalsFor ?? 0} /><Field label="Goals against" name="goalsAgainst" type="number" defaultValue={selectedStanding.goalsAgainst ?? 0} /><Field label="Points" name="points" type="number" min={0} defaultValue={selectedStanding.points ?? 0} /><Field label="Last five form (e.g. WDLWW)" name="form" defaultValue={(selectedStanding.form ?? []).join('')} /></div>
+                <div className="admin-form-grid table-arrow-fields">
+                  <label className="admin-field"><span>Table arrow</span><select name="arrow" defaultValue="auto"><option value="auto">From last week's position</option><option value="up">▲ Moved up</option><option value="down">▼ Moved down</option><option value="same">No arrow (same place)</option></select></label>
+                  <Field label="Last week's position" name="previousPosition" type="number" min={1} max={30} defaultValue={selectedStanding.previousPosition ?? selectedStanding.position ?? ''} />
+                </div>
                 <div className="admin-actions"><Button type="submit" disabled={saving}>Save table row</Button></div>
               </form>}
             </Card>
