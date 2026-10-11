@@ -755,7 +755,8 @@ export default function AdminPanel() {
         date: dateInput ? `${dateInput}:00+02:00` : '',
         home: String(form.get('home') ?? '').trim(),
         away: String(form.get('away') ?? '').trim(),
-        venue: String(form.get('venue') ?? '').trim() || null,
+        // Ekhaya's home ground is Chiwembe Stadium unless another venue is typed.
+        venue: String(form.get('venue') ?? '').trim() || (/^ekhaya/i.test(String(form.get('home') ?? '').trim()) ? 'Chiwembe Stadium' : null),
         status: String(form.get('status') ?? 'upcoming'),
         homeScore: numberValue(form.get('homeScore'), true),
         awayScore: numberValue(form.get('awayScore'), true),
