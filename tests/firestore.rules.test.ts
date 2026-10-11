@@ -166,3 +166,23 @@ test('alerts: a fan saves the players they follow on their own device only', asy
   await assertFails(updateDoc(doc(fan, `pushTokens/${token}`), { follows: Array.from({ length: 31 }, (_, i) => `p${i}`), updatedAt: serverTimestamp() }))
   await assertFails(updateDoc(doc(signedIn('fan-2'), `pushTokens/${token}`), { follows: [], updatedAt: serverTimestamp() }))
 })
+
+test('stadium check-in: once team news is out or during the match, in the fan\'s own name, never in practice', async () => {
+  await seedDocument('users/fan-1', { role: 'fan', fullName: 'Supporter One' })
+  const fan = testEnvironment.authenticatedContext('fan-1', { email: 'fan-1@example.com', email_verified: true }).firestore()
+  await seedDocument('fixtures/early', { status: 'upcoming', home: 'Ekhaya FC', away: 'Blue Eagles' })
+  await seedDocument('fixtures/teamnews', { status: 'upcoming', lineupConfirmed: true, home: 'Ekhaya FC', away: 'Blue Eagles' })
+  await seedDocument('fixtures/live', { status: 'live', home: 'Ekhaya FC', away: 'Blue Eagles' })
+  await seedDocument('fixtures/practice', { status: 'live', isTest: true, home: 'Ekhaya FC', away: 'Practice XI' })
+  await seedDocument('fixtures/done', { status: 'finished', home: 'Ekhaya FC', away: 'Blue Eagles' })
+  const checkIn = (fixture: string, name = 'Supporter One') => setDoc(doc(fan, `fixtures/${fixture}/checkins/fan-1`), { name, createdAt: serverTimestamp() })
+  await assertFails(checkIn('early'))
+  await assertSucceeds(checkIn('teamnews'))
+  await assertSucceeds(checkIn('live'))
+  await assertFails(checkIn('practice'))
+  await assertFails(checkIn('done'))
+  await assertFails(setDoc(doc(fan, 'fixtures/live/checkins/fan-2'), { name: 'Supporter One', createdAt: serverTimestamp() }))
+  // Fan points are written by admins only.
+  await assertFails(setDoc(doc(fan, 'fanPoints/fan-1'), { points: 9999 }))
+  await assertSucceeds(getDoc(doc(fan, 'fanPoints/fan-1')))
+})

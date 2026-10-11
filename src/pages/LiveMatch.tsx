@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import GoalSplash from '../components/GoalSplash'
 import MotmCard from '../components/MotmCard'
 import ShareBar from '../components/ShareBar'
+import CheckInCard from '../components/CheckInCard'
+import { checkInOpen } from '../utils/checkIn'
 import PlayerAvatar from '../components/PlayerAvatar'
 import { DEFAULT_FORMATION, FORMATIONS, isFormation, slotRoles, type Formation } from '../utils/formations'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
@@ -996,6 +998,7 @@ export default function LiveMatch() {
       <div className="matchday-scoreboard-bottom"><span>{selectedFixture.venue || 'Venue TBC'}</span><span>{new Date(selectedFixture.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span></div>
     </section>
     {isAdmin && isFinished && !selectedFixture.isTest && params.get('edit') === '1' && params.get('match') === selectedFixture.id && !editPromptUsed && <div className="edit-prompt"><span>Fix the scorers, minutes, cards or score of this match.</span><Button type="button" disabled={busy} onClick={() => { setEditPromptUsed(true); void resetMatch('edit') }}>Edit match</Button></div>}
+    {checkInOpen(selectedFixture) && <CheckInCard key={selectedFixture.id} fixture={selectedFixture} />}
     <ShareBar fixture={selectedFixture} events={events} players={players} minuteLabel={matchMinute(selectedFixture, clockNow)} />
     {message && <p className="live-feedback" role="status">{message}</p>}
     {problem && <p className="live-error" role="alert"><ShieldAlert size={15} />{problem}</p>}

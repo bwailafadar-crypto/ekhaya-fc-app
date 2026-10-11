@@ -7,6 +7,7 @@ import { matchAlerts, newsAlert } from '../../src/utils/alertRules.ts'
 import { isLiveNow, isPlayed } from '../../src/utils/football.ts'
 import { currentEventMinute, matchMinute } from '../../src/utils/matchClock.ts'
 import { autoStories } from '../../src/utils/stories.ts'
+import { fanPointsTable, levelFor } from '../../src/utils/leaderboardCalc.ts'
 import { competitionLabel, competitionOf, isCupCompetition, matchesFilter } from '../../src/utils/competitions.ts'
 import { cupStatus } from '../../src/utils/cupSeason.ts'
 import { ekhayaOutcome } from '../../src/utils/football.ts'
@@ -155,4 +156,21 @@ test('stories: live score, team news, next match and full time come from the fix
   const live = autoStories([f({ id: 'l', home: 'Ekhaya FC', away: 'Red Lions', date: '2026-10-17T07:30:00Z', status: 'live', homeScore: 1, awayScore: 0 })], now)
   assert.equal(live[0].label, 'LIVE')
   assert.equal(live[0].title, 'Ekhaya FC 1–0 Red Lions')
+})
+
+test('fan points: predictions, votes, check-ins and invites add up; levels follow the points', () => {
+  const rows = fanPointsTable({
+    predictionPoints: [{ uid: 'a', points: 4, name: 'Amos' }],
+    motmVoters: ['a', 'b', 'b'],
+    pollVoters: ['b'],
+    checkIns: [{ uid: 'c', name: 'Chikondi' }, { uid: 'a' }],
+    inviters: ['c', 'c'],
+    names: { b: 'Bertha' },
+  })
+  // a: 4 + 2 (vote) + 5 (check-in) = 11; b: 2 votes x2 + 1 poll = 5; c: 5 + 2 invites x10 = 25
+  assert.deepEqual(rows.map((row) => [row.name, row.points, row.rank, row.level]), [['Chikondi', 25, 1, 'Supporter'], ['Amos', 11, 2, 'Rookie'], ['Bertha', 5, 3, 'Rookie']])
+  assert.equal(levelFor(0).name, 'Rookie')
+  assert.equal(levelFor(100).name, 'Ultra')
+  assert.equal(levelFor(250).next, null)
+  assert.deepEqual(levelFor(60).next, { name: 'Ultra', from: 100 })
 })

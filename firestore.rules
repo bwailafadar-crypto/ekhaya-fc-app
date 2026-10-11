@@ -172,6 +172,21 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
+      // Stadium check-in: one per fan per match, from team news until full time.
+      match /checkins/{uid} {
+        allow read: if signedIn();
+        allow create: if canAct()
+          && request.auth.uid == uid
+          && fixtureDoc(fixtureId).get('isTest', false) != true
+          && fixtureDoc(fixtureId).get('editing', false) != true
+          && (fixtureDoc(fixtureId).status == 'live'
+            || (fixtureDoc(fixtureId).status == 'upcoming' && fixtureDoc(fixtureId).get('lineupConfirmed', false) == true))
+          && request.resource.data.keys().hasOnly(['name', 'createdAt'])
+          && request.resource.data.name == myName()
+          && request.resource.data.createdAt == request.time;
+        allow delete: if isAdmin();
+      }
+
       match /reactions/{uid} {
         allow read: if signedIn();
         allow create, update: if canAct()
@@ -232,6 +247,12 @@ service cloud.firestore {
     // Season leaderboard, calculated by admins after each match so fans read
     // one small document instead of every prediction ever made.
     match /leaderboard/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Fan points and level, calculated by admins (fans never write their own).
+    match /fanPoints/{uid} {
       allow read: if signedIn();
       allow write: if isAdmin();
     }

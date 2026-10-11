@@ -12,6 +12,7 @@ import { useAuth } from '../auth/AuthContext'
 import TeamLogo from '../components/TeamLogo'
 import NewsArticleEditor from '../components/NewsArticleEditor'
 import SquadSheet from './admin/SquadSheet'
+import MemberCardCheck from './admin/MemberCardCheck'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
@@ -802,6 +803,7 @@ export default function AdminPanel() {
       : section === 'fans' ? <FansManager onOpenRequests={() => setSection('members')} />
       : section === 'fanzone' ? <FanZoneManager />
       : section === 'members' ? <section className="admin-members">
+          {isSuperadmin && <MemberCardCheck />}
           <div className="member-filters">
             <label className="admin-field"><span>Tier</span><select value={tierFilter} onChange={(event) => setTierFilter(event.target.value)}><option value="all">All tiers</option>{membershipTiers.items.map((tier) => <option key={tier.id} value={tier.id}>{tier.name}</option>)}</select></label>
             <label className="admin-field"><span>Status</span><select value={memberStatusFilter} onChange={(event) => setMemberStatusFilter(event.target.value)}><option value="all">All statuses</option><option value="pending">Pending</option><option value="active">Active</option><option value="suspended">Suspended</option></select></label>

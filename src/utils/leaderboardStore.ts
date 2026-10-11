@@ -4,7 +4,7 @@ import { collection, doc, getDocs, serverTimestamp, setDoc, writeBatch } from 'f
 import { db } from '../firebase'
 import type { Fixture } from '../types'
 import { isPlayed } from './football'
-import { rankPredictions, type ScoredPrediction } from './leaderboardCalc'
+import { fanPointsTable, rankPredictions, type ScoredPrediction } from './leaderboardCalc'
 
 export const LEADERBOARD_TOP = 100
 
@@ -61,10 +61,53 @@ async function doRecalculate(force: boolean) {
     ...changed.map((row) => (batch: ReturnType<typeof writeBatch>) => batch.set(doc(db, 'leaderboardEntries', row.uid), { ...row, totalFans: rows.length, updatedAt: serverTimestamp() })),
     ...stale.map((item) => (batch: ReturnType<typeof writeBatch>) => batch.delete(item.ref)),
   ]
+  await commitAll(writes)
+  await recalculateFanPoints(fixtures.docs.map((item) => ({ ...(item.data() as Fixture), id: item.id })), rows)
+  return rows.length
+}
+
+async function commitAll(writes: Array<(batch: ReturnType<typeof writeBatch>) => void>) {
   for (let i = 0; i < writes.length; i += 450) {
     const batch = writeBatch(db)
     writes.slice(i, i + 450).forEach((write) => write(batch))
     await batch.commit()
   }
-  return rows.length
+}
+
+/**
+ * Fan points: predictions + man-of-the-match votes + poll votes + stadium
+ * check-ins + friends invited. Saved as one board (leaderboard/fans) plus one
+ * small document per fan (fanPoints/{uid}).
+ */
+async function recalculateFanPoints(allFixtures: Fixture[], predictionRows: Array<{ uid: string; points: number; name: string }>) {
+  const real = allFixtures.filter((fixture) => !fixture.isTest)
+  const played = real.filter((fixture) => isPlayed(fixture) || fixture.status === 'live')
+  const safe = async <T,>(work: () => Promise<T>, fallback: T) => { try { return await work() } catch { return fallback } }
+  const [motmSets, checkinSets, polls, referrals, fanCards] = await Promise.all([
+    Promise.all(real.filter(isPlayed).map((fixture) => safe(() => getDocs(collection(db, 'fixtures', fixture.id, 'motm')), null))),
+    Promise.all(played.map((fixture) => safe(() => getDocs(collection(db, 'fixtures', fixture.id, 'checkins')), null))),
+    safe(() => getDocs(collection(db, 'polls')), null),
+    safe(() => getDocs(collection(db, 'referrals')), null),
+    safe(() => getDocs(collection(db, 'fanCards')), null),
+  ])
+  const pollSets = polls ? await Promise.all(polls.docs.map((poll) => safe(() => getDocs(collection(db, 'polls', poll.id, 'votes')), null))) : []
+  const names: Record<string, string> = {}
+  fanCards?.docs.forEach((item) => { const name = item.data().name; if (typeof name === 'string' && name) names[item.id] = name })
+  const table = fanPointsTable({
+    predictionPoints: predictionRows,
+    motmVoters: motmSets.flatMap((set) => set?.docs.map((item) => item.id) ?? []),
+    pollVoters: pollSets.flatMap((set) => set?.docs.map((item) => item.id) ?? []),
+    checkIns: checkinSets.flatMap((set) => set?.docs.map((item) => ({ uid: item.id, name: typeof item.data().name === 'string' ? item.data().name : undefined })) ?? []),
+    inviters: referrals?.docs.map((item) => String(item.data().by ?? '')).filter(Boolean) ?? [],
+    names,
+  })
+  const existing = await getDocs(collection(db, 'fanPoints'))
+  const current = new Map(existing.docs.map((item) => [item.id, item.data()]))
+  const keep = new Set(table.map((row) => row.uid))
+  const changed = table.filter((row) => { const old = current.get(row.uid); return !old || old.points !== row.points || old.rank !== row.rank || old.name !== row.name || old.totalFans !== table.length || JSON.stringify(old.breakdown) !== JSON.stringify(row.breakdown) })
+  await commitAll([
+    (batch) => batch.set(doc(db, 'leaderboard', 'fans'), { rows: table.slice(0, LEADERBOARD_TOP).map(({ breakdown: _breakdown, ...row }) => { void _breakdown; return row }), totalFans: table.length, updatedAt: serverTimestamp() }),
+    ...changed.map((row) => (batch: ReturnType<typeof writeBatch>) => batch.set(doc(db, 'fanPoints', row.uid), { ...row, totalFans: table.length, updatedAt: serverTimestamp() })),
+    ...existing.docs.filter((item) => !keep.has(item.id)).map((item) => (batch: ReturnType<typeof writeBatch>) => batch.delete(item.ref)),
+  ])
 }

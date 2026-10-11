@@ -1691,3 +1691,42 @@ select.auth-input { appearance: auto; }
 .player-log-goals i { color: var(--gold-dark); font-size: 11px; font-style: normal; font-weight: 700; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .story-bubble.live .story-ring { animation: none; } }
 .story-composer textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; font: 500 14px 'Inter', sans-serif; resize: vertical; }
+
+/* update 67: Phase 4 — fan points, levels, stadium check-in, gate card check */
+.fan-level-card { background: linear-gradient(150deg, #FFFBEA, #fff 60%); border-color: rgb(201 162 39 / 45%); }
+.fan-level-top { display: flex; align-items: center; gap: 12px; }
+.fan-level-top small { display: block; color: var(--gold-dark); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.fan-level-top strong { display: block; font: 700 26px/1.1 'Oswald', sans-serif; }
+.fan-level-top span:not(.fan-level-badge) { color: var(--muted); font-size: 12px; }
+.fan-level-badge { width: 52px; height: 52px; flex: 0 0 52px; display: grid; place-items: center; color: #fff; background: linear-gradient(140deg, #C9C2AE, #8E8770); border-radius: 50%; box-shadow: 0 6px 16px rgb(0 0 0 / 15%); }
+.fan-level-badge.level-1 { background: linear-gradient(140deg, #D9B98F, #A0703C); }
+.fan-level-badge.level-2 { background: linear-gradient(140deg, #D8DDE2, #8C97A2); }
+.fan-level-badge.level-3 { background: linear-gradient(140deg, var(--gold-light), var(--gold-dark)); }
+.fan-level-badge.level-4 { background: linear-gradient(140deg, #2A2A2A, #000); color: var(--gold-light); border: 2px solid var(--gold-light); }
+.fan-level-bar { margin: 12px 0 4px; height: 8px; overflow: hidden; background: #EFEBDD; border-radius: 99px; }
+.fan-level-bar i { height: 100%; display: block; background: linear-gradient(90deg, var(--gold-light), var(--gold-dark)); border-radius: 99px; transition: width .6s ease; }
+.fan-level-breakdown { margin: 8px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.fan-level-breakdown li { padding: 7px 10px; display: flex; justify-content: space-between; background: #fff; border: 1px solid var(--line); border-radius: 10px; font-size: 12px; }
+.fan-level-breakdown b { color: var(--gold-dark); }
+.fan-level-how { margin-top: 10px; font-size: 12px; }
+.fan-level-how summary { color: var(--gold-dark); font-weight: 700; cursor: pointer; }
+.fan-level-how ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.fan-level-chip { margin-top: 6px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; color: var(--gold-dark); background: rgb(232 201 90 / 18%); border: 1px solid rgb(201 162 39 / 40%); border-radius: 999px; font-size: 11px; font-weight: 700; }
+.digital-membership-name .fan-level-chip { margin-left: 8px; }
+.checkin-card { margin: 10px 0; padding: 12px 14px; display: flex; align-items: center; gap: 12px; background: linear-gradient(120deg, #FFF8DE, #fff 70%); border: 1px solid rgb(201 162 39 / 50%); border-radius: 16px; }
+.checkin-card > svg { color: var(--gold-dark); flex: 0 0 auto; }
+.checkin-card > div { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.checkin-card strong { font-size: 14px; }
+.checkin-card span { color: var(--muted); font-size: 12px; }
+.checkin-card button { min-height: 38px; padding: 0 16px; color: var(--ink); background: linear-gradient(120deg, var(--gold-light), var(--gold)); border: 0; border-radius: 999px; font: 700 13px 'Inter', sans-serif; cursor: pointer; white-space: nowrap; }
+.checkin-card .checkin-done { display: inline-flex; align-items: center; gap: 5px; color: var(--win); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.member-check { margin-bottom: 14px; }
+.member-check-video { margin-top: 10px; width: 100%; max-height: 300px; object-fit: cover; background: #000; border-radius: 14px; }
+.member-check-actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.member-check-actions form { min-width: 0; flex: 1; display: flex; gap: 8px; }
+.member-check-actions input { min-width: 0; flex: 1; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; font: 500 14px 'Inter', sans-serif; }
+.member-check-result { margin-top: 12px; padding: 12px; display: flex; align-items: center; gap: 10px; border-radius: 12px; font-size: 13px; }
+.member-check-result > div { display: flex; flex-direction: column; }
+.member-check-result span { color: var(--muted); font-size: 12px; }
+.member-check-result.good { color: var(--win); background: rgb(30 142 62 / 10%); border: 1px solid rgb(30 142 62 / 35%); }
+.member-check-result.bad { color: var(--loss); background: rgb(198 40 40 / 8%); border: 1px solid rgb(198 40 40 / 30%); }

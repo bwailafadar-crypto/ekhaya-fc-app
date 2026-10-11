@@ -3,6 +3,7 @@ import { collection, doc, onSnapshot, query, where } from 'firebase/firestore'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../auth/AuthContext'
 import { LeaderboardBadge } from '../components/Leaderboard'
+import { FanLevelChip } from '../components/FanLevel'
 import VerificationBanner from '../components/VerificationBanner'
 import LogoutButton from '../components/LogoutButton'
 import PushSettings from '../components/PushSettings'
@@ -65,6 +66,7 @@ export default function Profile() {
       <Card className="profile-card">
         <h2>{fullName}</h2>
         <p>{user?.email}</p>
+        <FanLevelChip />
       </Card>
       {/* Email check lives here now, not at the top of every page. */}
       <VerificationBanner />
@@ -72,7 +74,7 @@ export default function Profile() {
       <section className="digital-membership-card" aria-label="Digital membership card">
         <div className="digital-membership-header"><TeamLogo name="Ekhaya FC" crest /><div><span>EKHAYA FC</span><strong>OFFICIAL SUPPORTER CLUB</strong></div><span className={`digital-membership-status digital-membership-${status}`}>{status === 'active' ? 'ACTIVE' : status.toUpperCase()}</span></div>
         {loading ? <div className="digital-membership-loading"><Skeleton /><Skeleton /></div> : <>
-          <div className="digital-membership-name"><span>Member</span><strong>{fullName}</strong></div>
+          <div className="digital-membership-name"><span>Member</span><strong>{fullName}</strong><FanLevelChip /></div>
           <div className="digital-membership-details"><div><span>Fan ID</span><strong>{fanId ?? 'Pending approval'}</strong></div><div><span>Tier</span><strong>{tier?.name ?? 'Pending'}</strong></div><div><span>Expires</span><strong>{status === 'active' ? expiry ?? 'Not set' : 'Pending approval'}</strong></div></div>
           <div className="digital-membership-meta"><span>Joined {joinedAt ?? 'on approval'}</span>{tierBenefits.length ? <strong>{tierBenefits.join(' • ')}</strong> : null}</div>
           <div className="digital-membership-qr">{status === 'active' && qrValue ? <QRCodeSVG value={qrValue} size={104} level="M" includeMargin aria-label={`Membership QR for ${fanId}`} /> : <p>QR available after approval</p>}</div>

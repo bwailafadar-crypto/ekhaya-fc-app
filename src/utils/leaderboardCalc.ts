@@ -30,3 +30,56 @@ export function rankPredictions(results: FinalScore[], predictions: ScoredPredic
   }
   return ranked
 }
+
+// ---- Fan points and levels (everything a fan does for the club, not just predictions) ----
+export const FAN_POINTS = { motmVote: 2, pollVote: 1, checkIn: 5, invite: 10 } as const
+export const LEVELS = [
+  { name: 'Rookie', from: 0 },
+  { name: 'Supporter', from: 20 },
+  { name: 'Regular', from: 50 },
+  { name: 'Ultra', from: 100 },
+  { name: 'Legend', from: 200 },
+] as const
+
+export type FanPointsBreakdown = { predictions: number; motmVotes: number; pollVotes: number; checkIns: number; invites: number }
+export type FanPointsRow = { uid: string; name: string; points: number; level: string; rank: number; breakdown: FanPointsBreakdown }
+export type FanActivity = {
+  predictionPoints: Array<{ uid: string; points: number; name: string }>
+  motmVoters: string[]
+  pollVoters: string[]
+  checkIns: Array<{ uid: string; name?: string }>
+  inviters: string[]
+  names: Record<string, string>
+}
+
+export function levelFor(points: number) {
+  let index = 0
+  LEVELS.forEach((level, i) => { if (points >= level.from) index = i })
+  const next = LEVELS[index + 1]
+  return { name: LEVELS[index].name, index, next: next ? { name: next.name, from: next.from } : null }
+}
+
+/** Adds up every fan's points; one row per fan, best first, ties share a rank. */
+export function fanPointsTable(activity: FanActivity): FanPointsRow[] {
+  const rows = new Map<string, { name: string; breakdown: FanPointsBreakdown }>()
+  const row = (uid: string) => {
+    let entry = rows.get(uid)
+    if (!entry) { entry = { name: activity.names[uid] ?? '', breakdown: { predictions: 0, motmVotes: 0, pollVotes: 0, checkIns: 0, invites: 0 } }; rows.set(uid, entry) }
+    return entry
+  }
+  for (const item of activity.predictionPoints) { const entry = row(item.uid); entry.breakdown.predictions += item.points; if (!entry.name && item.name) entry.name = item.name }
+  for (const uid of activity.motmVoters) row(uid).breakdown.motmVotes += 1
+  for (const uid of activity.pollVoters) row(uid).breakdown.pollVotes += 1
+  for (const item of activity.checkIns) { const entry = row(item.uid); entry.breakdown.checkIns += 1; if (!entry.name && item.name) entry.name = item.name }
+  for (const uid of activity.inviters) row(uid).breakdown.invites += 1
+  const total = (b: FanPointsBreakdown) => b.predictions + b.motmVotes * FAN_POINTS.motmVote + b.pollVotes * FAN_POINTS.pollVote + b.checkIns * FAN_POINTS.checkIn + b.invites * FAN_POINTS.invite
+  const sorted = [...rows.entries()].map(([uid, entry]) => ({ uid, name: entry.name || 'Fan', points: total(entry.breakdown), breakdown: entry.breakdown }))
+    .filter((entry) => entry.points > 0)
+    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
+  const ranked: FanPointsRow[] = []
+  sorted.forEach((entry, index) => {
+    const previous = ranked[index - 1]
+    ranked.push({ ...entry, level: levelFor(entry.points).name, rank: previous && previous.points === entry.points ? previous.rank : index + 1 })
+  })
+  return ranked
+}

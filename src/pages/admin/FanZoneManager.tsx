@@ -72,6 +72,8 @@ function PollRow({ poll }: { poll: Poll }) {
         ? { status: 'closed', results: counts }
         : { status: 'open', results: deleteField() })
       showToast(poll.status === 'open' ? 'Poll closed. Fans now see the final results.' : 'Poll reopened.')
+      // Poll votes earn fan points: update the boards in the background.
+      if (poll.status === 'open') void recalculateLeaderboard().catch(() => undefined)
     } catch { showToast('The poll was not updated.', 'error') } finally { setBusy(false) }
   }
 
@@ -125,6 +127,8 @@ function MotmControl({ fixture, players }: { fixture: Fixture; players: Player[]
         ? { motmClosed: false, motmTally: deleteField(), motmWinnerId: deleteField(), motmWinnerVotes: deleteField(), motmTotalVotes: deleteField() }
         : { motmClosed: true, motmTally: tally, motmTotalVotes: votes.items.length, ...(winnerId ? { motmWinnerId: winnerId, motmWinnerVotes: winnerVotes } : {}) })
       showToast(closed ? 'Man of the match voting reopened.' : 'Voting closed. Fans now see the winner.')
+      // Votes earn fan points: update the boards in the background.
+      if (!closed) void recalculateLeaderboard().catch(() => undefined)
     } catch { showToast('Voting was not updated.', 'error') } finally { setBusy(false) }
   }
 

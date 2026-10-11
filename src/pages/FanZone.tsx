@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useFlag } from '../hooks/useFlag'
 import Leaderboard from '../components/Leaderboard'
 import PushSettings from '../components/PushSettings'
+import { FanLevelCard, FansBoard } from '../components/FanLevel'
 import TeamLogo from '../components/TeamLogo'
 import { useToast } from '../components/ToastContext'
 import { Button, Card, PageHeader, Skeleton } from '../components/UI'
@@ -205,11 +206,13 @@ export default function FanZone() {
 
   return <div className="fan-zone">
     <PageHeader eyebrow="Supporters" title="Fan Zone" description="Predict scores, pick the man of the match and have your say." />
+    <FanLevelCard />
     {(fixtures.error || players.error || polls.error) && <p className="live-error" role="alert">Some Fan Zone content could not be loaded. Check your connection.</p>}
     <VerifyEmailNotice />
     <PushSettings compact />
     {fanFamily && <Link className="community-link" to="/community"><HeartHandshake size={20} aria-hidden="true" /><span><strong>Fan Family</strong><small>Join your district branch and invite friends</small></span><ChevronRight size={18} aria-hidden="true" /></Link>}
     {nextMatch ? <PredictCard fixture={nextMatch} /> : <Card className="fz-card"><h2>Predict the score</h2><p className="fz-note">The next fixture will appear here once it is scheduled.</p></Card>}
+    <FansBoard />
     <Leaderboard />
     {lastMatch && <MotmCard fixture={lastMatch} players={players.items} />}
     {lastMatch && <LastPredictionsCard fixture={lastMatch} />}
