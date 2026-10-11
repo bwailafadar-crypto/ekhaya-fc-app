@@ -1805,3 +1805,10 @@ select.auth-input { appearance: auto; }
 .tv-facebook .matchday-section-title a { color: var(--gold-dark); font-size: 12px; font-weight: 700; }
 .tv-facebook iframe { width: 100%; height: 720px; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 16px; }
 .tv-facebook-load { width: 100%; min-height: 54px; padding: 0 16px; color: #fff; background: #1877F2; border: 0; border-radius: 14px; font: 700 14px 'Inter', sans-serif; cursor: pointer; }
+
+/* update 72: "Can't get in?" help on the sign-in page */
+.auth-help { margin-top: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: #FFF8DE; border: 1px solid rgb(201 162 39 / 45%); border-radius: 14px; }
+.auth-help strong { font-size: 14px; }
+.auth-help small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.auth-help-action { min-height: 42px; padding: 8px 12px; display: flex; align-items: center; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 10px; font: 600 13px 'Inter', sans-serif; text-align: left; text-decoration: none; cursor: pointer; }
+.auth-help-action:disabled { color: var(--win); cursor: default; }

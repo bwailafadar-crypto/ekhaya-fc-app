@@ -16,9 +16,9 @@ function getErrorMessage(error: unknown) {
   if (!(error instanceof FirebaseError)) return 'Something went wrong. Please try again.'
   const messages: Record<string, string> = {
     'auth/email-already-in-use': 'An account with this email already exists. Try signing in instead.',
-    'auth/invalid-credential': 'The email or password is incorrect. Check for typos or spaces. Forgot it? Tap "Forgot password?" below. Were you a club member before this app? You still need to tap "Create account" once with the same email.',
-    'auth/wrong-password': 'The email or password is incorrect. Check for typos or spaces. Forgot it? Tap "Forgot password?" below. Were you a club member before this app? You still need to tap "Create account" once with the same email.',
-    'auth/user-not-found': 'The email or password is incorrect. Check for typos or spaces. Forgot it? Tap "Forgot password?" below. Were you a club member before this app? You still need to tap "Create account" once with the same email.',
+    'auth/invalid-credential': 'The email or password is incorrect. Check for typos, or use the options below.',
+    'auth/wrong-password': 'The email or password is incorrect. Check for typos, or use the options below.',
+    'auth/user-not-found': 'The email or password is incorrect. Check for typos, or use the options below.',
     'auth/invalid-email': 'Enter a valid email address.',
     'auth/weak-password': 'Choose a password with at least 6 characters.',
     'auth/network-request-failed': 'Connection failed. Check your internet and try again.',
@@ -378,12 +378,20 @@ function SignOutNotice() {
 }
 
 export function LoginPage() {
-  const { signIn, accountBlocked } = useAuth()
+  const { signIn, accountBlocked, sendPasswordReset } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  // After a rejected email/password: one-tap ways back in.
+  const [stuck, setStuck] = useState(false)
+  const [resetState, setResetState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
+
+  async function emailResetLink() {
+    setResetState('sending')
+    try { await sendPasswordReset(email); setResetState('sent') } catch { setResetState('failed') }
+  }
   const [status, setStatus] = useState<SendStatus>('idle')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -398,6 +406,9 @@ export function LoginPage() {
       window.setTimeout(() => navigate(from?.startsWith('/') ? from : '/', { replace: true }), 1100)
     } catch (reason) {
       const message = getErrorMessage(reason)
+      const code = reason instanceof FirebaseError ? reason.code : ''
+      setStuck(['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/too-many-requests'].includes(code))
+      setResetState('idle')
       // Let the plane crash into the button first, then show red.
       const crashMs = canFly() ? 650 : 0
       setStatus('crash')
@@ -423,6 +434,15 @@ export function LoginPage() {
         {error && <p className="auth-error" role="alert">{error}</p>}
         <SendButton status={status} label="Sign in" />
       </form>
+      {stuck && email.includes('@') && <div className="auth-help" role="region" aria-label="Help signing in">
+        <strong>Can't get in?</strong>
+        <button type="button" className="auth-help-action" disabled={resetState === 'sending' || resetState === 'sent'} onClick={() => void emailResetLink()}>
+          {resetState === 'sent' ? `✔ Link sent to ${email.trim()} — check your inbox and spam` : resetState === 'sending' ? 'Sending…' : '📧 Email me a link to set a new password'}
+        </button>
+        {resetState === 'failed' && <small>The link could not be sent. Check the email address and your connection.</small>}
+        <Link className="auth-help-action" to="/signup" state={{ email: email.trim() }}>🆕 I don't have an app account yet: create one with this email</Link>
+        <small>Club members from before the app also need to create an account once. Their membership links automatically.</small>
+      </div>}
       <div className="auth-links">
         <Link className="auth-link" to="/forgot-password">Forgot password?</Link>
         <span>New to Ekhaya? <Link className="auth-link" to="/signup">Create account</Link></span>
@@ -435,9 +455,11 @@ export function LoginPage() {
 export function SignUpPage() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
+  const signUpLocation = useLocation()
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
+  // Coming from "Can't get in?" on the sign-in page: keep the email they typed.
+  const [email, setEmail] = useState(() => String((signUpLocation.state as { email?: string } | null)?.email ?? ''))
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [branch, setBranch] = useState('')

@@ -6,6 +6,11 @@
 //        -> also makes a password reset link you can send the fan on WhatsApp
 const os = require('node:os')
 require('node:dns').setDefaultResultOrder('ipv4first')
+// On slow mobile networks Node gives up on a connection after 0.25 s and reports
+// ETIMEDOUT, although curl works. Give each connection attempt more time.
+const net = require('node:net')
+if (net.setDefaultAutoSelectFamilyAttemptTimeout) net.setDefaultAutoSelectFamilyAttemptTimeout(5000)
+if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false)
 const path = require('node:path')
 const fs = require('node:fs')
 const { initializeApp, cert } = require('firebase-admin/app')
