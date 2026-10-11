@@ -26,7 +26,8 @@ export default function Home() {
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const competitions = useFlag('competitions')
   const newsResult = usePublishedNews()
-  const [clockNow, setClockNow] = useState(0)
+  // Start from the real time (not 0), so the first second never shows a wrong minute or countdown.
+  const [clockNow, setClockNow] = useState(() => Date.now())
   const liveMatch = fixturesResult.items.find((fixture) => isLiveNow(fixture) && !fixture.isTest)
   const upcoming = sortByDate(fixturesResult.items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')[0]
   const lastResult = sortByDate(fixturesResult.items.filter((fixture) => isPlayed(fixture) && !fixture.isTest), 'desc')[0]

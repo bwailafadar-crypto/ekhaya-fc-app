@@ -198,6 +198,11 @@ function messageFrom(error: unknown) {
   return error instanceof Error ? error.message : 'Could not save this change. Check your connection and try again.'
 }
 
+const STAT_LABELS: Record<keyof PlayerStats, string> = {
+  appearances: 'Appearances', starts: 'Starts', minutes: 'Minutes', goals: 'Goals',
+  assists: 'Assists', yellowCards: 'Yellow cards', redCards: 'Red cards', cleanSheets: 'Clean sheets',
+}
+
 export default function AdminPanel() {
   const { role } = useAuth()
   const isSuperadmin = role === 'superadmin'
@@ -234,7 +239,8 @@ export default function AdminPanel() {
   const memberPageBusy = useRef(false)
   const [membershipRecords, setMembershipRecords] = useState<AdminCollectionState<StoredMembership>>({ items: [], loading: true, error: null })
   const [legacyFans, setLegacyFans] = useState<AdminCollectionState<LegacyFan>>({ items: [], loading: true, error: null })
-  const [clockNow, setClockNow] = useState(0)
+  // Start from the real time (not 0), so the first second never shows a wrong minute or countdown.
+  const [clockNow, setClockNow] = useState(() => Date.now())
   const { showToast } = useToast()
   const players = useFirestoreCollection<Player>('players')
   const teams = useFirestoreCollection<Team>('teams')
@@ -844,7 +850,7 @@ export default function AdminPanel() {
               <Field label="Height (cm)" name="heightCm" type="number" defaultValue={selectedPlayer?.heightCm} min={1} />
             </div>
             <fieldset className="admin-stats"><legend>Season statistics</legend><div className="admin-form-grid">
-              {(Object.keys(emptyStats) as Array<keyof PlayerStats>).map((key) => <Field key={key} label={key.replace(/([A-Z])/g, ' $1')} name={key} type="number" min={0} defaultValue={selectedPlayer?.stats?.[key] ?? 0} />)}
+              {(Object.keys(emptyStats) as Array<keyof PlayerStats>).map((key) => <Field key={key} label={STAT_LABELS[key]} name={key} type="number" min={0} defaultValue={selectedPlayer?.stats?.[key] ?? 0} />)}
             </div></fieldset>
             <label className="admin-upload"><input type="file" accept="image/*" onChange={(event) => void handleImage(event, setPlayerPhoto)} /><ImagePlus size={17} />Upload player photo <small>Compressed under 200 KB</small></label>
             {playerPhoto && <img className="admin-image-preview" src={playerPhoto} alt="Player upload preview" />}

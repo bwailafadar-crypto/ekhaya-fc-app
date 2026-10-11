@@ -26,3 +26,16 @@ export function matchMinute(fixture: Fixture, now = Date.now()) {
 export function activePeriod(period: MatchPeriod | undefined) {
   return period === 'first-half' || period === 'second-half'
 }
+/** The minute new events are recorded at; always matches the clock fans see. */
+export function currentEventMinute(fixture: Fixture, now = Date.now()) {
+  if (!fixture.period) return Math.max(1, fixture.minute ?? 1)
+  const elapsed = elapsedMatchSeconds(fixture, now)
+  if (fixture.period === 'second-half' || fixture.period === 'full-time') {
+    // The second half restarts at 46', whatever stoppage time the first half had.
+    const inHalf = Math.max(0, elapsed - Number(fixture.firstHalfSeconds ?? 45 * 60))
+    return Math.min(130, 45 + Math.max(1, Math.ceil(inHalf / 60)))
+  }
+  if (fixture.period === 'half-time') return 45
+  // Never above the form's limit (130'), or the browser silently refuses to save the event.
+  return Math.min(130, Math.max(1, Math.ceil(elapsed / 60)))
+}

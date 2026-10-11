@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { MatchEvent, Player } from '../types'
 import { fireConfetti, prefersLessMotion } from '../utils/confetti'
 import PlayerAvatar from './PlayerAvatar'
@@ -13,7 +14,8 @@ export default function GoalSplash({ event, player, score, onClose }: { event: M
   }, [event.id, onClose])
 
   const name = player?.name ?? event.playerName ?? 'Ekhaya FC'
-  return <div className="goal-splash" role="alert" onClick={onClose}>
+  // Drawn on top of everything (header and bottom bar included).
+  return createPortal(<div className="goal-splash" role="alert" onClick={onClose}>
     <div className="goal-splash-card">
       <span className="goal-splash-word" aria-hidden="true">GOAL!</span>
       {player ? <PlayerAvatar player={player} large /> : <span className="goal-splash-ball" aria-hidden="true">⚽</span>}
@@ -22,5 +24,5 @@ export default function GoalSplash({ event, player, score, onClose }: { event: M
       <b>{score}</b>
       <small>Tap to close</small>
     </div>
-  </div>
+  </div>, document.body)
 }

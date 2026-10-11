@@ -55,85 +55,59 @@ function mapWordPressPost(post: WordPressPost, index: number): NewsItem {
   }
 }
 
+// The club website is checked every 10 minutes (not every minute) to save fans' data.
+const WEBSITE_REFRESH_MS = 10 * 60 * 1000
+
+type SourceState = { items: NewsItem[]; done: boolean; failed: boolean }
+const EMPTY: SourceState = { items: [], done: false, failed: false }
+
+/**
+ * Club news for fans: articles published in the app (Admin → News) and posts
+ * from the club website, together, newest first. If one source is down the
+ * other still shows; app articles are never hidden by the website.
+ */
 export function usePublishedNews() {
-  const [state, setState] = useState<{ items: NewsItem[]; loading: boolean; error: string | null }>({
-    items: [], loading: true, error: null,
-  })
+  const [app, setApp] = useState<SourceState>(EMPTY)
+  const [website, setWebsite] = useState<SourceState>(EMPTY)
+
+  useEffect(() => onSnapshot(
+    query(collection(db, 'news'), where('status', '==', 'published')),
+    (snapshot) => setApp({ items: snapshot.docs.map((item) => ({ ...item.data() as DocumentData, id: item.id }) as NewsItem), done: true, failed: false }),
+    () => setApp({ items: [], done: true, failed: true }),
+  ), [])
 
   useEffect(() => {
     let active = true
-    let unsubscribeFallback: (() => void) | undefined
-    let activeController: AbortController | undefined
-    let requestInProgress = false
-    let usingExternalNews = false
-
-    async function loadExternalNews() {
-      if (!active || requestInProgress) return
-      requestInProgress = true
-      const controller = new AbortController()
-      activeController = controller
-      const timeout = window.setTimeout(() => controller.abort(), 15000)
-
+    let controller: AbortController | undefined
+    async function load() {
+      controller?.abort()
+      const current = new AbortController()
+      controller = current
+      const timeout = window.setTimeout(() => current.abort(), 15000)
       try {
-        const response = await fetch(WORDPRESS_NEWS_URL, {
-          headers: { Accept: 'application/json' },
-          signal: controller.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error(`News source returned ${response.status}`)
-        }
-
+        const response = await fetch(WORDPRESS_NEWS_URL, { headers: { Accept: 'application/json' }, signal: current.signal })
+        if (!response.ok) throw new Error(`News source returned ${response.status}`)
         const posts = (await response.json()) as WordPressPost[]
-        if (!Array.isArray(posts)) {
-          throw new Error('News source did not return an array')
-        }
-
-        const items = posts.map(mapWordPressPost)
-        if (active) {
-          usingExternalNews = true
-          unsubscribeFallback?.()
-          unsubscribeFallback = undefined
-          setState({ items, loading: false, error: null })
-        }
+        if (!Array.isArray(posts)) throw new Error('News source did not return an array')
+        if (active) setWebsite({ items: posts.map(mapWordPressPost).map((item) => ({ ...item, featured: false })), done: true, failed: false })
       } catch {
-        if (!active) return
-        usingExternalNews = false
-        if (!unsubscribeFallback) {
-          unsubscribeFallback = onSnapshot(
-            query(collection(db, 'news'), where('status', '==', 'published')),
-            (snapshot) => {
-              if (!active || usingExternalNews) return
-              const items = snapshot.docs.map((item) => ({ ...item.data() as DocumentData, id: item.id }) as NewsItem)
-                .sort((left, right) => right.publishedDate.localeCompare(left.publishedDate))
-              setState({ items, loading: false, error: null })
-            },
-            () => {
-              if (!active || usingExternalNews) return
-              unsubscribeFallback = undefined
-              setState({ items: [], loading: false, error: 'News could not be loaded. Check your connection and try again.' })
-            },
-          )
-        }
+        // Keep the last good website posts if a refresh fails.
+        if (active) setWebsite((prev) => ({ items: prev.items, done: true, failed: !prev.items.length }))
       } finally {
         window.clearTimeout(timeout)
-        if (activeController === controller) activeController = undefined
-        requestInProgress = false
       }
     }
-
-    void loadExternalNews()
-    const refreshTimer = window.setInterval(() => {
-      void loadExternalNews()
-    }, 60000)
-
-    return () => {
-      active = false
-      activeController?.abort()
-      unsubscribeFallback?.()
-      window.clearInterval(refreshTimer)
-    }
+    void load()
+    const timer = window.setInterval(() => void load(), WEBSITE_REFRESH_MS)
+    return () => { active = false; controller?.abort(); window.clearInterval(timer) }
   }, [])
 
-  return state
+  const items = [...app.items, ...website.items.filter((post) => !app.items.some((item) => item.id === post.id))]
+    .sort((left, right) => String(right.publishedDate ?? '').localeCompare(String(left.publishedDate ?? '')))
+  // Featured: the newest app article marked featured, otherwise the newest article.
+  const featuredId = (items.find((item) => item.featured) ?? items[0])?.id
+  const merged = items.map((item) => ({ ...item, featured: item.id === featuredId }))
+  const loading = !app.done && !website.done
+  const error = app.failed && website.failed ? 'News could not be loaded. Check your connection and try again.' : null
+  return { items: merged, loading: loading && !merged.length, error }
 }

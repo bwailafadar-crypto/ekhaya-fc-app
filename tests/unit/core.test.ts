@@ -5,6 +5,7 @@ import { buildMatchSnapshot, buildTeamsSnapshot, fingerprint, SNAPSHOT_MAX_BYTES
 import type { Fixture } from '../../src/types.ts'
 import { matchAlerts, newsAlert } from '../../src/utils/alertRules.ts'
 import { isLiveNow, isPlayed } from '../../src/utils/football.ts'
+import { currentEventMinute, matchMinute } from '../../src/utils/matchClock.ts'
 import { competitionLabel, competitionOf, isCupCompetition, matchesFilter } from '../../src/utils/competitions.ts'
 import { cupStatus } from '../../src/utils/cupSeason.ts'
 import { ekhayaOutcome } from '../../src/utils/football.ts'
@@ -126,4 +127,15 @@ test('a match being edited after full time still counts as a result for fans', (
   assert.equal(isLiveNow({ ...f, status: 'live', editing: true }), false)
   assert.equal(isLiveNow({ ...f, status: 'live' }), true)
   assert.equal(isPlayed({ ...f, status: 'live' }), false)
+})
+
+test('match clock: events are recorded at the minute fans see, also after first-half stoppage time', () => {
+  const base = { id: 'c', home: 'Ekhaya FC', away: 'Blue Eagles', date: '2026-10-01T13:00:00Z', competition: 'FDH Championship', status: 'live' as const }
+  // First half ran 48 minutes; 10 minutes into the second half.
+  const second = { ...base, period: 'second-half' as const, firstHalfSeconds: 48 * 60, clockElapsedSeconds: 48 * 60 + 10 * 60 - 30 }
+  assert.equal(matchMinute(second as never), "55'")
+  assert.equal(currentEventMinute(second as never), 55)
+  assert.equal(currentEventMinute({ ...base, period: 'first-half', clockElapsedSeconds: 22 * 60 + 5 } as never), 23)
+  // Never above the form limit, or the browser refuses to save the event.
+  assert.equal(currentEventMinute({ ...base, period: 'first-half', clockElapsedSeconds: 500 * 60 } as never), 130)
 })

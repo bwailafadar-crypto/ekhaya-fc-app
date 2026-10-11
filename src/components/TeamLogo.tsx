@@ -32,6 +32,6 @@ export default function TeamLogo({
   }
 
   return <span className={`${classes} team-logo-fallback`} style={style} aria-label={`${name} initials`}>
-    {crest ? 'EFC' : initials(name)}
+    {initials(name)}
   </span>
 }

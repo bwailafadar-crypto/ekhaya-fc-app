@@ -16,7 +16,7 @@ import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { db } from '../firebase'
 import type { Fixture, MatchEvent, MatchEventKind, MatchStats, Player, PlayerStats, Standing } from '../types'
 import { isPlayed, sortByDate } from '../utils/football'
-import { activePeriod, elapsedMatchSeconds, matchMinute } from '../utils/matchClock'
+import { activePeriod, currentEventMinute, elapsedMatchSeconds, matchMinute } from '../utils/matchClock'
 import TeamLogo from '../components/TeamLogo'
 
 const CLUB_NAME = 'ekhaya fc'
@@ -44,10 +44,6 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Could not save this match update.'
 }
 
-function currentEventMinute(fixture: Fixture, now: number) {
-  if (!fixture.period) return Math.max(1, fixture.minute ?? 1)
-  return Math.max(1, Math.ceil(elapsedMatchSeconds(fixture, now) / 60))
-}
 
 function EventForm({
   fixture,
@@ -81,7 +77,7 @@ function EventForm({
     <input type="hidden" name="kind" value={kind} />
     <div className="live-form-grid">
       <label className="admin-field"><span>Team</span><select name="side" value={side} onChange={(event) => setSide(event.target.value as 'home' | 'away')}><option value="home">{fixture.home}</option><option value="away">{fixture.away}</option></select></label>
-      <label className="admin-field"><span>Minute</span><input name="minute" type="number" min={1} max={130} defaultValue={minute || 1} required /></label>
+      <label className="admin-field"><span>Minute</span><input name="minute" type="number" min={1} max={130} defaultValue={Math.min(130, Math.max(1, minute || 1))} required /></label>
     </div>
     {kind === 'commentary' ? <label className="admin-field"><span>Commentary</span><textarea name="text" rows={2} maxLength={180} placeholder="Chance for Stambuli!" required /></label>
       : kind === 'substitution' ? <div className="live-form-grid">
@@ -121,7 +117,8 @@ export default function LiveMatch() {
   const [goalMoment, setGoalMoment] = useState<MatchEvent | null>(null)
   const seenGoals = useRef<{ fixtureId: string; ids: Set<string> } | null>(null)
   const closeGoal = useCallback(() => setGoalMoment(null), [])
-  const [clockNow, setClockNow] = useState(0)
+  // Start from the real time (not 0), so the first second never shows a wrong minute or countdown.
+  const [clockNow, setClockNow] = useState(() => Date.now())
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [problem, setProblem] = useState('')
@@ -236,7 +233,7 @@ export default function LiveMatch() {
         if (!snapshot.exists() || snapshot.data().status !== 'upcoming') throw new Error('Lineups can only be confirmed before kick-off.')
         transaction.update(fixtureRef, { startingPlayerIds: startingSlots.filter(Boolean), benchPlayerIds: benchPlayers, formation, lineupConfirmed: true, updatedAt: serverTimestamp() })
       })
-      setMessage('Starting XI and subs confirmed for fans.')
+      setMessage(selectedFixture.isTest ? 'Starting XI and subs confirmed (practice: fans cannot see it).' : 'Starting XI and subs confirmed for fans.')
     } catch (error) {
       reportError(error)
     } finally {
@@ -252,7 +249,7 @@ export default function LiveMatch() {
       const id = `practice-${Date.now()}`
       await setDoc(doc(db, 'fixtures', id), {
         id, isTest: true, competition: 'Practice match', season: new Date().getFullYear().toString(),
-        date: new Date(Date.now() + 5 * 60 * 1000).toISOString(), home: CLUB_NAME, away: 'Practice XI',
+        date: new Date(Date.now() + 5 * 60 * 1000).toISOString(), home: 'Ekhaya FC', away: 'Practice XI',
         venue: 'Training ground', status: 'upcoming', homeScore: null, awayScore: null,
         createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
       })
@@ -314,7 +311,7 @@ export default function LiveMatch() {
         })
       })
       setQuickAction(null)
-      setMessage('Kick-off. Fans can follow the live match now.')
+      setMessage(selectedFixture.isTest ? 'Kick-off (practice match: only admins can see it).' : 'Kick-off. Fans can follow the live match now.')
     } catch (error) {
       reportError(error)
     } finally {
@@ -411,7 +408,7 @@ export default function LiveMatch() {
     if (!selectedFixture || !Number.isFinite(minute)) return
     setProblem('')
     try {
-      await runTransaction(db, async (transaction) => {
+      const shown = await runTransaction(db, async (transaction) => {
         const fixtureRef = doc(db, 'fixtures', selectedFixture.id)
         const snapshot = await transaction.get(fixtureRef)
         const fixture = snapshot.data() as Fixture | undefined
@@ -425,8 +422,9 @@ export default function LiveMatch() {
         const minuteInHalf = target - (secondHalf ? 45 : 0)
         // One second into the chosen minute, so the clock shows exactly that minute now.
         transaction.update(fixtureRef, { clockElapsedSeconds: halfStart + (minuteInHalf - 1) * 60 + 1, periodStartedAt: serverTimestamp(), updatedAt: serverTimestamp() })
+        return target
       })
-      setMessage(`Clock set to ${Math.round(minute)}'.`)
+      setMessage(`Clock set to ${shown}'.`)
     } catch (error) {
       reportError(error)
     }
@@ -684,7 +682,9 @@ export default function LiveMatch() {
 
   async function endMatch() {
     if (!selectedFixture) return
-    if (!window.confirm('End this match and apply its result and player statistics?')) return
+    if (!window.confirm(selectedFixture.isTest ? 'End this practice match? Nothing is added to the table or player stats.'
+      : selectedFixture.editing ? 'Save your changes? The table and player stats will be updated with the corrected result.'
+      : 'End this match and apply its result and player statistics?')) return
     setBusy(true)
     setProblem('')
     try {
@@ -713,7 +713,7 @@ export default function LiveMatch() {
         }
         const playerRefs = [...playerIds].map((id) => doc(db, 'players', id))
         const playerSnapshots = await Promise.all(playerRefs.map((ref) => transaction.get(ref)))
-        const tableRows = standingsSnapshots.map((item) => ({ ref: item.ref, data: item.data() as Standing }))
+        const tableRows = standingsSnapshots.map((item) => ({ ref: item.ref, data: { ...item.data(), id: item.id } as Standing }))
         // Cup matches (Airtel Top 8, Castel Cup) never change the league table.
         // Practice matches never change the table or player stats.
         const isPractice = Boolean(fixture.isTest)
@@ -856,7 +856,7 @@ export default function LiveMatch() {
           currentStandings = await Promise.all(changes.standings.map(async (change) => {
             const snapshot = await transaction.get(doc(db, 'standings', change.standingId))
             if (!snapshot.exists()) throw new Error(`Missing standings row ${change.standingId}; no changes were reset.`)
-            return { ref: snapshot.ref, data: snapshot.data() as Standing }
+            return { ref: snapshot.ref, data: { ...snapshot.data(), id: snapshot.id } as Standing }
           }))
           const playerRefs = Object.keys(changes.players).map((id) => doc(db, 'players', id))
           playerDocs = await Promise.all(playerRefs.map((ref) => transaction.get(ref)))
@@ -865,7 +865,7 @@ export default function LiveMatch() {
           const knownPaths = new Set(currentStandings.map((row) => row.ref.path))
           const remainingRefs = allStandingRefs.filter((ref) => !knownPaths.has(ref.path))
           const remainingDocs = await Promise.all(remainingRefs.map((ref) => transaction.get(ref)))
-          currentStandings.push(...remainingDocs.map((snapshot) => ({ ref: snapshot.ref, data: snapshot.data() as Standing })))
+          currentStandings.push(...remainingDocs.map((snapshot) => ({ ref: snapshot.ref, data: { ...snapshot.data(), id: snapshot.id } as Standing })))
         }
 
         let reversedRows = currentStandings
@@ -1037,7 +1037,7 @@ export default function LiveMatch() {
 
     <div className="matchday-tabs" role="tablist" aria-label="Match details">{tabs.map((tab) => <button type="button" role="tab" aria-selected={currentTab === tab} className={currentTab === tab ? 'active' : ''} key={tab} onClick={() => setActiveTab(tab)}>{TAB_LABELS[tab]}</button>)}</div>
     {currentTab === 'timeline' && <>
-      {eventsLoading ? <Skeleton className="live-player-skeleton" /> : <section className="live-timeline"><div className="live-section-heading"><h2>Commentary</h2><span>{events.length} updates</span></div>{isFinished && events.length > 0 && <div className="live-marker">Full time · {homeScore}–{awayScore}</div>}{events.length ? events.map((matchEvent) => <article className={`live-event${matchEvent.kind === 'goal' ? ' live-event-big' : ''}${matchEvent.kind === 'card' ? ` live-event-big-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} key={matchEvent.id}><strong>{matchEvent.minute}'</strong><span className={`live-event-mark live-event-${matchEvent.kind}${matchEvent.kind === 'card' ? ` live-event-card-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} aria-label={matchEvent.kind === 'card' ? `${matchEvent.card === 'red' ? 'Red' : 'Yellow'} card` : undefined}>{matchEvent.kind === 'goal' ? <Goal size={15} /> : matchEvent.kind === 'card' ? <i className="card-shape" /> : matchEvent.kind === 'commentary' ? <MessageSquareText size={14} /> : <Users size={14} />}</span><div>{matchEvent.kind === 'goal' && <span className="live-event-headline">GOAL!</span>}<p>{(() => { const scorer = matchEvent.kind === 'goal' || matchEvent.kind === 'card' ? players.find((player) => player.id === matchEvent.playerId) : undefined; return scorer ? <span className="live-event-who"><PlayerAvatar player={scorer} />{eventDescription(matchEvent)}</span> : eventDescription(matchEvent) })()}</p><small>{matchEvent.team}</small>{isAdmin && isLive && <details className="match-event-edit"><summary>Edit event</summary><form className="match-event-editor" onSubmit={(event) => void editMatchEvent(matchEvent, event)}>
+      {eventsLoading ? <Skeleton className="live-player-skeleton" /> : <section className="live-timeline"><div className="live-section-heading"><h2>Commentary</h2><span>{events.length} updates</span></div>{isFinished && events.length > 0 && <div className="live-marker">Full time · {homeScore}–{awayScore}</div>}{events.length ? events.map((matchEvent) => <article className={`live-event${matchEvent.kind === 'goal' ? ' live-event-big' : ''}${matchEvent.kind === 'card' ? ` live-event-big-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} key={matchEvent.id}><strong>{matchEvent.minute}'</strong><span className={`live-event-mark live-event-${matchEvent.kind}${matchEvent.kind === 'card' ? ` live-event-card-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} aria-label={matchEvent.kind === 'card' ? `${matchEvent.card === 'red' ? 'Red' : 'Yellow'} card` : undefined}>{matchEvent.kind === 'goal' ? <Goal size={15} /> : matchEvent.kind === 'card' ? <i className="card-shape" /> : matchEvent.kind === 'commentary' ? <MessageSquareText size={14} /> : <Users size={14} />}</span><div>{matchEvent.kind === 'goal' && <span className="live-event-headline">{sameTeam(matchEvent.team, CLUB_NAME) ? 'GOAL!' : 'Goal'}</span>}<p>{(() => { const scorer = matchEvent.kind === 'goal' || matchEvent.kind === 'card' ? players.find((player) => player.id === matchEvent.playerId) : undefined; return scorer ? <span className="live-event-who"><PlayerAvatar player={scorer} />{eventDescription(matchEvent)}</span> : eventDescription(matchEvent) })()}</p><small>{matchEvent.team}</small>{isAdmin && isLive && <details className="match-event-edit"><summary>Edit event</summary><form className="match-event-editor" onSubmit={(event) => void editMatchEvent(matchEvent, event)}>
         <div className="live-form-grid"><label className="admin-field"><span>Type</span><select name="kind" defaultValue={matchEvent.kind}><option value="goal">Goal</option><option value="card">Card</option><option value="substitution">Sub</option><option value="commentary">Commentary</option></select></label><label className="admin-field"><span>Team</span><select name="side" defaultValue={sameTeam(matchEvent.team, selectedFixture.home) ? 'home' : 'away'}><option value="home">{selectedFixture.home}</option><option value="away">{selectedFixture.away}</option></select></label><label className="admin-field"><span>Minute</span><input name="minute" type="number" min={1} max={130} defaultValue={matchEvent.minute} /></label></div>
         <input className="match-event-edit-input" name="playerName" defaultValue={matchEvent.playerName ?? ''} placeholder="Scorer / player name" /><input className="match-event-edit-input" name="assistPlayerName" defaultValue={matchEvent.assistPlayerName ?? ''} placeholder="Assist name" /><div className="live-form-grid"><input className="match-event-edit-input" name="subbedOutPlayerName" defaultValue={matchEvent.subbedOutPlayerName ?? ''} placeholder="Player off" /><input className="match-event-edit-input" name="subbedInPlayerName" defaultValue={matchEvent.subbedInPlayerName ?? ''} placeholder="Player on" /></div><label className="admin-field"><span>Commentary</span><input name="text" defaultValue={matchEvent.text ?? ''} maxLength={180} /></label><label className="admin-field"><span>Card</span><select name="card" defaultValue={matchEvent.card ?? 'yellow'}><option value="yellow">Yellow</option><option value="red">Red</option></select></label><div className="admin-actions"><Button type="submit" variant="secondary" disabled={busy}>Save event</Button><button type="button" className="match-event-delete" disabled={busy} onClick={() => void deleteMatchEvent(matchEvent.id)}><Trash2 size={15} />Delete</button></div></form></details>}</div></article>) : <div className="live-timeline-empty">{isLive ? 'No updates yet. The match is ready.' : 'No match events recorded.'}</div>}{events.length > 0 && selectedFixture.status !== 'upcoming' && <div className="live-marker">Kick-off</div>}</section>}
       {isLive && <section className="matchday-reactions" aria-label="Match reactions">{['⚽', '🔥', '👏', '😱'].map((emoji) => <button type="button" key={emoji} aria-label={`React ${emoji}`} aria-pressed={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji)} className={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji) ? 'selected' : ''} onClick={() => void reactToMatch(emoji)}><span>{emoji}</span><strong>{reactions.filter((reaction) => reaction.emoji === emoji).length}</strong></button>)}</section>}
@@ -1053,8 +1053,8 @@ export default function LiveMatch() {
 
 function eventDescription(event: MatchEvent) {
   if (event.kind === 'commentary') return event.text || 'Match update'
-  if (event.kind === 'goal') return `Goal · ${event.playerName || 'Unknown player'}${event.assistPlayerName ? ` (assist: ${event.assistPlayerName})` : ''}`
-  if (event.kind === 'card') return `${event.card === 'red' ? 'Red' : 'Yellow'} card · ${event.playerName || 'Unknown player'}`
+  if (event.kind === 'goal') return `Goal${event.playerName ? ` · ${event.playerName}` : ''}${event.assistPlayerName ? ` (assist: ${event.assistPlayerName})` : ''}`
+  if (event.kind === 'card') return `${event.card === 'red' ? 'Red' : 'Yellow'} card${event.playerName ? ` · ${event.playerName}` : ''}`
   return `Substitution · ${event.subbedInPlayerName || 'Player on'} for ${event.subbedOutPlayerName || 'Player off'}`
 }
 
