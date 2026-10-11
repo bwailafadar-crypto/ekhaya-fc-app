@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { after, before, beforeEach, test } from 'node:test'
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
 
 const projectId = 'demo-ekhaya-rules'
@@ -128,4 +128,41 @@ test('limits match reactions to the signed-in owner and supported emoji', async 
   await assertSucceeds(setDoc(doc(fanDb, 'fixtures/match-1/reactions/fan-1'), { emoji: '⚽', updatedAt: serverTimestamp() }))
   await assertFails(setDoc(doc(fanDb, 'fixtures/match-1/reactions/fan-2'), { emoji: '⚽', updatedAt: serverTimestamp() }))
   await assertFails(setDoc(doc(fanDb, 'fixtures/match-1/reactions/fan-1'), { emoji: '🔥🔥', updatedAt: serverTimestamp() }))
+})
+
+test('stories: admins post (photo + caption, max 2 days), fans can only read', async () => {
+  await seedRole('admin-1', 'admin')
+  await seedRole('fan-1', 'fan')
+  const admin = signedIn('admin-1')
+  const fan = signedIn('fan-1')
+  const story = (by: string, extra: Record<string, unknown> = {}) => ({
+    caption: 'Warm-up done', label: 'Match day', thumb: 'data:image/jpeg;base64,AAAA', hasImage: true, path: '/live',
+    createdAt: serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 24 * 3600 * 1000), by, ...extra,
+  })
+  const batch = writeBatch(admin)
+  batch.set(doc(admin, 'storyImages/s1'), { image: 'data:image/jpeg;base64,BBBB', createdAt: serverTimestamp() })
+  batch.set(doc(admin, 'stories/s1'), story('admin-1'))
+  await assertSucceeds(batch.commit())
+  // Text-only story without a thumbnail.
+  await assertSucceeds(setDoc(doc(admin, 'stories/s2'), { caption: 'Kick-off at 2pm', label: 'Club', thumb: null, hasImage: false, createdAt: serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 3600 * 1000), by: 'admin-1' }))
+  // Fans read the live stories and photos, but cannot post or delete.
+  await assertSucceeds(getDocs(query(collection(fan, 'stories'), where('expiresAt', '>', Timestamp.now()))))
+  await assertSucceeds(getDoc(doc(fan, 'storyImages/s1')))
+  await assertFails(setDoc(doc(fan, 'stories/s3'), story('fan-1')))
+  await assertFails(deleteDoc(doc(fan, 'stories/s1')))
+  // Wrong label, someone else's name, or a story that lasts a week are refused.
+  await assertFails(setDoc(doc(admin, 'stories/s4'), story('admin-1', { label: 'Anything' })))
+  await assertFails(setDoc(doc(admin, 'stories/s5'), story('fan-1')))
+  await assertFails(setDoc(doc(admin, 'stories/s6'), story('admin-1', { expiresAt: Timestamp.fromMillis(Date.now() + 7 * 24 * 3600 * 1000) })))
+  await assertSucceeds(deleteDoc(doc(admin, 'stories/s1')))
+})
+
+test('alerts: a fan saves the players they follow on their own device only', async () => {
+  const token = 't'.repeat(150)
+  const fan = signedIn('fan-1')
+  const device = { uid: 'fan-1', token, prefs: { match: true, news: true }, platform: 'android', updatedAt: serverTimestamp() }
+  await assertSucceeds(setDoc(doc(fan, `pushTokens/${token}`), { ...device, follows: ['allen-chihana'] }))
+  await assertSucceeds(updateDoc(doc(fan, `pushTokens/${token}`), { follows: ['allen-chihana', 'samuel-rukura'], updatedAt: serverTimestamp() }))
+  await assertFails(updateDoc(doc(fan, `pushTokens/${token}`), { follows: Array.from({ length: 31 }, (_, i) => `p${i}`), updatedAt: serverTimestamp() }))
+  await assertFails(updateDoc(doc(signedIn('fan-2'), `pushTokens/${token}`), { follows: [], updatedAt: serverTimestamp() }))
 })
