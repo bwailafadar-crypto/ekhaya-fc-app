@@ -28,6 +28,11 @@ export function matchAlerts(before: FixtureLike | undefined, after: FixtureLike 
   const wasLive = before.status === 'live'
   const isLive = after.status === 'live'
 
+  // Team news: the starting XI was confirmed before kick-off.
+  if (after.status === 'upcoming' && !before.lineupConfirmed && after.lineupConfirmed) {
+    const opponent = CLUB.test(after.home) ? after.away : after.home
+    alerts.push({ key: `${after.id}-teamnews`, kind: 'match', title: 'Team news is in!', body: `See the Ekhaya FC starting XI v ${opponent}${after.formation ? ` (${after.formation})` : ''}.`, path: `/live?match=${after.id}&tab=lineups` })
+  }
   if (before.status === 'upcoming' && isLive) {
     alerts.push({ key: `${run}-kickoff`, kind: 'match', title: `Kick-off! ${after.home} v ${after.away}`, body: 'Follow it live in the Ekhaya FC app.', path: '/live' })
   }
@@ -46,7 +51,7 @@ export function matchAlerts(before: FixtureLike | undefined, after: FixtureLike 
     }
   }
   if (wasLive && after.status === 'finished') {
-    alerts.push({ key: `${run}-ft`, kind: 'match', title: `Full time: ${scoreLine(after)}`, body: 'See the match summary and vote for man of the match.', path: '/live' })
+    alerts.push({ key: `${run}-ft`, kind: 'match', title: `Full time: ${scoreLine(after)}`, body: 'See the match summary and vote for man of the match.', path: `/live?match=${after.id}&tab=vote` })
   }
   return alerts
 }

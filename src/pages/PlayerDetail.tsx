@@ -1,6 +1,7 @@
 import { ArrowLeft, UserRound } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import type { Player } from '../types'
+import type { Fixture, Player } from '../types'
+import { sortByDate } from '../utils/football'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import PlayerAvatar from '../components/PlayerAvatar'
@@ -30,6 +31,8 @@ export default function PlayerDetailPage() {
   const { id } = useParams()
   const { items, loading, error } = useFirestoreCollection<Player>('players')
   const player = items.find((item) => item.id === id)
+  const fixtures = useFirestoreCollection<Fixture>('fixtures')
+  const awards = sortByDate(fixtures.items.filter((fixture) => fixture.motmClosed && fixture.motmWinnerId === id && !fixture.isTest), 'desc')
 
   if (loading) {
     return <div className="player-detail-loading"><Skeleton /><Skeleton /><Skeleton /></div>
@@ -49,6 +52,11 @@ export default function PlayerDetailPage() {
           <p>{player.team === 'senior' ? 'Senior team' : player.team}</p>
         </div>
       </section>
+
+      {awards.length > 0 && <section className="player-awards" aria-label="Man of the match awards">
+        <span className="player-awards-star" aria-hidden="true">★</span>
+        <div><strong>Fans' man of the match ×{awards.length}</strong><ul>{awards.slice(0, 5).map((fixture) => <li key={fixture.id}><Link to={`/live?match=${fixture.id}&tab=vote`}>{fixture.home} {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0} {fixture.away}</Link></li>)}</ul></div>
+      </section>}
 
       <PageHeader eyebrow="Player details" title="Player profile" />
       <section className="player-facts" aria-label="Player details">

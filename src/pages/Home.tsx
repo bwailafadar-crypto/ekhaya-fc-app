@@ -64,7 +64,7 @@ export default function Home() {
         <PageHeader eyebrow="Full time" title="Last result" action={<Link className="text-link" to="/results">Results <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
           : fixturesResult.error ? null
-          : lastResult ? <><MatchCard fixture={lastResult} /><MatchSummary fixture={lastResult} compact /></>
+          : lastResult ? <><MatchCard fixture={lastResult} /><MotmSpotlight fixture={lastResult} /><MatchSummary fixture={lastResult} compact /></>
             : <Card><EmptyState icon={Trophy} title="No results yet" /></Card>}
       </section>
       <section className="home-shortcuts" aria-label="Quick links">
@@ -106,4 +106,27 @@ function NextLineup({ fixture }: { fixture: Fixture }) {
   const starters = pick(fixture.startingPlayerIds)
   if (!starters.length) return null
   return <details className="home-lineup" open><summary>Starting XI confirmed</summary><LineupPitch starters={starters} bench={pick(fixture.benchPlayerIds)} formation={fixture.formation} /></details>
+}
+
+// Fans' man of the match: the winner's photo once voting closes, a vote button while it is open.
+function MotmSpotlight({ fixture }: { fixture: Fixture }) {
+  const [openedAt] = useState(() => Date.now())
+  const winner = useMyDoc<Player>(fixture.motmClosed && fixture.motmWinnerId ? ['players', fixture.motmWinnerId] : null).data
+  if (!/ekhaya/i.test(`${fixture.home} ${fixture.away}`) || fixture.editing) return null
+  if (fixture.motmClosed) {
+    if (!winner || !fixture.motmWinnerId) return null
+    const share = fixture.motmWinnerVotes && fixture.motmTotalVotes ? Math.round(fixture.motmWinnerVotes / fixture.motmTotalVotes * 100) : null
+    return <Link className="motm-spotlight" to={`/squad/${fixture.motmWinnerId}`}>
+      <PlayerAvatar player={{ ...winner, id: fixture.motmWinnerId }} large />
+      <span><small>★ Fans' man of the match</small><strong>{winner.name}{winner.number != null ? <em> #{winner.number}</em> : null}</strong>{share != null && <i>{share}% of the vote</i>}</span>
+      <ArrowRight size={16} aria-hidden="true" />
+    </Link>
+  }
+  // Only nudge fans to vote for a recent match (voting left open on an old one stays quiet).
+  if (openedAt - new Date(fixture.date).getTime() > 4 * 86400000) return null
+  return <Link className="motm-spotlight motm-spotlight-vote" to={`/live?match=${fixture.id}&tab=vote`}>
+    <span className="motm-spotlight-star" aria-hidden="true">★</span>
+    <span><small>Voting open</small><strong>Pick your man of the match</strong></span>
+    <ArrowRight size={16} aria-hidden="true" />
+  </Link>
 }

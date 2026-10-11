@@ -59,6 +59,9 @@ test('alerts: kick-off, goal and full time fire once, test matches never', () =>
   assert.match(matchAlerts({ ...base, status: 'live' }, { ...base, status: 'finished' })[0]?.title ?? '', /^Full time/)
   assert.equal(matchAlerts({ ...base, status: 'upcoming' }, { ...base, status: 'live', isTest: true }).length, 0)
   assert.equal(matchAlerts(undefined, { ...base, status: 'finished' }).length, 0)
+  // Team news fires once when the XI is confirmed before kick-off.
+  assert.equal(matchAlerts({ ...base, status: 'upcoming' }, { ...base, status: 'upcoming', lineupConfirmed: true, formation: '4-3-3' })[0]?.title, 'Team news is in!')
+  assert.equal(matchAlerts({ ...base, status: 'upcoming', lineupConfirmed: true }, { ...base, status: 'upcoming', lineupConfirmed: true }).length, 0)
   // Editing a finished match never alerts fans: reopening, goals while editing, or saving.
   assert.equal(matchAlerts({ ...base, status: 'finished' }, { ...base, status: 'live', editing: true }).length, 0)
   assert.equal(matchAlerts({ ...base, status: 'live', editing: true, homeScore: 0 }, { ...base, status: 'live', editing: true, homeScore: 1 }).length, 0)

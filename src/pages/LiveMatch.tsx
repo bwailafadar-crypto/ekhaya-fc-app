@@ -1,4 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import GoalSplash from '../components/GoalSplash'
+import MotmCard from '../components/MotmCard'
+import ShareBar from '../components/ShareBar'
 import PlayerAvatar from '../components/PlayerAvatar'
 import { DEFAULT_FORMATION, FORMATIONS, isFormation, slotRoles, type Formation } from '../utils/formations'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
@@ -11,7 +15,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { db } from '../firebase'
 import type { Fixture, MatchEvent, MatchEventKind, MatchStats, Player, PlayerStats, Standing } from '../types'
-import { sortByDate } from '../utils/football'
+import { isPlayed, sortByDate } from '../utils/football'
 import { activePeriod, elapsedMatchSeconds, matchMinute } from '../utils/matchClock'
 import TeamLogo from '../components/TeamLogo'
 
@@ -22,6 +26,7 @@ const EMPTY_STATS: PlayerStats = {
 }
 const EMPTY_MATCH_STATS: MatchStats = { shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, offsides: 0 }
 type QuickAction = 'goal' | 'opponent-goal' | 'yellow' | 'red' | 'substitution' | 'commentary'
+const TAB_LABELS = { timeline: 'Commentary', lineups: 'Lineups', stats: 'Stats', vote: 'MOTM vote' } as const
 const QUICK_ACTIONS: Array<{ action: QuickAction; label: string; icon: typeof Goal }> = [
   { action: 'goal', label: 'Goal', icon: Goal },
   { action: 'opponent-goal', label: 'Opponent goal', icon: Goal },
@@ -102,14 +107,20 @@ export default function LiveMatch() {
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const playersResult = useFirestoreCollection<Player>('players')
   const standingsResult = useFirestoreCollection<Standing>('standings')
-  const [selectedId, setSelectedId] = useState('')
+  // Alerts and Home link straight to a match and tab: /live?match=<id>&tab=vote
+  const [params] = useSearchParams()
+  const [selectedId, setSelectedId] = useState(() => params.get('match') ?? '')
   const [lineupDraft, setLineupDraft] = useState<{ fixtureId: string; playerIds: string[] } | null>(null)
   const [benchDraft, setBenchDraft] = useState<{ fixtureId: string; playerIds: string[] } | null>(null)
   const [formationDraft, setFormationDraft] = useState<{ fixtureId: string; value: Formation } | null>(null)
   const [eventState, setEventState] = useState<{ fixtureId: string; items: MatchEvent[]; error: string | null } | null>(null)
   const [reactionState, setReactionState] = useState<{ fixtureId: string; items: Array<{ uid: string; emoji: string }> } | null>(null)
   const [quickAction, setQuickAction] = useState<QuickAction | null>(null)
-  const [activeTab, setActiveTab] = useState<'timeline' | 'lineups' | 'stats'>('timeline')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'lineups' | 'stats' | 'vote'>(() => { const tab = params.get('tab'); return tab === 'vote' || tab === 'lineups' || tab === 'stats' ? tab : 'timeline' })
+  // Big-club style GOAL! moment: only for Ekhaya goals that arrive while you watch.
+  const [goalMoment, setGoalMoment] = useState<MatchEvent | null>(null)
+  const seenGoals = useRef<{ fixtureId: string; ids: Set<string> } | null>(null)
+  const closeGoal = useCallback(() => setGoalMoment(null), [])
   const [clockNow, setClockNow] = useState(0)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -162,6 +173,14 @@ export default function LiveMatch() {
         const bTime = b.createdAt?.toMillis?.() ?? 0
         return b.minute - a.minute || bTime - aTime
       })
+      const goals = nextEvents.filter((item) => item.kind === 'goal' && sameTeam(item.team, CLUB_NAME))
+      const seen = seenGoals.current
+      if (seen?.fixtureId === selectedFixtureId && !snapshot.metadata.hasPendingWrites) {
+        const fresh = goals.find((item) => !seen.ids.has(item.id))
+        if (fresh) setGoalMoment(fresh)
+      }
+      // The first load only remembers existing goals; it never celebrates old ones.
+      seenGoals.current = { fixtureId: selectedFixtureId, ids: new Set([...(seen?.fixtureId === selectedFixtureId ? seen.ids : []), ...goals.map((item) => item.id)]) }
       setEventState({ fixtureId: selectedFixtureId, items: nextEvents, error: null })
     }, () => {
       setEventState({ fixtureId: selectedFixtureId, items: [], error: 'Could not load match events. Check your connection and try again.' })
@@ -947,6 +966,9 @@ export default function LiveMatch() {
   const homeLineup = (selectedFixture.startingPlayerIds ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
   const benchLineup = (selectedFixture.benchPlayerIds ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
   const countdownSeconds = Math.max(0, Math.floor((new Date(selectedFixture.date).getTime() - clockNow) / 1000))
+  const canVote = isPlayed(selectedFixture) && !selectedFixture.isTest && hasClubTeam
+  const tabs = (['timeline', 'lineups', 'stats', 'vote'] as const).filter((tab) => tab !== 'vote' || canVote)
+  const currentTab = tabs.includes(activeTab as typeof tabs[number]) ? activeTab : 'timeline'
   const countdown = `${Math.floor(countdownSeconds / 86400)}d ${String(Math.floor(countdownSeconds % 86400 / 3600)).padStart(2, '0')}:${String(Math.floor(countdownSeconds % 3600 / 60)).padStart(2, '0')}:${String(countdownSeconds % 60).padStart(2, '0')}`
 
   return <>
@@ -966,6 +988,7 @@ export default function LiveMatch() {
       </div>
       <div className="matchday-scoreboard-bottom"><span>{selectedFixture.venue || 'Venue TBC'}</span><span>{new Date(selectedFixture.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span></div>
     </section>
+    <ShareBar fixture={selectedFixture} events={events} players={players} minuteLabel={matchMinute(selectedFixture, clockNow)} />
     {message && <p className="live-feedback" role="status">{message}</p>}
     {problem && <p className="live-error" role="alert"><ShieldAlert size={15} />{problem}</p>}
 
@@ -1012,16 +1035,18 @@ export default function LiveMatch() {
     {isLive && !isAdmin && <div className="live-fan-note"><span className="live-pulse-dot" />Live from Chiwembe Stadium</div>}
     {eventsError && <p className="live-error" role="alert"><ShieldAlert size={15} />{eventsError}</p>}
 
-    <div className="matchday-tabs" role="tablist" aria-label="Match details">{(['timeline', 'lineups', 'stats'] as const).map((tab) => <button type="button" role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? 'active' : ''} key={tab} onClick={() => setActiveTab(tab)}>{tab[0].toUpperCase() + tab.slice(1)}</button>)}</div>
-    {activeTab === 'timeline' && <>
-      {eventsLoading ? <Skeleton className="live-player-skeleton" /> : <section className="live-timeline"><div className="live-section-heading"><h2>Timeline</h2><span>{events.length} updates</span></div>{events.length ? events.map((matchEvent) => <article className="live-event" key={matchEvent.id}><strong>{matchEvent.minute}'</strong><span className={`live-event-mark live-event-${matchEvent.kind}${matchEvent.kind === 'card' ? ` live-event-card-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} aria-label={matchEvent.kind === 'card' ? `${matchEvent.card === 'red' ? 'Red' : 'Yellow'} card` : undefined}>{matchEvent.kind === 'goal' ? <Goal size={15} /> : matchEvent.kind === 'card' ? <i className="card-shape" /> : matchEvent.kind === 'commentary' ? <MessageSquareText size={14} /> : <Users size={14} />}</span><div><p>{eventDescription(matchEvent)}</p><small>{matchEvent.team}</small>{isAdmin && isLive && <details className="match-event-edit"><summary>Edit event</summary><form className="match-event-editor" onSubmit={(event) => void editMatchEvent(matchEvent, event)}>
+    <div className="matchday-tabs" role="tablist" aria-label="Match details">{tabs.map((tab) => <button type="button" role="tab" aria-selected={currentTab === tab} className={currentTab === tab ? 'active' : ''} key={tab} onClick={() => setActiveTab(tab)}>{TAB_LABELS[tab]}</button>)}</div>
+    {currentTab === 'timeline' && <>
+      {eventsLoading ? <Skeleton className="live-player-skeleton" /> : <section className="live-timeline"><div className="live-section-heading"><h2>Commentary</h2><span>{events.length} updates</span></div>{isFinished && events.length > 0 && <div className="live-marker">Full time · {homeScore}–{awayScore}</div>}{events.length ? events.map((matchEvent) => <article className={`live-event${matchEvent.kind === 'goal' ? ' live-event-big' : ''}${matchEvent.kind === 'card' ? ` live-event-big-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} key={matchEvent.id}><strong>{matchEvent.minute}'</strong><span className={`live-event-mark live-event-${matchEvent.kind}${matchEvent.kind === 'card' ? ` live-event-card-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} aria-label={matchEvent.kind === 'card' ? `${matchEvent.card === 'red' ? 'Red' : 'Yellow'} card` : undefined}>{matchEvent.kind === 'goal' ? <Goal size={15} /> : matchEvent.kind === 'card' ? <i className="card-shape" /> : matchEvent.kind === 'commentary' ? <MessageSquareText size={14} /> : <Users size={14} />}</span><div>{matchEvent.kind === 'goal' && <span className="live-event-headline">GOAL!</span>}<p>{(() => { const scorer = matchEvent.kind === 'goal' || matchEvent.kind === 'card' ? players.find((player) => player.id === matchEvent.playerId) : undefined; return scorer ? <span className="live-event-who"><PlayerAvatar player={scorer} />{eventDescription(matchEvent)}</span> : eventDescription(matchEvent) })()}</p><small>{matchEvent.team}</small>{isAdmin && isLive && <details className="match-event-edit"><summary>Edit event</summary><form className="match-event-editor" onSubmit={(event) => void editMatchEvent(matchEvent, event)}>
         <div className="live-form-grid"><label className="admin-field"><span>Type</span><select name="kind" defaultValue={matchEvent.kind}><option value="goal">Goal</option><option value="card">Card</option><option value="substitution">Sub</option><option value="commentary">Commentary</option></select></label><label className="admin-field"><span>Team</span><select name="side" defaultValue={sameTeam(matchEvent.team, selectedFixture.home) ? 'home' : 'away'}><option value="home">{selectedFixture.home}</option><option value="away">{selectedFixture.away}</option></select></label><label className="admin-field"><span>Minute</span><input name="minute" type="number" min={1} max={130} defaultValue={matchEvent.minute} /></label></div>
-        <input className="match-event-edit-input" name="playerName" defaultValue={matchEvent.playerName ?? ''} placeholder="Scorer / player name" /><input className="match-event-edit-input" name="assistPlayerName" defaultValue={matchEvent.assistPlayerName ?? ''} placeholder="Assist name" /><div className="live-form-grid"><input className="match-event-edit-input" name="subbedOutPlayerName" defaultValue={matchEvent.subbedOutPlayerName ?? ''} placeholder="Player off" /><input className="match-event-edit-input" name="subbedInPlayerName" defaultValue={matchEvent.subbedInPlayerName ?? ''} placeholder="Player on" /></div><label className="admin-field"><span>Commentary</span><input name="text" defaultValue={matchEvent.text ?? ''} maxLength={180} /></label><label className="admin-field"><span>Card</span><select name="card" defaultValue={matchEvent.card ?? 'yellow'}><option value="yellow">Yellow</option><option value="red">Red</option></select></label><div className="admin-actions"><Button type="submit" variant="secondary" disabled={busy}>Save event</Button><button type="button" className="match-event-delete" disabled={busy} onClick={() => void deleteMatchEvent(matchEvent.id)}><Trash2 size={15} />Delete</button></div></form></details>}</div></article>) : <div className="live-timeline-empty">{isLive ? 'No updates yet. The match is ready.' : 'No match events recorded.'}</div>}</section>}
+        <input className="match-event-edit-input" name="playerName" defaultValue={matchEvent.playerName ?? ''} placeholder="Scorer / player name" /><input className="match-event-edit-input" name="assistPlayerName" defaultValue={matchEvent.assistPlayerName ?? ''} placeholder="Assist name" /><div className="live-form-grid"><input className="match-event-edit-input" name="subbedOutPlayerName" defaultValue={matchEvent.subbedOutPlayerName ?? ''} placeholder="Player off" /><input className="match-event-edit-input" name="subbedInPlayerName" defaultValue={matchEvent.subbedInPlayerName ?? ''} placeholder="Player on" /></div><label className="admin-field"><span>Commentary</span><input name="text" defaultValue={matchEvent.text ?? ''} maxLength={180} /></label><label className="admin-field"><span>Card</span><select name="card" defaultValue={matchEvent.card ?? 'yellow'}><option value="yellow">Yellow</option><option value="red">Red</option></select></label><div className="admin-actions"><Button type="submit" variant="secondary" disabled={busy}>Save event</Button><button type="button" className="match-event-delete" disabled={busy} onClick={() => void deleteMatchEvent(matchEvent.id)}><Trash2 size={15} />Delete</button></div></form></details>}</div></article>) : <div className="live-timeline-empty">{isLive ? 'No updates yet. The match is ready.' : 'No match events recorded.'}</div>}{events.length > 0 && selectedFixture.status !== 'upcoming' && <div className="live-marker">Kick-off</div>}</section>}
       {isLive && <section className="matchday-reactions" aria-label="Match reactions">{['⚽', '🔥', '👏', '😱'].map((emoji) => <button type="button" key={emoji} aria-label={`React ${emoji}`} aria-pressed={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji)} className={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji) ? 'selected' : ''} onClick={() => void reactToMatch(emoji)}><span>{emoji}</span><strong>{reactions.filter((reaction) => reaction.emoji === emoji).length}</strong></button>)}</section>}
     </>}
-    {activeTab === 'lineups' && <section className="matchday-lineups"><div className="matchday-section-title"><h2>Lineups</h2>{selectedFixture.status === 'upcoming' && <Badge variant="gold">{homeLineup.length ? 'CONFIRMED' : 'AWAITING'}</Badge>}</div>{homeLineup.length ? <LineupPitch starters={homeLineup} bench={benchLineup} formation={selectedFixture.formation} /> : <p className="live-timeline-empty">The confirmed Ekhaya XI will appear here before kick-off.</p>}</section>}
-    {activeTab === 'stats' && <section className="matchday-stats-view"><div className="matchday-section-title"><h2>Match stats</h2><span>Live comparison</span></div>{(['shots', 'shotsOnTarget', 'shotsOffTarget', 'corners', 'fouls', 'offsides'] as const).map((key) => { const value = (stats: MatchStats) => key === 'shotsOffTarget' ? Math.max(0, stats.shots - stats.shotsOnTarget) : stats[key]; const home = value(homeStats); const away = value(awayStats); const total = Math.max(1, home, away); return <div className="match-stat-compare" key={key}><div><strong>{home}</strong><span>{key === 'shotsOnTarget' ? 'Shots on target' : key === 'shotsOffTarget' ? 'Shots off target' : key[0].toUpperCase() + key.slice(1)}</span><strong>{away}</strong></div><div className="match-stat-bars"><i style={{ width: `${home / total * 50}%` }} /><i style={{ width: `${away / total * 50}%` }} /></div></div> })}<div className="matchday-stat-legend"><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div></section>}
+    {currentTab === 'lineups' && <section className="matchday-lineups"><div className="matchday-section-title"><h2>Lineups</h2>{selectedFixture.status === 'upcoming' && <Badge variant="gold">{homeLineup.length ? 'CONFIRMED' : 'AWAITING'}</Badge>}</div>{homeLineup.length ? <LineupPitch starters={homeLineup} bench={benchLineup} formation={selectedFixture.formation} /> : <p className="live-timeline-empty">The confirmed Ekhaya XI will appear here before kick-off.</p>}</section>}
+    {currentTab === 'stats' && <section className="matchday-stats-view"><div className="matchday-section-title"><h2>Match stats</h2><span>Live comparison</span></div>{(['shots', 'shotsOnTarget', 'shotsOffTarget', 'corners', 'fouls', 'offsides'] as const).map((key) => { const value = (stats: MatchStats) => key === 'shotsOffTarget' ? Math.max(0, stats.shots - stats.shotsOnTarget) : stats[key]; const home = value(homeStats); const away = value(awayStats); const total = Math.max(1, home, away); return <div className="match-stat-compare" key={key}><div><strong>{home}</strong><span>{key === 'shotsOnTarget' ? 'Shots on target' : key === 'shotsOffTarget' ? 'Shots off target' : key[0].toUpperCase() + key.slice(1)}</span><strong>{away}</strong></div><div className="match-stat-bars"><i style={{ width: `${home / total * 50}%` }} /><i style={{ width: `${away / total * 50}%` }} /></div></div> })}<div className="matchday-stat-legend"><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div></section>}
+    {currentTab === 'vote' && <section className="matchday-vote"><MotmCard fixture={selectedFixture} players={clubPlayers} /></section>}
     {isFinished && <MatchSummary fixture={selectedFixture} />}
+    {goalMoment && isLive && !selectedFixture.editing && goalMoment.id && <GoalSplash event={goalMoment} player={players.find((player) => player.id === goalMoment.playerId)} score={`${selectedFixture.home} ${homeScore}–${awayScore} ${selectedFixture.away}`} onClose={closeGoal} />}
     {standingsResult.error && isAdmin && <p className="live-error">Standings could not be loaded: {standingsResult.error}</p>}
   </>
 }

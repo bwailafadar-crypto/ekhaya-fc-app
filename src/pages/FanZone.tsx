@@ -1,11 +1,10 @@
 import { collection, doc, getDocs, limit, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
-import { CheckCircle2, ChevronRight, HeartHandshake, Lock, Minus, Plus, Star, Target, Trophy, Vote } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { ChevronRight, HeartHandshake, Lock, Minus, Plus, Target, Trophy, Vote } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useFlag } from '../hooks/useFlag'
 import Leaderboard from '../components/Leaderboard'
-import PlayerAvatar from '../components/PlayerAvatar'
 import PushSettings from '../components/PushSettings'
 import TeamLogo from '../components/TeamLogo'
 import { useToast } from '../components/ToastContext'
@@ -13,14 +12,12 @@ import { Button, Card, PageHeader, Skeleton } from '../components/UI'
 import { db } from '../firebase'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { useCounts, useMyDoc } from '../hooks/useCounts'
-import type { Fixture, MotmVote, Player, Poll, PollVote, ScorePrediction } from '../types'
+import type { Fixture, Player, Poll, PollVote, ScorePrediction } from '../types'
 import { formatMalawiDate, formatMalawiTime, isPlayed, sortByDate } from '../utils/football'
+import { percent, saveErrorText } from '../utils/fanZone'
+import MotmCard, { ResultBar } from '../components/MotmCard'
 
 const MAX_GOALS = 20
-
-function percent(part: number, total: number) {
-  return total ? Math.round((part / total) * 100) : 0
-}
 
 function useNow(intervalMs = 30000) {
   const [now, setNow] = useState(() => Date.now())
@@ -29,17 +26,6 @@ function useNow(intervalMs = 30000) {
     return () => window.clearInterval(timer)
   }, [intervalMs])
   return now
-}
-
-function ResultBar({ label, value, total, mine, leading }: { label: ReactNode; value: number; total: number; mine?: boolean; leading?: boolean }) {
-  const share = percent(value, total)
-  return (
-    <div className={`fz-bar${mine ? ' fz-bar-mine' : ''}${leading ? ' fz-bar-leading' : ''}`}>
-      <span className="fz-bar-fill" style={{ width: `${share}%` }} aria-hidden="true" />
-      <span className="fz-bar-label">{label}{mine && <CheckCircle2 size={14} aria-label="Your vote" />}</span>
-      <span className="fz-bar-value">{share}%</span>
-    </div>
-  )
 }
 
 function Stepper({ label, value, onChange, disabled }: { label: string; value: number; onChange: (value: number) => void; disabled: boolean }) {
@@ -56,11 +42,6 @@ const COMMON_SCORES: Array<[number, number]> = [[1, 0], [2, 1], [1, 1], [2, 0], 
 
 function predictionsRef(fixtureId: string) {
   return collection(db, 'fixtures', fixtureId, 'predictions')
-}
-
-function saveErrorText(error: unknown, fallback: string) {
-  const code = (error as { code?: string })?.code
-  return code === 'permission-denied' ? 'Please verify your email first (check your inbox), then try again.' : fallback
 }
 
 function PredictCard({ fixture }: { fixture: Fixture }) {
@@ -148,59 +129,6 @@ function LastPredictionsCard({ fixture }: { fixture: Fixture }) {
       <div className="fz-card-heading"><Trophy size={18} aria-hidden="true" /><div><h2>Last match predictions</h2><span>{fixture.home} {homeScore}–{awayScore} {fixture.away}</span></div></div>
       {mine.data && <p className={mineCorrect ? 'fz-result fz-result-win' : 'fz-result'}>{mineCorrect ? `You called it! ${mine.data.home}–${mine.data.away} 🎯` : `You said ${mine.data.home}–${mine.data.away}.`}</p>}
       <p className="fz-note">{exact ? `${exact} of ${total} fans got the exact score${nameList.length ? `: ${nameList.join(', ')}` : '.'}` : `None of the ${total} fans got the exact score.`}</p>
-    </Card>
-  )
-}
-
-function MotmCard({ fixture, players }: { fixture: Fixture; players: Player[] }) {
-  const { user } = useAuth()
-  const { showToast } = useToast()
-  const mine = useMyDoc<Omit<MotmVote, 'id'>>(user ? ['fixtures', fixture.id, 'motm', user.uid] : null)
-  const [saving, setSaving] = useState('')
-  const [version, setVersion] = useState(0)
-  const lineup = [...(fixture.startingPlayerIds ?? []), ...(fixture.benchPlayerIds ?? [])]
-  const candidates = (lineup.length ? players.filter((player) => lineup.includes(player.id)) : players)
-    .slice().sort((a, b) => (a.number ?? 99) - (b.number ?? 99))
-  const closed = fixture.motmClosed === true
-  const showResults = Boolean(mine.data) || closed
-  const savedTally = fixture.motmTally
-  // When voting is closed the final tally is saved on the match (no extra reads);
-  // while open, results are counted once after the fan votes.
-  const live = useCounts(showResults && !savedTally && candidates.length ? `${fixture.id}:${version}` : null, () => Object.fromEntries(candidates.map((player) => [player.id, query(collection(db, 'fixtures', fixture.id, 'motm'), where('playerId', '==', player.id))])))
-  const tally: Record<string, number> = savedTally ?? live.counts
-  const totalVotes = Object.values(tally).reduce((sum, count) => sum + count, 0)
-  const ranked = candidates.slice().sort((a, b) => (tally[b.id] ?? 0) - (tally[a.id] ?? 0))
-  const winner = closed && fixture.motmWinnerId ? players.find((player) => player.id === fixture.motmWinnerId) : (ranked[0] && (tally[ranked[0].id] ?? 0) > 0 ? ranked[0] : null)
-
-  async function vote(player: Player) {
-    if (!user || closed) return
-    setSaving(player.id)
-    try {
-      await setDoc(doc(db, 'fixtures', fixture.id, 'motm', user.uid), { playerId: player.id, updatedAt: serverTimestamp() })
-      setVersion((value) => value + 1)
-      showToast(`You voted for ${player.name}.`)
-    } catch (error) {
-      showToast(saveErrorText(error, 'Your vote was not saved. Check your connection and try again.'), 'error')
-    } finally {
-      setSaving('')
-    }
-  }
-
-  return (
-    <Card className="fz-card">
-      <div className="fz-card-heading"><Star size={18} aria-hidden="true" /><div><h2>Man of the match</h2><span>{fixture.home} {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0} {fixture.away}</span></div></div>
-      {closed && winner && <p className="fz-result fz-result-win">🏆 {winner.name} is the fans' man of the match</p>}
-      {!candidates.length ? <p className="fz-note">Players will appear here once the squad is added.</p>
-        : showResults ? (live.loading ? <Skeleton className="fz-board-skeleton" /> : <div className="fz-bars">
-            {ranked.slice(0, 8).map((player, index) => <ResultBar key={player.id} label={<><PlayerAvatar player={player} />{player.number ? `${player.number}. ` : ''}{player.name}</>} value={tally[player.id] ?? 0} total={totalVotes} mine={mine.data?.playerId === player.id} leading={index === 0 && (tally[player.id] ?? 0) > 0} />)}
-          </div>)
-        : <div className="fz-players">
-            {candidates.map((player) => <button key={player.id} type="button" className="fz-player" disabled={Boolean(saving)} onClick={() => void vote(player)}>
-              <PlayerAvatar player={player} /><span>{player.number ? <em>{player.number}</em> : null}{player.name}</span>{saving === player.id && <small>Voting...</small>}
-            </button>)}
-          </div>}
-      <p className="fz-note">{closed ? <><Lock size={14} aria-hidden="true" /> Voting closed · </> : null}{totalVotes} vote{totalVotes === 1 ? '' : 's'}{mine.data && !closed ? ' · tap below to change your vote' : ''}</p>
-      {mine.data && !closed && <details className="fz-change"><summary>Change my vote</summary><div className="fz-players">{candidates.map((player) => <button key={player.id} type="button" className={mine.data?.playerId === player.id ? 'fz-player active' : 'fz-player'} disabled={Boolean(saving)} onClick={() => void vote(player)}><PlayerAvatar player={player} /><span>{player.name}</span></button>)}</div></details>}
     </Card>
   )
 }
