@@ -280,7 +280,9 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.token == tokenId
         && tokenId.size() >= 100 && tokenId.size() <= 400
-        && request.resource.data.keys().hasOnly(['uid', 'token', 'prefs', 'platform', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'token', 'prefs', 'platform', 'follows', 'updatedAt'])
+        // Players this fan follows (goal alerts for them), at most 30.
+        && (!('follows' in request.resource.data) || (request.resource.data.follows is list && request.resource.data.follows.size() <= 30))
         && request.resource.data.prefs is map
         && request.resource.data.prefs.keys().hasOnly(['match', 'news'])
         && request.resource.data.prefs.match is bool
@@ -367,6 +369,34 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
       allow read, delete: if isAdmin();
       allow update: if false;
+    }
+
+    // Home stories: posted by admins, shown to signed-in fans for 24 hours.
+    // The small thumbnail lives on the story; the full photo is in storyImages.
+    match /stories/{storyId} {
+      allow read: if signedIn();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['caption', 'label', 'thumb', 'hasImage', 'path', 'createdAt', 'expiresAt', 'by'])
+        && request.resource.data.keys().hasAll(['caption', 'label', 'hasImage', 'createdAt', 'expiresAt', 'by'])
+        && request.resource.data.caption is string && request.resource.data.caption.size() <= 160
+        && request.resource.data.label in ['Team news', 'Match day', 'Goal', 'Training', 'Club']
+        && request.resource.data.hasImage is bool
+        && (!('thumb' in request.resource.data) || request.resource.data.thumb == null || (request.resource.data.thumb is string && request.resource.data.thumb.size() <= 30000))
+        && (!('path' in request.resource.data) || (request.resource.data.path is string && request.resource.data.path.size() <= 120))
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt <= request.time + duration.value(2, 'd')
+        && request.resource.data.by == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /storyImages/{storyId} {
+      allow read: if signedIn();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['image', 'createdAt'])
+        && request.resource.data.image is string && request.resource.data.image.size() <= 400000
+        && request.resource.data.createdAt == request.time;
+      allow delete: if isAdmin();
     }
 
     match /alertsSent/{alertId} {

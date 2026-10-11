@@ -25,13 +25,13 @@ export async function saveGithubKey(token: string) {
   cachedKey = token.trim() || null
 }
 
-export async function dispatchAlert(alert: { kind: 'match' | 'news' | 'test'; title: string; body: string; path: string }) {
+export async function dispatchAlert(alert: { kind: 'match' | 'news' | 'test' | 'player'; title: string; body: string; path: string; player?: string }) {
   const token = await githubKey()
   if (!token) throw new Error('no-key')
   const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ref: 'master', inputs: { kind: alert.kind, title: alert.title.slice(0, 120), body: alert.body.slice(0, 240), path: alert.path } }),
+    body: JSON.stringify({ ref: 'master', inputs: { kind: alert.kind, title: alert.title.slice(0, 120), body: alert.body.slice(0, 240), path: alert.path, ...(alert.player ? { player: alert.player } : {}) } }),
   })
   if (response.status !== 204) {
     if (response.status === 401 || response.status === 403 || response.status === 404) cachedKey = undefined

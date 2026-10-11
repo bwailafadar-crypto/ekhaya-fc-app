@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       kind:
-        description: 'match, news or test'
+        description: 'match, news, player or test'
         type: choice
-        options: [match, news, test]
+        options: [match, news, player, test]
         default: test
       title:
         description: 'Alert title'
@@ -23,6 +23,10 @@ on:
         description: 'Page to open, e.g. /live or /news/abc'
         required: false
         default: '/'
+      player:
+        description: 'Player id (player alerts: fans following him; match alerts: skip his followers)'
+        required: false
+        default: ''
 
 concurrency:
   group: send-alert
@@ -51,8 +55,9 @@ jobs:
           TITLE: ${{ inputs.title }}
           BODY: ${{ inputs.body }}
           LINK_PATH: ${{ inputs.path }}
+          PLAYER: ${{ inputs.player }}
         run: |
           printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
-          node send.cjs --kind "$KIND" --title "$TITLE" --body "$BODY" --path "$LINK_PATH"
+          node send.cjs --kind "$KIND" --title "$TITLE" --body "$BODY" --path "$LINK_PATH" --player "$PLAYER"
           rm -f "$RUNNER_TEMP/sa.json"

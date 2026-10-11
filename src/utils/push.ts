@@ -11,6 +11,8 @@ const PREFS_KEY = 'ekhaya-push-prefs'
 const OFF_KEY = 'ekhaya-push-off'
 const ASKED_KEY = 'ekhaya-push-asked-at'
 const REFRESHED_KEY = 'ekhaya-push-refreshed-at'
+const FOLLOWS_KEY = 'ekhaya-follows'
+const MAX_FOLLOWS = 30
 const SW_SCOPE = '/firebase-cloud-messaging-push-scope'
 const VAPID_KEY = (import.meta.env.VITE_FIREBASE_VAPID_KEY ?? '').trim()
 
@@ -23,6 +25,33 @@ function writeLocal(key: string, value: string | null) {
 
 export function savedToken() {
   return readLocal(TOKEN_KEY)
+}
+
+/** Players this fan follows on this device (goal alerts for each). */
+export function savedFollows(): string[] {
+  try {
+    const list = JSON.parse(readLocal(FOLLOWS_KEY) ?? '[]')
+    return Array.isArray(list) ? list.filter((item): item is string => typeof item === 'string').slice(0, MAX_FOLLOWS) : []
+  } catch { return [] }
+}
+
+/**
+ * Follow or unfollow a player. Following switches alerts on if they are off
+ * (the phone asks permission once). Returns the new list.
+ */
+export async function setFollow(uid: string, playerId: string, follow: boolean) {
+  const current = savedFollows()
+  const next = follow ? [...new Set([...current, playerId])].slice(0, MAX_FOLLOWS) : current.filter((id) => id !== playerId)
+  writeLocal(FOLLOWS_KEY, JSON.stringify(next))
+  try {
+    const token = savedToken()
+    if (token) await updateDoc(doc(db, 'pushTokens', token), { follows: next, updatedAt: serverTimestamp() })
+    else if (follow) await enablePush(uid, savedPrefs())
+  } catch (error) {
+    if (follow) writeLocal(FOLLOWS_KEY, JSON.stringify(current))
+    throw error
+  }
+  return next
 }
 
 export function savedPrefs(): PushPrefs {
@@ -78,7 +107,7 @@ export async function enablePush(uid: string, prefs: PushPrefs) {
   const old = savedToken()
   if (old && old !== token) await deleteDoc(doc(db, 'pushTokens', old)).catch(() => undefined)
   await setDoc(doc(db, 'pushTokens', token), {
-    uid, token, prefs,
+    uid, token, prefs, follows: savedFollows(),
     platform: /Android/i.test(navigator.userAgent) ? 'android' : /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'ios' : 'desktop',
     updatedAt: serverTimestamp(),
   })

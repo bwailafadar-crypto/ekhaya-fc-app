@@ -8,6 +8,7 @@ import MatchCard from '../components/MatchCard'
 import MatchSummary from '../components/MatchSummary'
 import { Badge, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import TeamLogo from '../components/TeamLogo'
+import StoriesBar from '../components/StoriesBar'
 import NewsCoverImage from '../components/NewsCoverImage'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { usePublishedNews } from '../hooks/usePublishedNews'
@@ -40,34 +41,45 @@ export default function Home() {
     return () => window.clearInterval(timer)
   }, [liveMatchId])
 
-  return (
-    <>
-      {liveMatch && <Link className="home-live-banner" to="/live" aria-label={`Live match: ${liveMatch.home} ${liveMatch.homeScore ?? 0}, ${liveMatch.awayScore ?? 0} ${liveMatch.away}. Open match centre.`}>
-        <span className="home-live-label"><i className="live-pulse-dot" />LIVE NOW</span>
-        <span className="home-live-teams"><span><TeamLogo name={liveMatch.home} />{liveMatch.home}</span><strong>{liveMatch.homeScore ?? 0} – {liveMatch.awayScore ?? 0}</strong><span><TeamLogo name={liveMatch.away} />{liveMatch.away}</span></span>
-        <span className="home-live-clock">{matchMinute(liveMatch, clockNow)} <ArrowRight size={15} /></span>
-        <LatestGoal fixtureId={liveMatch.id} />
-      </Link>}
-      <section className="home-hero">
-        <span className="page-eyebrow">The heart of the home</span>
-        <h1>Welcome home, {firstName}</h1>
-        <p>One club. One community. Ekhaya FC.</p>
-        <div className="home-hero-footer"><ShieldCheck size={15} /> Chiwembe Stadium · Blantyre</div>
-      </section>
-      <section className="home-section">
-        <PageHeader eyebrow="Next up" title="Next match" action={<Link className="text-link" to="/fixtures">All fixtures <ArrowRight size={15} /></Link>} />
+  // Home follows match day: the match comes first before kick-off (36 h) and after full time (48 h).
+  const kickoffIn = upcoming ? new Date(upcoming.date).getTime() - clockNow : Infinity
+  const sinceResult = lastResult ? clockNow - new Date(lastResult.date).getTime() : Infinity
+  const phase: 'live' | 'pre' | 'post' | 'normal' = liveMatch ? 'live' : kickoffIn < 36 * 3_600_000 && kickoffIn > -3 * 3_600_000 ? 'pre' : sinceResult < 48 * 3_600_000 ? 'post' : 'normal'
+  const matchDayLabel = kickoffIn < 12 * 3_600_000 ? 'Today' : 'Tomorrow'
+  const nextSection = <section className="home-section">
+        <PageHeader eyebrow={phase === 'pre' ? matchDayLabel : 'Next up'} title={phase === 'pre' ? 'Match day' : 'Next match'} action={<Link className="text-link" to="/fixtures">All fixtures <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
           : fixturesResult.error ? <p className="live-error" role="alert">Fixtures could not be loaded: {fixturesResult.error}</p>
           : upcoming ? <><MatchCard fixture={upcoming} />{upcoming.lineupConfirmed && <NextLineup fixture={upcoming} />}</>
             : <Card><EmptyState icon={CalendarDays} title="No upcoming match" description="Check back when the next fixture is announced." /></Card>}
       </section>
-      <section className="home-section">
+  const lastSection = <section className="home-section">
         <PageHeader eyebrow="Full time" title="Last result" action={<Link className="text-link" to="/results">Results <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
           : fixturesResult.error ? null
           : lastResult ? <><MatchCard fixture={lastResult} /><MotmSpotlight fixture={lastResult} /><MatchSummary fixture={lastResult} compact /></>
             : <Card><EmptyState icon={Trophy} title="No results yet" /></Card>}
       </section>
+
+  return (
+    <>
+      {liveMatch && <Link className="home-live-banner" to={`/live?match=${liveMatch.id}`} aria-label={`Live match: ${liveMatch.home} ${liveMatch.homeScore ?? 0}, ${liveMatch.awayScore ?? 0} ${liveMatch.away}. Open match centre.`}>
+        <span className="home-live-label"><i className="live-pulse-dot" />LIVE NOW</span>
+        <span className="home-live-teams"><span><TeamLogo name={liveMatch.home} />{liveMatch.home}</span><strong>{liveMatch.homeScore ?? 0} – {liveMatch.awayScore ?? 0}</strong><span><TeamLogo name={liveMatch.away} />{liveMatch.away}</span></span>
+        <span className="home-live-clock">{matchMinute(liveMatch, clockNow)} <ArrowRight size={15} /></span>
+        <LatestGoal fixtureId={liveMatch.id} />
+      </Link>}
+      <StoriesBar fixtures={fixturesResult.items} />
+      {phase === 'pre' && nextSection}
+      {phase === 'post' && lastSection}
+      <section className="home-hero">
+        <span className="page-eyebrow">The heart of the home</span>
+        <h1>Welcome home, {firstName}</h1>
+        <p>One club. One community. Ekhaya FC.</p>
+        <div className="home-hero-footer"><ShieldCheck size={15} /> Chiwembe Stadium · Blantyre</div>
+      </section>
+      {phase !== 'pre' && nextSection}
+      {phase !== 'post' && lastSection}
       <section className="home-shortcuts" aria-label="Quick links">
         <Link to="/squad"><Users size={19} /><span>Squad</span></Link>
         {competitions ? <Link to="/competitions?tab=cups"><Trophy size={19} /><span>Cups</span></Link> : <Link to="/table"><Trophy size={19} /><span>Table</span></Link>}

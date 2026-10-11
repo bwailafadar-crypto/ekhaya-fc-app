@@ -1,17 +1,26 @@
-import { ArrowLeft, UserRound } from 'lucide-react'
+import { collection, getDocs, query, where } from 'firebase/firestore'
+import { ArrowLeft, Bell, BellOff, UserRound } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import type { Fixture, Player } from '../types'
-import { sortByDate } from '../utils/football'
-import { EmptyState, PageHeader, Skeleton } from '../components/UI'
-import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import { useAuth } from '../auth/AuthContext'
 import PlayerAvatar from '../components/PlayerAvatar'
+import TeamLogo from '../components/TeamLogo'
+import { useToast } from '../components/ToastContext'
+import { EmptyState, PageHeader, Skeleton } from '../components/UI'
+import { db } from '../firebase'
+import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import type { Fixture, Player } from '../types'
+import { ekhayaOutcome, formatMalawiDate, isPlayed, sortByDate } from '../utils/football'
+import { pushSupport, savedFollows, setFollow } from '../utils/push'
+
+const POSITION_NAMES: Record<string, string> = { GK: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }
 
 const stats = [
   ['Appearances', 'appearances'],
-  ['Starts', 'starts'],
-  ['Minutes', 'minutes'],
   ['Goals', 'goals'],
   ['Assists', 'assists'],
+  ['Starts', 'starts'],
+  ['Minutes', 'minutes'],
   ['Yellow cards', 'yellowCards'],
   ['Red cards', 'redCards'],
 ] as const
@@ -27,12 +36,76 @@ function playerAge(dob: string | null) {
   return age
 }
 
+const FOLLOW_PROBLEMS: Record<string, string> = {
+  'no-key': 'Alerts are not set up for the app yet.',
+  apk: 'Alerts work in the web app (ekhaya-fc-app.web.app), not in the downloaded Android app yet.',
+  'ios-install': 'On iPhone, add the app to your Home Screen first (Share → Add to Home Screen), then follow.',
+  unsupported: 'This browser cannot receive alerts. Try Chrome.',
+  blocked: 'Alerts are blocked for this app. Allow notifications in your browser settings, then try again.',
+  dismissed: 'Tap Allow when your phone asks, to get his goals.',
+}
+
+function FollowButton({ player }: { player: Player }) {
+  const { user } = useAuth()
+  const { showToast } = useToast()
+  const [following, setFollowing] = useState(() => savedFollows().includes(player.id))
+  const [busy, setBusy] = useState(false)
+  const first = player.name.split(/\s+/)[0]
+
+  async function toggle() {
+    if (!user) return
+    setBusy(true)
+    try {
+      if (!following) {
+        const support = await pushSupport()
+        if (support !== 'ok') { showToast(FOLLOW_PROBLEMS[support] ?? 'Alerts are not available on this device.', 'error'); return }
+      }
+      const list = await setFollow(user.uid, player.id, !following)
+      const now = list.includes(player.id)
+      setFollowing(now)
+      showToast(now ? `Following ${first}. You'll get an alert when he scores.` : `You no longer follow ${first}.`)
+    } catch (error) {
+      const code = error instanceof Error ? error.message : ''
+      showToast(FOLLOW_PROBLEMS[code] ?? 'Could not save. Check your connection and try again.', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return <button type="button" className={`follow-button${following ? ' following' : ''}`} aria-pressed={following} disabled={busy} onClick={() => void toggle()}>
+    {following ? <BellOff size={15} aria-hidden="true" /> : <Bell size={15} aria-hidden="true" />}
+    {busy ? 'Saving…' : following ? 'Following' : `Follow ${first}`}
+  </button>
+}
+
+/** His goals in his recent matches: one small query per match, only for those matches. */
+function useGoals(playerId: string, fixtureIds: string[]) {
+  const key = fixtureIds.join(',')
+  const [state, setState] = useState<{ key: string; goals: Record<string, number[]> }>({ key: '', goals: {} })
+  useEffect(() => {
+    if (!key) return
+    let active = true
+    void Promise.all(key.split(',').map(async (fixtureId) => {
+      try {
+        const snap = await getDocs(query(collection(db, 'fixtures', fixtureId, 'events'), where('playerId', '==', playerId)))
+        return [fixtureId, snap.docs.map((item) => item.data()).filter((event) => event.kind === 'goal').map((event) => Number(event.minute)).sort((a, b) => a - b)] as const
+      } catch { return [fixtureId, []] as const }
+    })).then((rows) => { if (active) setState({ key, goals: Object.fromEntries(rows) }) })
+    return () => { active = false }
+  }, [playerId, key])
+  return state.key === key ? state.goals : {}
+}
+
 export default function PlayerDetailPage() {
-  const { id } = useParams()
+  const { id = '' } = useParams()
   const { items, loading, error } = useFirestoreCollection<Player>('players')
   const player = items.find((item) => item.id === id)
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
-  const awards = sortByDate(fixtures.items.filter((fixture) => fixture.motmClosed && fixture.motmWinnerId === id && !fixture.isTest), 'desc')
+  const real = fixtures.items.filter((fixture) => !fixture.isTest)
+  const awards = sortByDate(real.filter((fixture) => fixture.motmClosed && fixture.motmWinnerId === id), 'desc')
+  // Matches he was named in (started or on the bench), newest first.
+  const log = sortByDate(real.filter((fixture) => isPlayed(fixture) && ((fixture.startingPlayerIds ?? []).includes(id) || (fixture.benchPlayerIds ?? []).includes(id))), 'desc').slice(0, 6)
+  const goals = useGoals(id, log.map((fixture) => fixture.id))
 
   if (loading) {
     return <div className="player-detail-loading"><Skeleton /><Skeleton /><Skeleton /></div>
@@ -41,16 +114,26 @@ export default function PlayerDetailPage() {
   if (!player) return <EmptyState icon={UserRound} title="Player not found" description="This player may have been removed from the squad." />
 
   const age = playerAge(player.dob)
+  const position = player.position ? POSITION_NAMES[player.position] : null
   return (
     <>
       <Link className="back-link" to="/squad"><ArrowLeft size={17} /> Squad</Link>
-      <section className="player-hero">
+      <section className="player-hero player-hero-big">
+        {player.number != null && <span className="player-hero-number" aria-hidden="true">{player.number}</span>}
         <PlayerAvatar player={player} large />
         <div className="player-profile-heading">
-          <span className="page-eyebrow">{player.position ?? 'Squad'}{player.number == null ? '' : ` · #${player.number}`}</span>
+          <span className="page-eyebrow">{position ?? 'Squad'}{player.number == null ? '' : ` · #${player.number}`}</span>
           <h1>{player.name}</h1>
-          <p>{player.team === 'senior' ? 'Senior team' : player.team}</p>
+          <p>Ekhaya FC{age != null ? ` · ${age} years` : ''}{player.nationality ? ` · ${player.nationality}` : ''}</p>
+          <FollowButton key={player.id} player={player} />
         </div>
+      </section>
+
+      <section className="player-headline-stats" aria-label="Season at a glance">
+        <div><strong className="number">{player.stats?.appearances ?? 0}</strong><span>Apps</span></div>
+        <div><strong className="number">{player.stats?.goals ?? 0}</strong><span>Goals</span></div>
+        <div><strong className="number">{player.stats?.assists ?? 0}</strong><span>Assists</span></div>
+        <div><strong className="number">{awards.length}</strong><span>MOTM</span></div>
       </section>
 
       {awards.length > 0 && <section className="player-awards" aria-label="Man of the match awards">
@@ -58,8 +141,27 @@ export default function PlayerDetailPage() {
         <div><strong>Fans' man of the match ×{awards.length}</strong><ul>{awards.slice(0, 5).map((fixture) => <li key={fixture.id}><Link to={`/live?match=${fixture.id}&tab=vote`}>{fixture.home} {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0} {fixture.away}</Link></li>)}</ul></div>
       </section>}
 
+      {log.length > 0 && <>
+        <PageHeader eyebrow="Recent matches" title="Match log" />
+        <ul className="player-log">
+          {log.map((fixture) => {
+            const started = (fixture.startingPlayerIds ?? []).includes(id)
+            const outcome = ekhayaOutcome(fixture)
+            const opponent = /ekhaya/i.test(fixture.home) ? fixture.away : fixture.home
+            const scored = goals[fixture.id] ?? []
+            return <li key={fixture.id}><Link to={`/live?match=${fixture.id}`}>
+              {outcome && <span className={`player-log-result result-${outcome}`}>{outcome}</span>}
+              <TeamLogo name={opponent} />
+              <span className="player-log-main"><strong>{/ekhaya/i.test(fixture.home) ? 'v' : '@'} {opponent} · {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0}</strong><small>{formatMalawiDate(fixture.date)} · {started ? 'Started' : 'Sub'}{fixture.motmWinnerId === id && fixture.motmClosed ? ' · ★ MOTM' : ''}</small></span>
+              {scored.length > 0 && <span className="player-log-goals" aria-label={`${scored.length} goal${scored.length === 1 ? '' : 's'}`}>{scored.map((minute, index) => <i key={index}>⚽ {minute}′</i>)}</span>}
+            </Link></li>
+          })}
+        </ul>
+      </>}
+
       <PageHeader eyebrow="Player details" title="Player profile" />
       <section className="player-facts" aria-label="Player details">
+        <Fact label="Position" value={position} />
         <Fact label="Date of birth" value={player.dob ? `${player.dob}${age == null ? '' : ` · ${age} years`}` : null} />
         <Fact label="Nationality" value={player.nationality} />
         <Fact label="Preferred foot" value={player.preferredFoot} />

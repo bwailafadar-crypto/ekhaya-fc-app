@@ -1,6 +1,9 @@
 // Sends one push alert to every device that chose this kind of alert.
 // Run by .github/workflows/send-alert.yml, which the admin app triggers.
 //   node send.cjs --kind match --title "GOAL! ..." --body "23' J. Banda" --path /live
+//   node send.cjs --kind player --player allen-chihana --title "Allen Chihana scores!" ...
+// Fans who follow a player get his goal as a 'player' alert, so the match goal
+// alert (sent with --player) skips them and nobody gets the same goal twice.
 const fs = require('node:fs')
 const { initializeApp, cert } = require('firebase-admin/app')
 const { getFirestore } = require('firebase-admin/firestore')
@@ -14,14 +17,19 @@ function arg(name, fallback = '') {
   return index >= 0 ? String(process.argv[index + 1] ?? '') : fallback
 }
 
-async function sendAlert({ kind, title, body, path }, db, messaging) {
-  if (!['match', 'news', 'test'].includes(kind)) throw new Error(`Unknown alert kind "${kind}"`)
+async function sendAlert({ kind, title, body, path, player = '' }, db, messaging) {
+  if (!['match', 'news', 'test', 'player'].includes(kind)) throw new Error(`Unknown alert kind "${kind}"`)
+  if (kind === 'player' && !player) throw new Error('A player alert needs --player')
   if (!title) throw new Error('An alert needs a title')
   const safePath = path.startsWith('/') ? path : '/'
   const link = `${APP_URL}/#${safePath}`
   // "test" alerts go to every device so the setup can be checked.
-  const query = kind === 'test' ? db.collection('pushTokens') : db.collection('pushTokens').where(`prefs.${kind}`, '==', true)
-  const tokens = (await query.get()).docs.map((doc) => doc.id)
+  const query = kind === 'test' ? db.collection('pushTokens')
+    : kind === 'player' ? db.collection('pushTokens').where('follows', 'array-contains', player)
+    : db.collection('pushTokens').where(`prefs.${kind}`, '==', true)
+  let docs = (await query.get()).docs
+  if (kind === 'match' && player) docs = docs.filter((doc) => !(doc.get('follows') || []).includes(player))
+  const tokens = docs.map((doc) => doc.id)
   let sent = 0
   const dead = []
   for (let i = 0; i < tokens.length; i += 500) {
@@ -32,7 +40,7 @@ async function sendAlert({ kind, title, body, path }, db, messaging) {
         notification: {
           title: title.slice(0, 120), body: body.slice(0, 240),
           icon: `${APP_URL}/pwa-icon-192.png`, badge: `${APP_URL}/pwa-icon-192.png`,
-          ...(kind === 'match' ? { tag: 'ekhaya-match', renotify: true } : {}),
+          ...(kind === 'match' || kind === 'player' ? { tag: 'ekhaya-match', renotify: true } : {}),
         },
         fcmOptions: { link },
       },
@@ -56,7 +64,7 @@ if (require.main === module) {
   const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS
   if (!keyFile || !fs.existsSync(keyFile)) { console.error('✖ Firebase key missing (FIREBASE_SA secret).'); process.exit(1) }
   initializeApp({ credential: cert(JSON.parse(fs.readFileSync(keyFile, 'utf8'))) })
-  sendAlert({ kind: arg('kind', 'match'), title: arg('title'), body: arg('body'), path: arg('path', '/') }, getFirestore(), getMessaging())
+  sendAlert({ kind: arg('kind', 'match'), title: arg('title'), body: arg('body'), path: arg('path', '/'), player: arg('player', '') }, getFirestore(), getMessaging())
     .then(({ sent, total, removed }) => console.log(`✔ "${arg('title')}" sent to ${sent} of ${total} devices${removed ? ` (${removed} old devices removed)` : ''}`))
     .catch((error) => { console.error('✖', error.message); process.exit(1) })
 }

@@ -6,6 +6,7 @@ import type { Fixture } from '../../src/types.ts'
 import { matchAlerts, newsAlert } from '../../src/utils/alertRules.ts'
 import { isLiveNow, isPlayed } from '../../src/utils/football.ts'
 import { currentEventMinute, matchMinute } from '../../src/utils/matchClock.ts'
+import { autoStories } from '../../src/utils/stories.ts'
 import { competitionLabel, competitionOf, isCupCompetition, matchesFilter } from '../../src/utils/competitions.ts'
 import { cupStatus } from '../../src/utils/cupSeason.ts'
 import { ekhayaOutcome } from '../../src/utils/football.ts'
@@ -138,4 +139,20 @@ test('match clock: events are recorded at the minute fans see, also after first-
   assert.equal(currentEventMinute({ ...base, period: 'first-half', clockElapsedSeconds: 22 * 60 + 5 } as never), 23)
   // Never above the form limit, or the browser refuses to save the event.
   assert.equal(currentEventMinute({ ...base, period: 'first-half', clockElapsedSeconds: 500 * 60 } as never), 130)
+})
+
+test('stories: live score, team news, next match and full time come from the fixtures', () => {
+  const now = Date.parse('2026-10-17T08:00:00Z')
+  const f = (o: Record<string, unknown>) => ({ competition: 'FDH Championship', venue: 'Chiwembe Stadium', ...o }) as never
+  const fixtures = [
+    f({ id: 'next', home: 'Ekhaya FC', away: 'Blue Eagles', date: '2026-10-18T12:30:00Z', status: 'upcoming', lineupConfirmed: true, startingPlayerIds: ['a', 'b'], formation: '4-3-3' }),
+    f({ id: 'last', home: 'Ekhaya FC', away: 'Kamuzu Barracks', date: '2026-10-15T12:30:00Z', status: 'finished', homeScore: 2, awayScore: 0 }),
+    f({ id: 'old', home: 'Silver Strikers', away: 'Ekhaya FC', date: '2026-09-01T12:30:00Z', status: 'finished', homeScore: 1, awayScore: 1 }),
+    f({ id: 'practice', home: 'Ekhaya FC', away: 'Practice XI', date: '2026-10-17T07:00:00Z', status: 'live', isTest: true }),
+  ]
+  const labels = autoStories(fixtures, now).map((story) => story.label)
+  assert.deepEqual(labels, ['Team news', 'Next match', 'Full time'])
+  const live = autoStories([f({ id: 'l', home: 'Ekhaya FC', away: 'Red Lions', date: '2026-10-17T07:30:00Z', status: 'live', homeScore: 1, awayScore: 0 })], now)
+  assert.equal(live[0].label, 'LIVE')
+  assert.equal(live[0].title, 'Ekhaya FC 1–0 Red Lions')
 })

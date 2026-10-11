@@ -9,13 +9,18 @@ import { dispatchAlert, githubKey } from '../utils/githubAlerts'
 import { recalculateLeaderboard } from '../utils/leaderboardStore'
 import { useToast } from './ToastContext'
 
-async function scorerLine(fixtureId: string, team: string) {
+async function latestGoal(fixtureId: string, team: string) {
   try {
     const events = await getDocs(query(collection(db, 'fixtures', fixtureId, 'events'), orderBy('createdAt', 'desc'), limit(6)))
     const goal = events.docs.map((item) => item.data()).find((event) => event.kind === 'goal' && String(event.team || '').toLowerCase() === team.toLowerCase())
-    return goal ? `${goal.minute ?? ''}' ${goal.playerName || team}`.trim() : team
+    return {
+      line: goal ? `${goal.minute ?? ''}' ${goal.playerName || team}`.trim() : team,
+      playerId: typeof goal?.playerId === 'string' ? goal.playerId : '',
+      playerName: typeof goal?.playerName === 'string' ? goal.playerName : '',
+      minute: goal?.minute,
+    }
   } catch {
-    return team
+    return { line: team, playerId: '', playerName: '', minute: undefined }
   }
 }
 
@@ -53,9 +58,17 @@ export default function AdminAlertRelay() {
       } catch {
         return // another admin already sent it
       }
-      const body = alert.scorerTeam && fixtureId ? await scorerLine(fixtureId, alert.scorerTeam) : alert.body
+      const goal = alert.scorerTeam && fixtureId ? await latestGoal(fixtureId, alert.scorerTeam) : null
+      const body = goal ? goal.line : alert.body
+      // Fans following the scorer get their own alert ("Allen Chihana scores!") instead.
+      const player = goal?.playerId && /ekhaya/i.test(alert.scorerTeam ?? '') ? goal.playerId : ''
+      if (player && goal) {
+        const playerLock = doc(db, 'alertsSent', `${alert.key.replace(/\//g, '_')}-p`)
+        const sendPlayer = await setDoc(playerLock, { title: `${goal.playerName} scores`.slice(0, 200), createdAt: serverTimestamp() }).then(() => true, () => false)
+        if (sendPlayer) await dispatchAlert({ kind: 'player', player, title: `⚽ ${goal.playerName || 'Your player'} scores!`, body: `${goal.minute ?? ''}' · ${alert.title.replace(/^GOAL! /, '')}`, path: alert.path }).catch(() => deleteDoc(playerLock).catch(() => undefined))
+      }
       try {
-        await dispatchAlert({ kind: alert.kind, title: alert.title, body, path: alert.path })
+        await dispatchAlert({ kind: alert.kind, title: alert.title, body, path: alert.path, ...(player ? { player } : {}) })
         if (active) showToast(`Alert sent to fans: ${alert.title}`, 'info')
       } catch {
         // Release the lock so the alert can be sent again (by this or another admin).
