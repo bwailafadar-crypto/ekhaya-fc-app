@@ -18,6 +18,8 @@ export const config = {
   environment: detectEnvironment(),
   build: typeof __APP_BUILD__ === 'string' ? __APP_BUILD__ : 'dev',
   appUrl: 'https://ekhaya-fc-app.web.app/',
+  /** The club's Facebook page: its latest posts and videos show on Ekhaya TV. */
+  facebookPage: 'https://www.facebook.com/profile.php?id=100090538980005',
   /** Local test copy of the database (npm run emulators); never touches live data. */
   useEmulators: import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS === 'true',
   firebase: {
