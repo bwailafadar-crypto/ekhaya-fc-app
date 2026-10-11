@@ -1822,3 +1822,16 @@ select.auth-input { appearance: auto; }
   :root { color-scheme: only light; }
   html { background-color: #FBFAF6; }
 }
+
+/* update-77: table zones — 1–8 Airtel Top 8 (green bar), last 3 relegated (red) */
+.standings-table tr.zone-top8 .standings-position { box-shadow: inset 4px 0 0 var(--win); color: var(--win); }
+.standings-table tr.zone-relegation .standings-position { box-shadow: inset 4px 0 0 var(--loss); color: var(--loss); }
+.standings-table tr.zone-relegation:not(.standings-ekhaya), .standings-table tr.zone-relegation:not(.standings-ekhaya) .standings-team { background: #FDECEC; }
+.standings-table tr.zone-relegation:not(.standings-ekhaya) .standings-team { color: #8E1C1C; }
+.standings-table tr.zone-top8 + tr:not(.zone-top8) td, .standings-table tr.zone-top8 + tr:not(.zone-top8) th { border-top: 2px dashed rgb(30 142 62 / 45%); }
+.standings-table tr:not(.zone-relegation) + tr.zone-relegation td, .standings-table tr:not(.zone-relegation) + tr.zone-relegation th { border-top: 2px dashed rgb(198 40 40 / 55%); }
+.table-zones { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 2px 0; padding: 0; list-style: none; color: var(--muted); font-size: 11px; font-weight: 600; }
+.table-zones li { display: flex; align-items: center; gap: 6px; }
+.zone-key { width: 12px; height: 12px; display: inline-block; border-radius: 3px; }
+.zone-key-top8 { background: var(--win); }
+.zone-key-relegation { background: var(--loss); }
