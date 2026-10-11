@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, CalendarDays, Newspaper, ShieldCheck, Trophy, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clapperboard, Newspaper, ShieldCheck, Trophy, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useFlag } from '../hooks/useFlag'
@@ -83,6 +83,7 @@ export default function Home() {
       <section className="home-shortcuts" aria-label="Quick links">
         <Link to="/squad"><Users size={19} /><span>Squad</span></Link>
         {competitions ? <Link to="/competitions?tab=cups"><Trophy size={19} /><span>Cups</span></Link> : <Link to="/table"><Trophy size={19} /><span>Table</span></Link>}
+        <Link to="/tv"><Clapperboard size={19} /><span>TV</span></Link>
         <Link to="/membership"><ShieldCheck size={19} /><span>Join</span></Link>
       </section>
       <section className="home-section">

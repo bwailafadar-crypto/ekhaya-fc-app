@@ -420,6 +420,47 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Ekhaya TV: links to the club's YouTube/Facebook videos.
+    match /videos/{videoId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'url', 'kind', 'fixtureId', 'createdAt', 'by'])
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+        && request.resource.data.url is string && request.resource.data.url.size() <= 300
+        && request.resource.data.url.matches('https?://((www|m|web|mobile)[.])?(youtube[.]com|youtu[.]be|facebook[.]com|fb[.]watch)/.*')
+        && request.resource.data.kind in ['Highlights', 'Goals', 'Interview', 'Training', 'Behind the scenes']
+        && (!('fixtureId' in request.resource.data) || request.resource.data.fixtureId is string)
+        && request.resource.data.by == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // Match photo galleries: thumbnail + caption here, full photo in matchPhotoImages.
+    match /matchPhotos/{photoId} {
+      allow read: if signedIn();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['fixtureId', 'thumb', 'caption', 'createdAt', 'by'])
+        && request.resource.data.fixtureId is string
+        && request.resource.data.thumb is string && request.resource.data.thumb.size() <= 30000
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.by == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /matchPhotoImages/{photoId} {
+      allow read: if signedIn();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['image', 'createdAt'])
+        && request.resource.data.image is string && request.resource.data.image.size() <= 400000
+        && request.resource.data.createdAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // Club history and honours page.
+    match /clubInfo/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     match /alertsSent/{alertId} {
       allow create: if isAdmin()
         && request.resource.data.keys().hasOnly(['title', 'createdAt'])

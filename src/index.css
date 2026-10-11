@@ -1730,3 +1730,71 @@ select.auth-input { appearance: auto; }
 .member-check-result span { color: var(--muted); font-size: 12px; }
 .member-check-result.good { color: var(--win); background: rgb(30 142 62 / 10%); border: 1px solid rgb(30 142 62 / 35%); }
 .member-check-result.bad { color: var(--loss); background: rgb(198 40 40 / 8%); border: 1px solid rgb(198 40 40 / 30%); }
+
+/* update 68: Phase 3 — Ekhaya TV, goal clips, match galleries, club & honours */
+.home-shortcuts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tv-filter { margin: 0 0 12px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.tv-filter button { min-height: 34px; padding: 0 14px; flex: 0 0 auto; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 999px; font: 700 12px 'Inter', sans-serif; cursor: pointer; }
+.tv-filter button.active { background: linear-gradient(120deg, var(--gold-light), var(--gold)); border-color: var(--gold); }
+.tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 14px; }
+.tv-card { overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 6px 18px rgb(14 14 14 / 6%); }
+.tv-thumb { position: relative; width: 100%; aspect-ratio: 16 / 9; padding: 0; display: block; overflow: hidden; background: #111; border: 0; cursor: pointer; }
+.tv-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
+.tv-thumb:hover img { transform: scale(1.04); }
+.tv-thumb-fallback { width: 100%; height: 100%; display: grid; place-items: center; color: var(--gold-light); background: radial-gradient(circle, #3A2E0C, #111); }
+.tv-play { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; display: grid; place-items: center; color: var(--ink); background: linear-gradient(140deg, var(--gold-light), var(--gold)); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 6px 20px rgb(0 0 0 / 35%); }
+.tv-kind { position: absolute; left: 10px; top: 10px; padding: 3px 9px; color: #fff; background: rgb(0 0 0 / 60%); border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+.tv-meta { padding: 10px 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.tv-meta strong { font-size: 13.5px; line-height: 1.35; }
+.tv-meta button { padding: 4px; color: var(--loss); background: none; border: 0; cursor: pointer; }
+.tv-add { margin-bottom: 14px; }
+.video-player { position: fixed; inset: 0; z-index: 9600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; background: rgb(0 0 0 / 92%); }
+.video-player-top { width: min(960px, 100%); display: flex; align-items: center; gap: 8px; color: #fff; }
+.video-player-top strong { min-width: 0; flex: 1; overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.video-player-top a, .video-player-top button { width: 40px; height: 40px; display: grid; place-items: center; color: #fff; background: rgb(255 255 255 / 12%); border: 0; border-radius: 50%; cursor: pointer; }
+.video-frame { width: min(960px, 100%); aspect-ratio: 16 / 9; overflow: hidden; background: #000; border-radius: 14px; }
+.video-frame.portrait { width: min(420px, 100%); aspect-ratio: 9 / 16; max-height: calc(100vh - 120px); }
+.video-frame iframe { width: 100%; height: 100%; border: 0; }
+.video-frame p { padding: 20px; color: #fff; text-align: center; }
+.video-frame a { color: var(--gold-light); }
+.live-event-watch { margin-top: 4px; margin-right: 6px; padding: 3px 10px; display: inline-flex; color: var(--ink); background: linear-gradient(120deg, var(--gold-light), var(--gold)); border: 0; border-radius: 999px; font: 700 11px 'Inter', sans-serif; cursor: pointer; }
+.live-event-watch.add { color: var(--gold-dark); background: #fff; border: 1px dashed rgb(201 162 39 / 60%); }
+.match-media { margin-top: 16px; }
+.match-media-videos { margin-bottom: 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.match-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.match-gallery button { aspect-ratio: 1; padding: 0; overflow: hidden; background: #EEE; border: 0; border-radius: 10px; cursor: pointer; }
+.match-gallery img { width: 100%; height: 100%; object-fit: cover; }
+.match-gallery-add { position: relative; margin-top: 10px; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--gold-dark); background: #FFF8DE; border: 2px dashed rgb(201 162 39 / 55%); border-radius: 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.match-gallery-add input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.photo-viewer { position: fixed; inset: 0; z-index: 9600; display: flex; flex-direction: column; background: #050505; touch-action: pan-y; }
+.photo-viewer-top { padding: max(10px, env(safe-area-inset-top)) 12px 8px; display: flex; align-items: center; justify-content: space-between; color: #fff; font-size: 13px; }
+.photo-viewer-top > div { display: flex; gap: 6px; }
+.photo-viewer-top button, .photo-nav { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; background: rgb(255 255 255 / 12%); border: 0; border-radius: 50%; cursor: pointer; }
+.photo-viewer-stage { min-height: 0; flex: 1; display: grid; place-items: center; padding: 0 0 max(12px, env(safe-area-inset-bottom)); }
+.photo-viewer-stage img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.photo-viewer-stage img.loading { filter: blur(6px); }
+.photo-nav { position: absolute; top: 50%; transform: translateY(-50%); }
+.photo-nav.prev { left: 10px; }
+.photo-nav.next { right: 10px; }
+.club-hero { margin-bottom: 18px; padding: 18px; display: flex; align-items: center; gap: 14px; background: linear-gradient(130deg, #FFFBEA, #fff); border: 1px solid rgb(201 162 39 / 45%); border-radius: 18px; }
+.club-hero .team-logo { --logo-size: 64px !important; }
+.club-hero h2 { font-size: 26px; }
+.club-hero span { color: var(--muted); font-size: 12.5px; }
+.matchday-section-title h2 svg { margin-right: 6px; vertical-align: -2px; color: var(--gold-dark); }
+.trophy-cabinet { margin-bottom: 20px; display: grid; gap: 12px; }
+.trophy-item { overflow: hidden; display: flex; align-items: center; gap: 12px; padding: 12px; background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+.trophy-item.won { flex-direction: column; align-items: stretch; padding: 0; border-color: rgb(201 162 39 / 55%); background: linear-gradient(160deg, #FFF8DE, #fff); }
+.trophy-item.won img { width: 100%; max-height: 260px; object-fit: cover; }
+.trophy-item.won > div { padding: 12px 14px; }
+.trophy-item > div { display: flex; flex-direction: column; gap: 2px; }
+.trophy-item strong { font: 600 17px 'Oswald', sans-serif; }
+.trophy-item b { color: var(--gold-dark); font-size: 13px; }
+.trophy-item small { color: var(--muted); font-size: 12px; }
+.trophy-icon { font-size: 30px; }
+.club-story { margin-bottom: 20px; }
+.club-story p { font-size: 14px; line-height: 1.6; }
+.club-story p + p { margin-top: 10px; }
+.club-legends { margin: 0 0 20px; padding: 0; list-style: none; display: grid; gap: 8px; }
+.club-legends li { padding: 12px 14px; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 12px; }
+.club-legends span { color: var(--muted); font-size: 12.5px; }
+.page-header > .button { flex: 0 0 auto; white-space: nowrap; }

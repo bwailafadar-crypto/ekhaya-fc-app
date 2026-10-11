@@ -8,6 +8,7 @@ import { isLiveNow, isPlayed } from '../../src/utils/football.ts'
 import { currentEventMinute, matchMinute } from '../../src/utils/matchClock.ts'
 import { autoStories } from '../../src/utils/stories.ts'
 import { fanPointsTable, levelFor } from '../../src/utils/leaderboardCalc.ts'
+import { parseVideo } from '../../src/utils/video.ts'
 import { competitionLabel, competitionOf, isCupCompetition, matchesFilter } from '../../src/utils/competitions.ts'
 import { cupStatus } from '../../src/utils/cupSeason.ts'
 import { ekhayaOutcome } from '../../src/utils/football.ts'
@@ -173,4 +174,16 @@ test('fan points: predictions, votes, check-ins and invites add up; levels follo
   assert.equal(levelFor(100).name, 'Ultra')
   assert.equal(levelFor(250).next, null)
   assert.deepEqual(levelFor(60).next, { name: 'Ultra', from: 100 })
+})
+
+test('videos: YouTube and Facebook links are understood, anything else is refused', () => {
+  for (const link of ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'https://youtu.be/dQw4w9WgXcQ?si=abc', 'https://m.youtube.com/shorts/dQw4w9WgXcQ', 'https://www.youtube.com/live/dQw4w9WgXcQ']) {
+    assert.equal(parseVideo(link)?.id, 'dQw4w9WgXcQ', link)
+  }
+  assert.equal(parseVideo('https://youtube.com/shorts/dQw4w9WgXcQ')?.portrait, true)
+  assert.equal(parseVideo('https://www.facebook.com/EkhayaFC/videos/123456789/')?.provider, 'facebook')
+  assert.equal(parseVideo('https://fb.watch/abcDEF123/')?.provider, 'facebook')
+  assert.equal(parseVideo('https://www.facebook.com/EkhayaFC'), null)
+  assert.equal(parseVideo('https://example.com/video.mp4'), null)
+  assert.equal(parseVideo('not a link'), null)
 })

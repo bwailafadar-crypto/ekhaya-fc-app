@@ -103,6 +103,8 @@ export interface MatchEvent {
   subbedInPlayerName?: string
   subbedOutPlayerId?: string
   subbedOutPlayerName?: string
+  /** YouTube/Facebook clip of this moment (goals). */
+  videoUrl?: string
 }
 
 export type NewsCategory = 'Match' | 'Club' | 'Transfer' | 'Community'
