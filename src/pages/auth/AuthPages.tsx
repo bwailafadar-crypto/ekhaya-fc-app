@@ -16,9 +16,9 @@ function getErrorMessage(error: unknown) {
   if (!(error instanceof FirebaseError)) return 'Something went wrong. Please try again.'
   const messages: Record<string, string> = {
     'auth/email-already-in-use': 'An account with this email already exists. Try signing in instead.',
-    'auth/invalid-credential': 'The email or password is incorrect.',
-    'auth/wrong-password': 'The email or password is incorrect.',
-    'auth/user-not-found': 'The email or password is incorrect.',
+    'auth/invalid-credential': 'The email or password is incorrect. Check for typos or spaces. Forgot it? Tap "Forgot password?" below. Were you a club member before this app? You still need to tap "Create account" once with the same email.',
+    'auth/wrong-password': 'The email or password is incorrect. Check for typos or spaces. Forgot it? Tap "Forgot password?" below. Were you a club member before this app? You still need to tap "Create account" once with the same email.',
+    'auth/user-not-found': 'The email or password is incorrect. Check for typos or spaces. Forgot it? Tap "Forgot password?" below. Were you a club member before this app? You still need to tap "Create account" once with the same email.',
     'auth/invalid-email': 'Enter a valid email address.',
     'auth/weak-password': 'Choose a password with at least 6 characters.',
     'auth/network-request-failed': 'Connection failed. Check your internet and try again.',
