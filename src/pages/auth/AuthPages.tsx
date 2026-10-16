@@ -447,6 +447,7 @@ export function LoginPage() {
         <Link className="auth-link" to="/forgot-password">Forgot password?</Link>
         <span>New to Ekhaya? <Link className="auth-link" to="/signup">Create account</Link></span>
         <Link className="auth-link auth-install-link" to="/install">Install the app</Link>
+        <a className="auth-link" href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>
       </div>
     </AuthShell>
   )
@@ -520,6 +521,7 @@ export function SignUpPage() {
         <SubmitButton busy={submitting} idleLabel="Create fan account" busyLabel="Creating account..." />
       </form>
       <div className="auth-links"><span>Already have an account? <Link className="auth-link" to="/login">Sign in</Link></span></div>
+      <p className="auth-legal">By creating an account you agree to how we use your details in our <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
     </AuthShell>
   )
 }

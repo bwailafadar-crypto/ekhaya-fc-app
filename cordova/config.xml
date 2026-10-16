@@ -1,16 +1,17 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="mw.ekhayafc.app" version="1.1.0" android-versionCode="10100" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="mw.ekhayafc.app" version="1.2.0" android-versionCode="10200" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>Ekhaya FC</name>
-    <description>Ekhaya FC official app</description>
+    <description>Ekhaya FC official app: live matches, fixtures, results, league table, squad, news and Fan Zone.</description>
     <author>Ekhaya FC</author>
     <content src="index.html" />
     <preference name="Orientation" value="portrait" />
-    <preference name="GradleVersion" value="8.10.2" />
-    <preference name="AndroidGradlePluginVersion" value="8.7.3" />
-    <preference name="android-buildToolsVersion" value="35.0.0" />
-    <preference name="android-targetSdkVersion" value="35" />
-    <preference name="android-compileSdkVersion" value="35" />
-    <preference name="AndroidWindowSplashScreenBackground" value="#11140F" />
+    <preference name="GradleVersion" value="8.14.2" />
+    <preference name="AndroidGradlePluginVersion" value="8.10.1" />
+    <preference name="android-buildToolsVersion" value="36.0.0" />
+    <preference name="android-targetSdkVersion" value="36" />
+    <preference name="android-compileSdkVersion" value="36" />
+    <preference name="android-minSdkVersion" value="24" />
+    <preference name="AndroidWindowSplashScreenBackground" value="#FBFAF6" />
     <preference name="AndroidWindowSplashScreenAnimatedIcon" value="resources/icon.png" />
     <!-- Load the live website so new features reach fans without a new APK. -->
     <access origin="*" />

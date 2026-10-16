@@ -1,4 +1,6 @@
 // Builds a SIGNED release APK and publishes it to public/downloads/EkhayaFC.apk.
+// With --bundle it builds the signed .aab that Google Play needs instead
+// (saved to release/EkhayaFC.aab, never inside public/).
 //
 // Steps: build an unsigned release APK with Cordova, align it with zipalign,
 // then sign it with Android's apksigner. Signing with apksigner (instead of
@@ -37,8 +39,12 @@ if (!buildTools) {
 }
 
 const javaHome = process.env.JAVA_HOME || '/usr/lib/jvm/java-17-openjdk-amd64'
-const gradleBin = join(homedir(), '.local/gradle/8.10.2/gradle-8.10.2/bin')
-const env = { ...process.env, JAVA_HOME: javaHome, CORDOVA_JAVA_HOME: javaHome, PATH: `${gradleBin}:${javaHome}/bin:${process.env.PATH}` }
+// Gradle: the newest one unpacked under ~/.local/gradle (8.14.2 or later for Android 16).
+const gradleRoot = join(homedir(), '.local/gradle')
+const gradleDirs = existsSync(gradleRoot) ? readdirSync(gradleRoot).sort().reverse() : []
+const gradleBin = gradleDirs.map((v) => join(gradleRoot, v, `gradle-${v}`, 'bin')).find((dir) => existsSync(join(dir, 'gradle'))) ?? ''
+const bundle = process.argv.includes('--bundle')
+const env = { ...process.env, JAVA_HOME: javaHome, CORDOVA_JAVA_HOME: javaHome, PATH: `${gradleBin ? `${gradleBin}:` : ''}${javaHome}/bin:${process.env.PATH}` }
 
 const run = (label, command, args, options = {}) => {
   console.log(`\n▶ ${label}`)
@@ -50,6 +56,25 @@ const run = (label, command, args, options = {}) => {
 }
 
 run('Copy Android shell', 'node', ['scripts/copy-android-www.mjs'])
+
+if (bundle) {
+  // Google Play: an Android App Bundle signed with the upload key (jarsigner signs .aab files).
+  run('Build release App Bundle', 'cordova', ['build', 'android', '--release', '--', '--packageType=bundle'], { cwd: resolve('cordova') })
+  const bundleDir = resolve('cordova/platforms/android/app/build/outputs/bundle/release')
+  const built = existsSync(bundleDir) ? readdirSync(bundleDir).find((name) => name.endsWith('.aab')) : null
+  if (!built) { console.error(`App Bundle not found in ${bundleDir}`); process.exit(1) }
+  mkdirSync(resolve('release'), { recursive: true })
+  const aab = resolve('release/EkhayaFC.aab')
+  copyFileSync(join(bundleDir, built), aab)
+  run('Sign App Bundle', join(javaHome, 'bin', 'jarsigner'), [
+    '-keystore', keystore, '-storepass:env', 'EKHAYA_KEYSTORE_PASSWORD', '-keypass:env', 'EKHAYA_KEY_PASSWORD',
+    '-sigalg', 'SHA256withRSA', '-digestalg', 'SHA-256', aab, alias,
+  ])
+  run('Verify App Bundle signature', join(javaHome, 'bin', 'jarsigner'), ['-verify', aab])
+  console.log('\n✔ Signed App Bundle ready: release/EkhayaFC.aab')
+  console.log('Upload it in Google Play Console → Test and release → Production (or Internal testing) → Create new release.')
+  process.exit(0)
+}
 run('Build unsigned release APK', 'cordova', ['build', 'android', '--release', '--', '--packageType=apk'], { cwd: resolve('cordova') })
 
 const outDir = resolve('cordova/platforms/android/app/build/outputs/apk/release')

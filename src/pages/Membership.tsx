@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { doc, onSnapshot } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
-import { ShieldCheck } from 'lucide-react'
+import { Clock, ShieldCheck } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import { useFlag } from '../hooks/useFlag'
 import { db } from '../firebase'
 import type { MembershipRecord, MembershipTier } from '../types'
 
@@ -71,6 +72,39 @@ async function paymentRequest(user: User, path: string, body: Record<string, str
 }
 
 export default function Membership() {
+  // Payments stay off ("Coming soon") until a superadmin switches them on in Admin → App health.
+  const open = useFlag('membershipPayments')
+  if (!open) return <MembershipComingSoon />
+  return <MembershipJoin />
+}
+
+function MembershipComingSoon() {
+  const tiersResult = useFirestoreCollection<MembershipTier>('membershipTiers')
+  const tiers = tiersResult.items
+    .filter((tier) => tier.active)
+    .sort((left, right) => tierOrder.indexOf(left.id) - tierOrder.indexOf(right.id))
+  return <div className="membership-page">
+    <div className="membership-glow" aria-hidden="true"><span /><span /><span /></div>
+    <PageHeader eyebrow="Join the club" title="Membership" />
+    <Card className="membership-soon">
+      <span className="membership-soon-badge"><Clock size={15} aria-hidden="true" /> Coming soon</span>
+      <h2>Official Ekhaya FC membership is on its way</h2>
+      <p>Soon you will join here and pay with Airtel Money, TNM Mpamba or card, and get your digital member card in the app. We will send an alert when it opens.</p>
+      <p className="membership-soon-note">Already a club member from before the app? Your card is in <a href="#/profile">Fan Profile</a>.</p>
+    </Card>
+    {tiersResult.loading ? <div className="loading-list"><Skeleton /><Skeleton /></div>
+      : tiers.length > 0 && <section className="membership-tier-grid" aria-label="Membership tiers (coming soon)">
+        {tiers.map((tier) => <Card className={`membership-tier-card membership-tier-soon${tier.id === 'gold' ? ' recommended' : ''}`} key={tier.id}>
+          <div className="membership-tier-heading"><h2>{tier.name}</h2><span>{tier.durationMonths} months</span></div>
+          <strong className="membership-price">MWK {Number(tier.priceMWK ?? 0).toLocaleString()}</strong>
+          <ul className="membership-benefits">{(tier.benefits ?? []).map((benefit, index) => <li key={`${tier.id}-${index}`}>{benefit}</li>)}</ul>
+          <Button type="button" disabled>Coming soon</Button>
+        </Card>)}
+      </section>}
+  </div>
+}
+
+function MembershipJoin() {
   const { user, profile } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const tiersResult = useFirestoreCollection<MembershipTier>('membershipTiers')

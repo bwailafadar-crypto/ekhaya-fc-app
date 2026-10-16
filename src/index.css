@@ -1835,3 +1835,26 @@ select.auth-input { appearance: auto; }
 .zone-key { width: 12px; height: 12px; display: inline-block; border-radius: 3px; }
 .zone-key-top8 { background: var(--win); }
 .zone-key-relegation { background: var(--loss); }
+
+/* update-79: membership "Coming soon" */
+.membership-soon { position: relative; border: 1px solid var(--glass-line, var(--line)); border-left: 4px solid var(--gold); background: linear-gradient(120deg, rgb(255 255 255 / 85%), rgb(248 237 197 / 65%)); }
+.membership-soon h2 { margin: 10px 0 6px; font-size: 18px; }
+.membership-soon p { margin: 0 0 8px; color: var(--muted); line-height: 1.5; }
+.membership-soon a { color: #8A6A0A; font-weight: 700; }
+.membership-soon-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; color: #6B540E; background: #FBF1CF; border: 1px solid rgb(158 124 18 / 35%); border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.membership-soon-note { font-size: 12px; }
+.membership-tier-soon { opacity: .92; }
+.membership-tier-soon .button[disabled], .membership-tier-soon button[disabled] { cursor: not-allowed; }
+.menu-soon, .shortcut-soon { display: inline-block; margin-left: 8px; padding: 2px 7px; color: #6B540E; background: #FBF1CF; border-radius: 999px; font-size: 9px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; vertical-align: middle; }
+.home-shortcuts a { position: relative; }
+.shortcut-soon { position: absolute; top: 4px; right: 4px; margin: 0; padding: 1px 5px; font-size: 8px; }
+
+/* update-79: account deletion + legal links */
+.delete-account { margin-top: 14px; border: 1px solid rgb(198 40 40 / 18%); }
+.delete-account h2 { margin: 0 0 6px; color: var(--loss); font-size: 17px; }
+.delete-account p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.delete-account-open { display: inline-flex; align-items: center; gap: 8px; padding: 6px 0; color: var(--loss); background: none; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+.legal-links { margin: 14px 2px 24px; color: var(--muted); font-size: 12px; text-align: center; }
+.legal-links a { color: #8A6A0A; font-weight: 600; }
+.auth-legal { margin: 10px 0 0; color: var(--muted); font-size: 11px; text-align: center; }
+.auth-legal a { color: #8A6A0A; font-weight: 600; }

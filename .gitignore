@@ -40,3 +40,7 @@ certs/*.pem
 # Built Android APK (published by npm run build:android:release, not committed)
 /public/downloads/*.apk
 .deploy-url
+
+# Signed Google Play bundles
+release/
+*.aab

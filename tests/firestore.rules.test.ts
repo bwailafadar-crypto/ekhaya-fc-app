@@ -81,10 +81,10 @@ test('keeps user profiles private to their owner and superadmins', async () => {
   await assertFails(getDoc(doc(signedIn('fan-2'), 'users/fan-1')))
 })
 
-test('allows a fan to create a pending request for an active tier only', async () => {
+test('memberships are created only by the payment server, never by a fan', async () => {
   await seedDocument('membershipTiers/basic', { active: true, priceMWK: 5000 })
   const db = signedIn('fan-1')
-  await assertSucceeds(setDoc(doc(db, 'memberships/fan-1'), {
+  await assertFails(setDoc(doc(db, 'memberships/fan-1'), {
     uid: 'fan-1',
     tierId: 'basic',
     fullName: 'Supporter One',
@@ -93,17 +93,27 @@ test('allows a fan to create a pending request for an active tier only', async (
     status: 'pending',
     createdAt: serverTimestamp(),
   }))
-
+  await seedDocument('memberships/fan-1', { uid: 'fan-1', status: 'pending' })
+  await assertSucceeds(getDoc(doc(db, 'memberships/fan-1')))
   await assertFails(updateDoc(doc(db, 'memberships/fan-1'), { status: 'active' }))
-  await assertFails(setDoc(doc(signedIn('fan-2'), 'memberships/fan-2'), {
-    uid: 'fan-2',
-    tierId: 'basic',
-    fullName: 'x'.repeat(121),
-    phone: '+265991234567',
-    email: 'fan-2@example.com',
-    status: 'pending',
-    createdAt: serverTimestamp(),
-  }))
+  await assertFails(getDoc(doc(signedIn('fan-2'), 'memberships/fan-1')))
+})
+
+test('payments are never readable or writable from the app', async () => {
+  await seedDocument('payments/tx-1', { uid: 'fan-1', status: 'pending', amount: 5000 })
+  await assertFails(getDoc(doc(signedIn('fan-1'), 'payments/tx-1')))
+  await assertFails(setDoc(doc(signedIn('fan-1'), 'payments/tx-2'), { uid: 'fan-1', status: 'paid' }))
+})
+
+test('a fan can delete their own account and leave a deletion request, not someone else\'s', async () => {
+  await seedRole('fan-1', 'fan')
+  await seedRole('fan-2', 'fan')
+  const db = signedIn('fan-1')
+  await assertSucceeds(setDoc(doc(db, 'deletionRequests/fan-1'), { email: 'fan-1@example.com', createdAt: serverTimestamp() }))
+  await assertFails(setDoc(doc(db, 'deletionRequests/fan-2'), { email: 'fan-1@example.com', createdAt: serverTimestamp() }))
+  await assertFails(getDoc(doc(db, 'deletionRequests/fan-1')))
+  await assertFails(deleteDoc(doc(db, 'users/fan-2')))
+  await assertSucceeds(deleteDoc(doc(db, 'users/fan-1')))
 })
 
 test('allows fans to read published news but not drafts', async () => {

@@ -26,6 +26,7 @@ export default function Home() {
     || 'Fan'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const competitions = useFlag('competitions')
+  const membershipOpen = useFlag('membershipPayments')
   const newsResult = usePublishedNews()
   // Start from the real time (not 0), so the first second never shows a wrong minute or countdown.
   const [clockNow, setClockNow] = useState(() => Date.now())
@@ -84,7 +85,7 @@ export default function Home() {
         <Link to="/squad"><Users size={19} /><span>Squad</span></Link>
         {competitions ? <Link to="/competitions?tab=cups"><Trophy size={19} /><span>Cups</span></Link> : <Link to="/table"><Trophy size={19} /><span>Table</span></Link>}
         <Link to="/tv"><Clapperboard size={19} /><span>TV</span></Link>
-        <Link to="/membership"><ShieldCheck size={19} /><span>Join</span></Link>
+        <Link to="/membership"><ShieldCheck size={19} /><span>Join</span>{!membershipOpen && <small className="shortcut-soon">Soon</small>}</Link>
       </section>
       <section className="home-section">
         <PageHeader eyebrow="From the club" title="Latest news" action={<Link className="text-link" to="/news">All news <ArrowRight size={15} /></Link>} />

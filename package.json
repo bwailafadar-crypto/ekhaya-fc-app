@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "build:android": "node scripts/copy-android-www.mjs && cd cordova && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 CORDOVA_JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 PATH=\"$HOME/.local/gradle/8.10.2/gradle-8.10.2/bin:/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH\" cordova build android",
+    "build:android": "node scripts/copy-android-www.mjs && cd cordova && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 CORDOVA_JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 PATH=\"$HOME/.local/gradle/8.14.2/gradle-8.14.2/bin:/usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH\" cordova build android",
     "lint": "eslint .",
     "preview": "vite preview --host 0.0.0.0",
     "seed": "tsx scripts/seed.ts",
@@ -28,7 +28,9 @@
     "seed:emulator": "node scripts/seed-emulator.cjs",
     "dev:emulators": "VITE_USE_EMULATORS=true vite --host 0.0.0.0",
     "health": "node scripts/check-app.cjs",
-    "compare": "node scripts/compare-data.cjs"
+    "compare": "node scripts/compare-data.cjs",
+    "cleanup": "node scripts/purge-deleted.cjs",
+    "build:android:play": "node scripts/build-android-release.mjs --bundle"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

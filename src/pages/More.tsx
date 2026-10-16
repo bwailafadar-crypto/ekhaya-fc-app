@@ -23,6 +23,7 @@ export default function More() {
   const canManage = role === 'admin' || role === 'superadmin'
   const fanFamily = useFlag('fanFamily')
   const competitions = useFlag('competitions')
+  const membershipOpen = useFlag('membershipPayments')
   const visible = items.filter((item) => (item.to !== '/community' || fanFamily) && (item.to !== '/competitions' || competitions))
 
   return (
@@ -30,7 +31,7 @@ export default function More() {
       {visible.map((i) => (
         <Link key={i.to} to={i.to} className="menu-item">
           <i.icon className="menu-icon" size={20} aria-hidden="true" />
-          <span>{i.label}</span>
+          <span>{i.label}{i.to === '/membership' && !membershipOpen && <small className="menu-soon">Coming soon</small>}</span>
           <ChevronRight className="arrow" size={18} aria-hidden="true" />
         </Link>
       ))}
@@ -50,6 +51,7 @@ export default function More() {
       )}
       <InstallSharePanel compact />
       <LogoutButton />
+      <p className="legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a> · <a href="/delete-account.html" target="_blank" rel="noreferrer">Delete your account</a></p>
       <p className="app-version">Version {__APP_BUILD__}</p>
     </div>
   )

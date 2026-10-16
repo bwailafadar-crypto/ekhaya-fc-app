@@ -1,0 +1,44 @@
+# Every Monday: finishes "Delete my account" requests (votes, predictions,
+# check-ins of deleted fans) and removes error reports older than 90 days.
+# Google Play requires deleted accounts' data to really be removed.
+name: Weekly clean-up
+
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'preview = list only, apply = delete'
+        type: choice
+        options: [preview, apply]
+        default: preview
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Clean up
+        run: |
+          # The weekly run deletes; a manual run only previews unless "apply" is chosen.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.mode }}" = "apply" ]; then
+            node scripts/purge-deleted.cjs --apply
+          else
+            node scripts/purge-deleted.cjs
+          fi
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

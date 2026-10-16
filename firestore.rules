@@ -109,7 +109,20 @@ service cloud.firestore {
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['disabled']) || request.resource.data.disabled is bool)
         );
 
-      allow delete: if isSuperadmin() && request.auth.uid != uid;
+      // A fan may delete their own account (Google Play requires this);
+      // the superadmin may remove other accounts.
+      allow delete: if signedIn() && (request.auth.uid == uid || isSuperadmin());
+    }
+
+    // "Delete my account": the fan leaves a note so the weekly clean-up also
+    // removes their votes, predictions and check-ins. Only the superadmin reads it.
+    match /deletionRequests/{uid} {
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'createdAt'])
+        && request.resource.data.email is string && request.resource.data.email.size() <= 200
+        && request.resource.data.createdAt == request.time;
+      allow read, delete: if isSuperadmin();
     }
 
     match /fans/{fanDocId} {
@@ -271,25 +284,9 @@ service cloud.firestore {
       allow get: if signedIn()
         && (membershipId == request.auth.uid || isSuperadmin());
       allow list: if isSuperadmin();
-      allow create: if signedIn()
-        && membershipId == request.auth.uid
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.keys().hasOnly([
-          'uid', 'tierId', 'fullName', 'phone', 'email', 'status', 'createdAt'
-        ])
-        && request.resource.data.keys().hasAll([
-          'uid', 'tierId', 'fullName', 'phone', 'email', 'status', 'createdAt'
-        ])
-        && request.resource.data.tierId is string
-        && request.resource.data.fullName is string
-        && request.resource.data.fullName.size() <= 120
-        && request.resource.data.phone is string
-        && request.resource.data.phone.size() <= 32
-        && exists(/databases/$(database)/documents/membershipTiers/$(request.resource.data.tierId))
-        && get(/databases/$(database)/documents/membershipTiers/$(request.resource.data.tierId)).data.active == true
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt is timestamp;
+      // Memberships are created only by the payment server after PayChangu
+      // confirms the payment (it uses admin access, so these rules do not apply to it).
+      allow create: if false;
       allow update, delete: if isSuperadmin();
     }
 

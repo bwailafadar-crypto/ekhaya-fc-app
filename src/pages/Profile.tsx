@@ -11,6 +11,8 @@ import TeamLogo from '../components/TeamLogo'
 import { Card, PageHeader, Skeleton } from '../components/UI'
 import { db } from '../firebase'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import { useFlag } from '../hooks/useFlag'
+import DeleteAccount from '../components/DeleteAccount'
 import type { LegacyFan, MembershipRecord, MembershipTier } from '../types'
 
 function dateLabel(value: unknown) {
@@ -28,6 +30,7 @@ function matchingTier(value: string | undefined, tiers: MembershipTier[]) {
 export default function Profile() {
   const { user, profile } = useAuth()
   const tiers = useFirestoreCollection<MembershipTier>('membershipTiers')
+  const membershipOpen = useFlag('membershipPayments')
   const [membershipState, setMembershipState] = useState<{ uid: string | null; value: MembershipRecord | null; loading: boolean; error: string | null }>({ uid: null, value: null, loading: true, error: null })
   const [legacyState, setLegacyState] = useState<{ email: string | null; value: LegacyFan | null; loading: boolean; error: string | null }>({ email: null, value: null, loading: true, error: null })
   const uid = user?.uid ?? null
@@ -71,7 +74,11 @@ export default function Profile() {
       {/* Email check lives here now, not at the top of every page. */}
       <VerificationBanner />
       <LeaderboardBadge />
-      <section className="digital-membership-card" aria-label="Digital membership card">
+      {!loading && !membership && !legacyFan && !membershipOpen ? <Card className="membership-soon">
+        <span className="membership-soon-badge">Coming soon</span>
+        <h2>Your digital member card</h2>
+        <p>Membership opens soon. When you join, your member card with its QR code will appear here.</p>
+      </Card> : <section className="digital-membership-card" aria-label="Digital membership card">
         <div className="digital-membership-header"><TeamLogo name="Ekhaya FC" crest /><div><span>EKHAYA FC</span><strong>OFFICIAL SUPPORTER CLUB</strong></div><span className={`digital-membership-status digital-membership-${status}`}>{status === 'active' ? 'ACTIVE' : status.toUpperCase()}</span></div>
         {loading ? <div className="digital-membership-loading"><Skeleton /><Skeleton /></div> : <>
           <div className="digital-membership-name"><span>Member</span><strong>{fullName}</strong><FanLevelChip /></div>
@@ -79,10 +86,12 @@ export default function Profile() {
           <div className="digital-membership-meta"><span>Joined {joinedAt ?? 'on approval'}</span>{tierBenefits.length ? <strong>{tierBenefits.join(' • ')}</strong> : null}</div>
           <div className="digital-membership-qr">{status === 'active' && qrValue ? <QRCodeSVG value={qrValue} size={104} level="M" includeMargin aria-label={`Membership QR for ${fanId}`} /> : <p>QR available after approval</p>}</div>
         </>}
-      </section>
+      </section>}
       {(membershipState.error || legacyState.error || tiers.error) && <p className="live-error" role="alert">{membershipState.error || legacyState.error || tiers.error}</p>}
       <PushSettings />
       <LogoutButton />
+      <DeleteAccount />
+      <p className="legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a> · <a href="/delete-account.html" target="_blank" rel="noreferrer">How account deletion works</a></p>
     </>
   )
 }
