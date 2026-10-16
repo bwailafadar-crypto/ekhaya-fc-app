@@ -1858,3 +1858,6 @@ select.auth-input { appearance: auto; }
 .legal-links a { color: #8A6A0A; font-weight: 600; }
 .auth-legal { margin: 10px 0 0; color: var(--muted); font-size: 11px; text-align: center; }
 .auth-legal a { color: #8A6A0A; font-weight: 600; }
+
+/* update-80: error screen shows what broke */
+.error-screen-detail { display: block; margin-top: 12px; color: var(--muted); font-size: 11px; word-break: break-word; }

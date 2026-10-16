@@ -60,7 +60,7 @@ export default function Profile() {
   const fanId = membership?.fanId || legacyFan?.fanId || null
   const expiry = dateLabel(membership?.expiryDate ?? legacyFan?.expiryDate)
   const joinedAt = dateLabel(membership?.startDate ?? legacyFan?.memberSince)
-  const tierBenefits = (tier?.benefits ?? []).slice(0, 3)
+  const tierBenefits = (Array.isArray(tier?.benefits) ? tier.benefits : []).slice(0, 3)
   const qrValue = fanId && email ? `EKHAYA-FC|${fanId}|${email}` : ''
 
   return (

@@ -97,7 +97,7 @@ function MembershipComingSoon() {
         {tiers.map((tier) => <Card className={`membership-tier-card membership-tier-soon${tier.id === 'gold' ? ' recommended' : ''}`} key={tier.id}>
           <div className="membership-tier-heading"><h2>{tier.name}</h2><span>{tier.durationMonths} months</span></div>
           <strong className="membership-price">MWK {Number(tier.priceMWK ?? 0).toLocaleString()}</strong>
-          <ul className="membership-benefits">{(tier.benefits ?? []).map((benefit, index) => <li key={`${tier.id}-${index}`}>{benefit}</li>)}</ul>
+          <ul className="membership-benefits">{(Array.isArray(tier.benefits) ? tier.benefits : []).map((benefit, index) => <li key={`${tier.id}-${index}`}>{benefit}</li>)}</ul>
           <Button type="button" disabled>Coming soon</Button>
         </Card>)}
       </section>}
@@ -254,7 +254,7 @@ function MembershipJoin() {
           {tiers.map((tier) => <Card className={`membership-tier-card${selectedTierId === tier.id ? ' selected' : ''}${tier.id === 'gold' ? ' recommended' : ''}`} key={tier.id}>
             <div className="membership-tier-heading"><h2>{tier.name}</h2>{tier.id === 'gold' && <span className="membership-tier-badge">Most popular</span>}<span>{tier.durationMonths} months</span></div>
             <strong className="membership-price">MWK {Number(tier.priceMWK ?? 0).toLocaleString()}</strong>
-            <ul className="membership-benefits">{(tier.benefits ?? []).map((benefit, index) => <li key={`${tier.id}-${index}`}>{benefit}</li>)}</ul>
+            <ul className="membership-benefits">{(Array.isArray(tier.benefits) ? tier.benefits : []).map((benefit, index) => <li key={`${tier.id}-${index}`}>{benefit}</li>)}</ul>
             <Button type="button" disabled={isLoadingMembership || Boolean(currentMembership)} onClick={() => { setSelectedTierId(tier.id); setMessage(''); setFormError('') }}>Join {tier.name}</Button>
           </Card>)}
         </section>

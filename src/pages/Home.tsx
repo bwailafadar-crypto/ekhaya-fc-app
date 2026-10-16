@@ -21,7 +21,7 @@ import { matchMinute } from '../utils/matchClock'
 
 export default function Home() {
   const { user, profile } = useAuth()
-  const firstName = profile?.fullName.trim().split(/\s+/)[0]
+  const firstName = profile?.fullName?.trim().split(/\s+/)[0]
     || user?.displayName?.trim().split(/\s+/)[0]
     || 'Fan'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
