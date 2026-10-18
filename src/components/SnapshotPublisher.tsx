@@ -58,7 +58,10 @@ export default function SnapshotPublisher() {
     // nothing. Later changes to these documents never trigger a publish, so
     // two admins online at the same time can never keep overwriting each other.
     for (const name of ['snapshot', 'teams'] as PublicDoc[]) {
-      const stop = onSnapshot(SNAPSHOT_REF(name), (snapshot) => {
+      // includeMetadataChanges: with the offline cache, the first answer can come
+      // from the phone; without this flag the server's confirmation of the same
+      // data never arrives and the app would never publish again.
+      const stop = onSnapshot(SNAPSHOT_REF(name), { includeMetadataChanges: true }, (snapshot) => {
         if (snapshot.metadata.fromCache || published[name] !== null) return
         const hash = snapshot.data()?.hash
         published[name] = typeof hash === 'string' ? hash : ''

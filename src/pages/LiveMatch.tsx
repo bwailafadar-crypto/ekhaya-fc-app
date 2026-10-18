@@ -137,10 +137,21 @@ export default function LiveMatch() {
     ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc'),
     ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'finished'), 'desc'),
   ]
-  const selectedFixture = fixtures.find((fixture) => fixture.id === selectedId)
+  const listedFixture = fixtures.find((fixture) => fixture.id === selectedId)
     ?? fixtures.find((fixture) => fixture.status === 'live')
     ?? fixtures.find((fixture) => fixture.status === 'upcoming')
     ?? fixtures[0]
+  // Fans normally get matches from the shared copy; the match they are looking
+  // at is also read directly, so stats, line-ups and edits show within seconds.
+  const [directFixture, setDirectFixture] = useState<Fixture | null>(null)
+  const watchId = !isAdmin && listedFixture && !listedFixture.isTest ? listedFixture.id : ''
+  useEffect(() => {
+    if (!watchId) return
+    return onSnapshot(doc(db, 'fixtures', watchId), (snapshot) => {
+      setDirectFixture(snapshot.exists() ? { ...(snapshot.data() as Fixture), id: snapshot.id } : null)
+    }, () => setDirectFixture(null))
+  }, [watchId])
+  const selectedFixture = listedFixture && directFixture?.id === listedFixture.id ? { ...listedFixture, ...directFixture } : listedFixture
   const players = [...playersResult.items].sort((a, b) => a.name.localeCompare(b.name))
   // The Starting XI is 11 fixed places (GK, defence, midfield, attack); '' = empty place.
   const startingSlots: string[] = (() => {
