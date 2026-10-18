@@ -34,7 +34,8 @@
     "match-report": "node scripts/load-match-report.cjs",
     "kickoff-3pm": "node scripts/set-kickoff.cjs",
     "venue": "node scripts/set-venue.cjs",
-    "table": "node scripts/sync-table.cjs"
+    "table": "node scripts/sync-table.cjs",
+    "move-match": "node scripts/move-match.cjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
