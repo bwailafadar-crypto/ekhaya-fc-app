@@ -9,7 +9,6 @@ export const FLAGS = {
   competitions: { label: 'Competitions & cup filters', default: true },
   celebrationConfetti: { label: 'Confetti on the champions card', default: true },
   smartBars: { label: 'Bars hide while scrolling', default: true },
-  stadiumCheckIn: { label: 'Stadium check-in card ("I\'m here") on match pages', default: false },
   membershipPayments: { label: 'Membership payments (off shows "Coming soon")', default: false },
 } as const
 

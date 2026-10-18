@@ -3,8 +3,6 @@ import { useSearchParams } from 'react-router-dom'
 import GoalSplash from '../components/GoalSplash'
 import MotmCard from '../components/MotmCard'
 import ShareBar from '../components/ShareBar'
-import CheckInCard from '../components/CheckInCard'
-import { checkInOpen } from '../utils/checkIn'
 import MatchMedia from '../components/MatchMedia'
 import VideoPlayer from '../components/VideoPlayer'
 import { parseVideo } from '../utils/video'
@@ -18,7 +16,6 @@ import { Activity, Clock3, CornerUpLeft, FlaskConical, Goal, MessageSquareText, 
 import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useAuth } from '../auth/AuthContext'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import { useFlag } from '../hooks/useFlag'
 import { db } from '../firebase'
 import type { Fixture, MatchEvent, MatchEventKind, MatchStats, Player, PlayerStats, Standing } from '../types'
 import { isPlayed, sortByDate } from '../utils/football'
@@ -106,8 +103,6 @@ function EventForm({
 export default function LiveMatch() {
   const { role, user } = useAuth()
   const isAdmin = role === 'admin' || role === 'superadmin'
-  // Stadium check-in is switched off unless a superadmin turns it on in App health.
-  const checkInOn = useFlag('stadiumCheckIn')
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const playersResult = useFirestoreCollection<Player>('players')
   const standingsResult = useFirestoreCollection<Standing>('standings')
@@ -1038,7 +1033,6 @@ export default function LiveMatch() {
       <div className="matchday-scoreboard-bottom"><span>{selectedFixture.venue || 'Venue TBC'}</span><span>{new Date(selectedFixture.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span></div>
     </section>
     {isAdmin && isFinished && !selectedFixture.isTest && params.get('edit') === '1' && params.get('match') === selectedFixture.id && !editPromptUsed && <div className="edit-prompt"><span>Fix the scorers, minutes, cards or score of this match.</span><Button type="button" disabled={busy} onClick={() => { setEditPromptUsed(true); void resetMatch('edit') }}>Edit match</Button></div>}
-    {checkInOn && checkInOpen(selectedFixture) && <CheckInCard key={selectedFixture.id} fixture={selectedFixture} />}
     <ShareBar fixture={selectedFixture} events={events} players={players} minuteLabel={matchMinute(selectedFixture, clockNow)} />
     {message && <p className="live-feedback" role="status">{message}</p>}
     {problem && <p className="live-error" role="alert"><ShieldAlert size={15} />{problem}</p>}
