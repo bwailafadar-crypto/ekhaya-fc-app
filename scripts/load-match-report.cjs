@@ -1,5 +1,5 @@
-// Loads a match report file (data/matches/*.json: official line-up, minutes
-// played and Catapult GPS) into the live app.
+// Loads a match report file (data/matches/*.json: official line-up and minutes
+// played) into the live app. GPS data is never loaded into the fan app.
 //   node scripts/load-match-report.cjs data/matches/<file>.json          -> preview only
 //   node scripts/load-match-report.cjs data/matches/<file>.json --apply  -> save
 //
@@ -10,7 +10,6 @@
 //  - if the match is finished and its stats were counted, corrects each
 //    player's appearances, starts and minutes so they match the official sheet
 //    (goals, assists and cards are not touched) - running it twice changes nothing;
-//  - saves the GPS figures in matchGps/<match> for the match and player pages.
 const os = require('node:os')
 const path = require('node:path')
 const fs = require('node:fs')
@@ -94,15 +93,6 @@ async function main() {
     console.log('\nSeason stats: the match is not finished in the app yet. When you finish it, the official minutes above are used.')
   }
 
-  // 4. GPS.
-  const gps = report.gps ? {
-    device: report.gps.device, totalTime: report.gps.totalTime, team: report.gps.team,
-    players: report.gps.players.map((p) => ({ ...p, playerId: idFor.get(p.playerId) ?? p.playerId })),
-  } : null
-  if (gps) {
-    const missing = gps.players.filter((p) => !idFor.has(p.playerId) && !live.some((l) => l.id === p.playerId))
-    console.log(`\nGPS: ${gps.players.length} players from ${gps.device}${missing.length ? `, not matched: ${missing.map((p) => p.playerId).join(', ')}` : ''}`)
-  }
   for (const note of report.notes ?? []) console.log(`\nNote: ${note}`)
 
   if (!apply) { console.log('\nRun again with --apply to save.'); return }
@@ -127,10 +117,9 @@ async function main() {
     ...(newApplied ? { 'statsAppliedChanges.players': newApplied } : {}),
     updatedAt: FieldValue.serverTimestamp(),
   })
-  if (gps) batch.set(db.collection('matchGps').doc(report.fixtureId), { ...gps, fixtureId: report.fixtureId, updatedAt: FieldValue.serverTimestamp() })
   await batch.commit()
   await require('./publish-snapshot.cjs').publishSnapshot()
-  console.log('\nDone. Fans see the line-up, minutes and GPS straight away.')
+  console.log('\nDone. Fans see the line-up and minutes straight away.')
 }
 
 main().catch((error) => { console.error('Match report failed:', error.message); process.exit(1) })

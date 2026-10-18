@@ -1862,28 +1862,7 @@ select.auth-input { appearance: auto; }
 /* update-80: error screen shows what broke */
 .error-screen-detail { display: block; margin-top: 12px; color: var(--muted); font-size: 11px; word-break: break-word; }
 
-/* update-81: GPS data and official minutes */
-.gps-card { margin-top: 18px; padding: 14px; background: linear-gradient(140deg, rgb(255 255 255 / 88%), rgb(248 237 197 / 55%)); border: 1px solid var(--glass-line, var(--line)); border-radius: 16px; }
-.gps-card .matchday-section-title h2 { display: flex; align-items: center; gap: 6px; }
-.gps-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 8px 0 10px; }
-.gps-tiles > div { padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
-.gps-tiles strong { display: block; color: #6B540E; font-family: Oswald, sans-serif; font-size: 20px; }
-.gps-tiles span { color: var(--muted); font-size: 11px; }
-.gps-top { margin: 4px 0 10px; color: var(--muted); font-size: 13px; }
-.gps-sort { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.gps-sort button { padding: 5px 10px; color: #6B540E; background: #fff; border: 1px solid rgb(158 124 18 / 30%); border-radius: 999px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-.gps-sort button.active { color: #fff; background: var(--gold); border-color: var(--gold); }
-.gps-list { margin: 0; padding: 0; list-style: none; }
-.gps-list li { display: grid; grid-template-columns: 20px minmax(0, 1.9fr) minmax(40px, 0.7fr) auto; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); }
-.gps-list li:last-child { border-bottom: 0; }
-.gps-rank { color: var(--muted); font-weight: 800; text-align: center; }
-.gps-name { min-width: 0; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.gps-name small { display: block; color: var(--muted); font-size: 10px; font-weight: 600; }
-.gps-bar { height: 7px; background: #F1EADA; border-radius: 99px; overflow: hidden; }
-.gps-bar i { display: block; height: 100%; background: linear-gradient(90deg, #E9C95A, var(--gold)); border-radius: 99px; }
-.gps-list strong { font-size: 13px; }
-.gps-extra { grid-column: 2 / -1; color: var(--muted); font-size: 10px; }
-.gps-more { margin-top: 8px; padding: 6px 0; color: #8A6A0A; background: none; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+/* update-81: official minutes played */
 .minutes-played { margin-top: 16px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: 14px; }
 .minutes-played h3 { margin: 0 0 6px; font-size: 15px; }
 .minutes-played ul { margin: 0; padding: 0; list-style: none; }
@@ -1893,8 +1872,3 @@ select.auth-input { appearance: auto; }
 .minutes-played li b { display: inline-block; min-width: 22px; margin-right: 6px; color: #8A6A0A; }
 .minutes-played li small { color: var(--muted); font-size: 11px; }
 .minutes-played li strong { text-align: right; }
-.player-gps { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 18px; }
-.player-gps > div { padding: 12px; background: #fff; border: 1px solid var(--line); border-radius: 14px; }
-.player-gps strong { display: block; color: #6B540E; font-size: 20px; }
-.player-gps span { display: block; font-size: 12px; font-weight: 700; }
-.player-gps small { color: var(--muted); font-size: 11px; }

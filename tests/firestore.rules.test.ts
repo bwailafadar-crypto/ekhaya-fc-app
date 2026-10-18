@@ -221,11 +221,3 @@ test('Ekhaya TV, match photos and the club page: admins add, fans watch', async 
   await assertSucceeds(getDoc(doc(fan, 'clubInfo/history')))
 })
 
-test('match GPS figures: fans read, only admins write', async () => {
-  await seedRole('fan-1', 'fan')
-  await seedRole('admin-1', 'admin')
-  await seedDocument('matchGps/m1', { players: [] })
-  await assertSucceeds(getDoc(doc(signedIn('fan-1'), 'matchGps/m1')))
-  await assertFails(setDoc(doc(signedIn('fan-1'), 'matchGps/m1'), { players: [] }))
-  await assertSucceeds(setDoc(doc(signedIn('admin-1'), 'matchGps/m1'), { players: [] }))
-})
