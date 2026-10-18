@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Player } from '../types'
+
+/** What happened to a player in the match, from the commentary events. */
+export type PlayerMarks = { off?: number; on?: number; replaced?: string; replacedBy?: string; goals?: number; yellow?: boolean; red?: boolean }
 import { arrangeFormation, DEFAULT_FORMATION, FORMATIONS, isFormation, linesBySlot, slotRoles, type Formation } from '../utils/formations'
 
 const ROWS: Array<{ key: NonNullable<Player['position']>; label: string }> = [
@@ -20,12 +23,15 @@ function initials(name: string) {
 }
 
 /** A player on the pitch: photo (or initials) with shirt number. Tap to open their profile. */
-function PitchPlayer({ player }: { player: Player }) {
+function PitchPlayer({ player, marks }: { player: Player; marks?: PlayerMarks }) {
   return (
-    <Link className="pitch-player" to={`/squad/${player.id}`} aria-label={`${player.name}${player.number != null ? `, number ${player.number}` : ''}. Open profile`}>
+    <Link className="pitch-player" to={`/squad/${player.id}`} aria-label={`${player.name}${player.number != null ? `, number ${player.number}` : ''}${marks?.off != null ? `, substituted ${marks.off} minutes` : ''}. Open profile`}>
       <span className="pitch-shirt">
         {player.photoDataUrl ? <img src={player.photoDataUrl} alt="" /> : <span className="pitch-initials">{initials(player.name)}</span>}
         {player.number != null && <span className="pitch-number">{player.number}</span>}
+        {marks?.off != null && <span className="pitch-sub-off" title={`Off ${marks.off}′${marks.replacedBy ? ` for ${marks.replacedBy}` : ''}`}>↓{marks.off}′</span>}
+        {(marks?.goals ?? 0) > 0 && <span className="pitch-goals" title={`${marks?.goals} goal${marks?.goals === 1 ? '' : 's'}`}>⚽{(marks?.goals ?? 0) > 1 ? marks?.goals : ''}</span>}
+        {(marks?.red || marks?.yellow) && <span className={`pitch-card ${marks?.red ? 'red' : 'yellow'}`} aria-label={marks?.red ? 'Red card' : 'Yellow card'} />}
       </span>
       <span className="pitch-name">{shortName(player.name)}</span>
     </Link>
@@ -36,7 +42,7 @@ function PitchPlayer({ player }: { player: Player }) {
  * Starting XI drawn on a pitch. With a formation (4-3-3, 4-4-2, …) the XI is
  * laid out in those lines; without one, players are grouped by their position.
  */
-export default function LineupPitch({ starters, bench, formation, onArrange }: { starters: Player[]; bench: Player[]; formation?: string | null; onArrange?: (order: string[], formation: Formation) => Promise<void> }) {
+export default function LineupPitch({ starters, bench, formation, onArrange, marks = {} }: { starters: Player[]; bench: Player[]; formation?: string | null; onArrange?: (order: string[], formation: Formation) => Promise<void>; marks?: Record<string, PlayerMarks> }) {
   const [arranging, setArranging] = useState(false)
   if (arranging && onArrange) return <ArrangePitch starters={starters} formation={formation} onSave={onArrange} onClose={() => setArranging(false)} />
   const useFormation = isFormation(formation) && starters.length >= 11
@@ -54,16 +60,16 @@ export default function LineupPitch({ starters, bench, formation, onArrange }: {
         <span className="pitch-line pitch-box pitch-box-top" aria-hidden="true" />
         <span className="pitch-line pitch-box pitch-box-bottom" aria-hidden="true" />
         {lines
-          ? lines.map((line, index) => line.length ? <div className="pitch-row" key={index}>{line.map((player) => <PitchPlayer key={player.id} player={player} />)}</div> : null)
+          ? lines.map((line, index) => line.length ? <div className="pitch-row" key={index}>{line.map((player) => <PitchPlayer key={player.id} player={player} marks={marks[player.id]} />)}</div> : null)
           : ROWS.map((row) => {
             const rowPlayers = starters.filter((player) => player.position === row.key)
-            return rowPlayers.length ? <div className="pitch-row" key={row.key}>{rowPlayers.map((player) => <PitchPlayer key={player.id} player={player} />)}</div> : null
+            return rowPlayers.length ? <div className="pitch-row" key={row.key}>{rowPlayers.map((player) => <PitchPlayer key={player.id} player={player} marks={marks[player.id]} />)}</div> : null
           })}
       </div>
       <p className="lineup-tip">Tap a player to see their profile.</p>
       {onArrange && starters.length === 11 && <button type="button" className="lineup-arrange-open" onClick={() => setArranging(true)}>↔ Move players</button>}
       {unplaced.length > 0 && <div className="lineup-list"><h3>Also starting</h3><ul className="lineup-subs">{unplaced.map((player) => <li key={player.id}><Link to={`/squad/${player.id}`}>{player.number ? `${player.number}. ` : ''}{player.name}</Link></li>)}</ul></div>}
-      {bench.length > 0 && <div className="lineup-list"><h3>Subs</h3><ul className="lineup-subs">{bench.map((player) => <li key={player.id}><em className="sub-tag">SUB</em><Link to={`/squad/${player.id}`}>{player.number ? `${player.number}. ` : ''}{player.name}</Link></li>)}</ul></div>}
+      {bench.length > 0 && <div className="lineup-list"><h3>Subs</h3><ul className="lineup-subs">{[...bench].sort((a, b) => (marks[a.id]?.on ?? 999) - (marks[b.id]?.on ?? 999)).map((player) => { const m = marks[player.id]; return <li key={player.id} className={m?.on != null ? 'came-on' : ''}>{m?.on != null ? <em className="sub-tag on">↑ {m.on}′</em> : <em className="sub-tag">SUB</em>}<Link to={`/squad/${player.id}`}>{player.number ? `${player.number}. ` : ''}{player.name}</Link>{m?.replaced && <small className="sub-for">for {m.replaced}</small>}{(m?.goals ?? 0) > 0 && <span className="sub-icons">⚽{(m?.goals ?? 0) > 1 ? m?.goals : ''}</span>}{(m?.red || m?.yellow) && <span className={`pitch-card inline ${m?.red ? 'red' : 'yellow'}`} />}{m?.off != null && <small className="sub-for">↓ {m.off}′</small>}</li> })}</ul></div>}
     </div>
   )
 }

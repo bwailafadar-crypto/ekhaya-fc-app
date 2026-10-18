@@ -1884,3 +1884,16 @@ select.auth-input { appearance: auto; }
 .pitch-player-move.picked .pitch-shirt { transform: scale(1.12); box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--gold); }
 .pitch-role { display: block; margin-top: 1px; color: rgb(255 255 255 / 80%); font-size: 9px; font-weight: 800; letter-spacing: .05em; }
 .lineup-arrange-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+
+/* update-91: substitutions, goals and cards on the line-up */
+.pitch-shirt { position: relative; }
+.pitch-sub-off { position: absolute; left: -10px; bottom: -4px; padding: 1px 4px; color: #fff; background: #C62828; border: 1.5px solid #fff; border-radius: 999px; font-size: 9px; font-weight: 800; line-height: 1.2; white-space: nowrap; }
+.pitch-goals { position: absolute; right: -8px; top: -6px; padding: 0 3px; background: #fff; border-radius: 999px; font-size: 10px; font-weight: 800; line-height: 1.4; box-shadow: 0 1px 3px rgb(0 0 0 / 25%); }
+.pitch-card { position: absolute; left: -4px; top: -4px; width: 9px; height: 12px; border: 1px solid #fff; border-radius: 2px; }
+.pitch-card.yellow { background: #F2C200; }
+.pitch-card.red { background: #C62828; }
+.pitch-card.inline { position: static; display: inline-block; margin-left: 6px; vertical-align: middle; }
+.lineup-subs li.came-on { font-weight: 700; }
+.sub-tag.on { color: #fff; background: #1E8E3E; }
+.sub-for { margin-left: 6px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.sub-icons { margin-left: 6px; font-size: 12px; }
