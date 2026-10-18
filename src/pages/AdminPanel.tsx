@@ -206,6 +206,13 @@ const STAT_LABELS: Record<keyof PlayerStats, string> = {
   assists: 'Assists', yellowCards: 'Yellow cards', redCards: 'Red cards', cleanSheets: 'Clean sheets',
 }
 
+/** New fixtures start on the coming Saturday at 15:00 CAT (the usual kick-off). */
+function nextSaturdayKickoff() {
+  const now = new Date(Date.now() + 2 * 3600000)
+  const days = (6 - now.getUTCDay() + 7) % 7 || 7
+  return `${new Date(now.getTime() + days * 86400000).toISOString().slice(0, 10)}T15:00`
+}
+
 export default function AdminPanel() {
   const { role } = useAuth()
   const isSuperadmin = role === 'superadmin'
@@ -912,7 +919,7 @@ export default function AdminPanel() {
               : <Card className="admin-card">
                 <div className="admin-card-heading"><h2>Fixture and result</h2><select aria-label="Choose fixture" value={selectedFixtureId} onChange={(event) => setSelectedFixtureId(event.target.value)}><option value="">Add a fixture</option>{fixtures.items.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.date.slice(0, 10)} · {fixture.home} v {fixture.away}</option>)}</select></div>
                 <form className="admin-form" key={selectedFixture?.id ?? 'new-fixture'} onSubmit={saveFixture}>
-                  <div className="admin-form-grid"><Field label="Competition" name="competition" defaultValue={selectedFixture?.competition ?? 'FDH Championship'} required list="competition-options" /><datalist id="competition-options">{COMPETITIONS.map((item) => <option key={item.id} value={item.name} />)}</datalist><Field label="Cup round (cups only)" name="round" defaultValue={selectedFixture?.round} placeholder="e.g. Quarter-final · 1st leg" /><Field label="Result note (optional)" name="note" defaultValue={selectedFixture?.note} placeholder="e.g. Won 4–3 on penalties" /><Field label="Season" name="season" defaultValue={selectedFixture?.season ?? '2026'} required /><Field label="Date and CAT kick-off" name="date" type="datetime-local" defaultValue={selectedFixture?.date?.slice(0, 16)} required /><Field label="Venue" name="venue" defaultValue={selectedFixture?.venue} /><Field label="Home team" name="home" defaultValue={selectedFixture?.home} required /><Field label="Away team" name="away" defaultValue={selectedFixture?.away} required /></div>
+                  <div className="admin-form-grid"><Field label="Competition" name="competition" defaultValue={selectedFixture?.competition ?? 'FDH Championship'} required list="competition-options" /><datalist id="competition-options">{COMPETITIONS.map((item) => <option key={item.id} value={item.name} />)}</datalist><Field label="Cup round (cups only)" name="round" defaultValue={selectedFixture?.round} placeholder="e.g. Quarter-final · 1st leg" /><Field label="Result note (optional)" name="note" defaultValue={selectedFixture?.note} placeholder="e.g. Won 4–3 on penalties" /><Field label="Season" name="season" defaultValue={selectedFixture?.season ?? '2026'} required /><Field label="Date and CAT kick-off (matches start 15:00)" name="date" type="datetime-local" defaultValue={selectedFixture?.date?.slice(0, 16) ?? nextSaturdayKickoff()} required /><Field label="Venue" name="venue" defaultValue={selectedFixture?.venue} /><Field label="Home team" name="home" defaultValue={selectedFixture?.home} required /><Field label="Away team" name="away" defaultValue={selectedFixture?.away} required /></div>
                   <div className="admin-actions"><Button type="submit" disabled={saving}>{saving ? 'Saving...' : selectedFixture ? 'Save fixture' : 'Add fixture'}</Button>{selectedFixture && <Button type="button" variant="danger" onClick={() => void deleteFixture()}>Delete fixture</Button>}</div>
                 </form>
               </Card>}

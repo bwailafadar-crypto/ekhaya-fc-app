@@ -31,7 +31,8 @@
     "compare": "node scripts/compare-data.cjs",
     "cleanup": "node scripts/purge-deleted.cjs",
     "build:android:play": "node scripts/build-android-release.mjs --bundle",
-    "match-report": "node scripts/load-match-report.cjs"
+    "match-report": "node scripts/load-match-report.cjs",
+    "kickoff-3pm": "node scripts/set-kickoff.cjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
