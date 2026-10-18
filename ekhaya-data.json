@@ -62,7 +62,7 @@
    "name": "Red Lions",
    "shortName": "Red Lions",
    "logoDataUrl": null,
-   "homeGround": null
+   "homeGround": "Zomba Stadium"
   },
   {
    "id": "mitundu-baptist",
@@ -643,7 +643,7 @@
    "date": "2026-10-18T15:00:00+02:00",
    "home": "Red Lions",
    "away": "Ekhaya FC",
-   "venue": null,
+   "venue": "Zomba Stadium",
    "status": "upcoming",
    "homeScore": null,
    "awayScore": null
