@@ -12,6 +12,8 @@ import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture, Player } from '../types'
 import { ekhayaOutcome, formatMalawiDate, isPlayed, sortByDate } from '../utils/football'
 import { pushSupport, savedFollows, setFollow } from '../utils/push'
+import { useMatchGps } from '../hooks/useMatchGps'
+import { km } from '../utils/gps'
 
 const POSITION_NAMES: Record<string, string> = { GK: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }
 
@@ -106,6 +108,10 @@ export default function PlayerDetailPage() {
   // Matches he was named in (started or on the bench), newest first.
   const log = sortByDate(real.filter((fixture) => isPlayed(fixture) && ((fixture.startingPlayerIds ?? []).includes(id) || (fixture.benchPlayerIds ?? []).includes(id))), 'desc').slice(0, 6)
   const goals = useGoals(id, log.map((fixture) => fixture.id))
+  const gpsByMatch = useMatchGps(log.map((fixture) => fixture.id))
+  const { role } = useAuth()
+  const staff = role === 'admin' || role === 'superadmin'
+  const latestGps = log.map((fixture) => ({ fixture, row: gpsByMatch[fixture.id]?.players.find((p) => p.playerId === id), team: gpsByMatch[fixture.id]?.team })).find((item) => item.row)
 
   if (loading) {
     return <div className="player-detail-loading"><Skeleton /><Skeleton /><Skeleton /></div>
@@ -152,11 +158,23 @@ export default function PlayerDetailPage() {
             return <li key={fixture.id}><Link to={`/live?match=${fixture.id}`}>
               {outcome && <span className={`player-log-result result-${outcome}`}>{outcome}</span>}
               <TeamLogo name={opponent} />
-              <span className="player-log-main"><strong>{/ekhaya/i.test(fixture.home) ? 'v' : '@'} {opponent} · {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0}</strong><small>{formatMalawiDate(fixture.date)} · {started ? 'Started' : 'Sub'}{fixture.motmWinnerId === id && fixture.motmClosed ? ' · ★ MOTM' : ''}</small></span>
+              <span className="player-log-main"><strong>{/ekhaya/i.test(fixture.home) ? 'v' : '@'} {opponent} · {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0}</strong><small>{formatMalawiDate(fixture.date)} · {started ? 'Started' : 'Sub'}{fixture.officialMinutes?.[id] ? ` · ${fixture.officialMinutes[id]}′` : ''}{gpsByMatch[fixture.id]?.players.find((p) => p.playerId === id) ? ` · ${km(gpsByMatch[fixture.id].players.find((p) => p.playerId === id)!.distance)}` : ''}{fixture.motmWinnerId === id && fixture.motmClosed ? ' · ★ MOTM' : ''}</small></span>
               {scored.length > 0 && <span className="player-log-goals" aria-label={`${scored.length} goal${scored.length === 1 ? '' : 's'}`}>{scored.map((minute, index) => <i key={index}>⚽ {minute}′</i>)}</span>}
             </Link></li>
           })}
         </ul>
+      </>}
+
+      {latestGps?.row && <>
+        <PageHeader eyebrow={`GPS · v ${/ekhaya/i.test(latestGps.fixture.home) ? latestGps.fixture.away : latestGps.fixture.home}`} title="Latest match data" />
+        <section className="player-gps" aria-label="GPS data from the latest match">
+          <div><strong className="number">{km(latestGps.row.distance)}</strong><span>Distance</span>{latestGps.team && <small>Team avg {km(latestGps.team.averageDistance)}</small>}</div>
+          <div><strong className="number">{latestGps.row.highSpeedDistance} m</strong><span>High speed</span>{latestGps.team && <small>Team avg {Math.round(latestGps.team.averageHighSpeedDistance)} m</small>}</div>
+          <div><strong className="number">{latestGps.row.sprintDistance} m</strong><span>Sprint</span>{latestGps.team && <small>Team avg {Math.round(latestGps.team.averageSprintDistance)} m</small>}</div>
+          {staff && <div><strong className="number">{latestGps.row.playerLoad}</strong><span>Player load</span>{latestGps.team && <small>Team avg {Math.round(latestGps.team.averagePlayerLoad)}</small>}</div>}
+          {staff && <div><strong className="number">{latestGps.row.maxAccel} / {latestGps.row.maxDecel}</strong><span>Max accel / decel</span><small>m/s²</small></div>}
+          {staff && <div><strong className="number">{latestGps.row.accelDecelEfforts}</strong><span>Accel + decel efforts</span>{latestGps.team && <small>Team avg {Math.round(latestGps.team.averageAccelDecelEfforts)}</small>}</div>}
+        </section>
       </>}
 
       <PageHeader eyebrow="Player details" title="Player profile" />

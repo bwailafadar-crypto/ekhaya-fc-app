@@ -49,6 +49,8 @@ export interface Fixture {
   startingPlayerIds?: string[]
   benchPlayerIds?: string[]
   lineupConfirmed?: boolean
+  /** Minutes played from the club's official match sheet (player id → minutes). */
+  officialMinutes?: Record<string, number>
   /** Line-up shape, e.g. '4-3-3'. */
   formation?: string
   /** True while an admin is correcting a finished match. */
@@ -228,3 +230,34 @@ export interface Poll {
 export interface PollVote { id: string; option: number; updatedAt?: Timestamp }
 export interface ScorePrediction { id: string; home: number; away: number; name: string; updatedAt?: Timestamp }
 export interface MotmVote { id: string; playerId: string; updatedAt?: Timestamp }
+
+/** Catapult GPS figures for one player in one match (matchGps/{fixtureId}). */
+export interface GpsPlayer {
+  playerId: string
+  position: string
+  distance: number
+  highSpeedDistance: number
+  sprintDistance: number
+  maxAccel: number
+  maxDecel: number
+  playerLoad: number
+  accelDecelEfforts: number
+  overall?: number
+}
+
+export interface MatchGps {
+  fixtureId: string
+  device: string
+  totalTime?: string
+  team: {
+    averageDistance: number
+    averageHighSpeedDistance: number
+    averageSprintDistance: number
+    averagePlayerLoad: number
+    averageAccelDecelEfforts: number
+    averageMaxAccel?: number
+    averageMaxDecel?: number
+    mdComparison?: { volume: number; overall: number; intensity: number; metresPerMinute: number }
+  }
+  players: GpsPlayer[]
+}

@@ -452,6 +452,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Catapult GPS figures per match (loaded by scripts/load-match-report.cjs).
+    match /matchGps/{fixtureId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     // Club history and honours page.
     match /clubInfo/{docId} {
       allow read: if signedIn();
