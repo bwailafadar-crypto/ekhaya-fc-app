@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Player } from '../types'
-import { isFormation, linesBySlot } from '../utils/formations'
+import { arrangeFormation, DEFAULT_FORMATION, FORMATIONS, isFormation, linesBySlot, slotRoles, type Formation } from '../utils/formations'
 
 const ROWS: Array<{ key: NonNullable<Player['position']>; label: string }> = [
   { key: 'FWD', label: 'Forwards' },
@@ -35,7 +36,9 @@ function PitchPlayer({ player }: { player: Player }) {
  * Starting XI drawn on a pitch. With a formation (4-3-3, 4-4-2, …) the XI is
  * laid out in those lines; without one, players are grouped by their position.
  */
-export default function LineupPitch({ starters, bench, formation }: { starters: Player[]; bench: Player[]; formation?: string | null }) {
+export default function LineupPitch({ starters, bench, formation, onArrange }: { starters: Player[]; bench: Player[]; formation?: string | null; onArrange?: (order: string[], formation: Formation) => Promise<void> }) {
+  const [arranging, setArranging] = useState(false)
+  if (arranging && onArrange) return <ArrangePitch starters={starters} formation={formation} onSave={onArrange} onClose={() => setArranging(false)} />
   const useFormation = isFormation(formation) && starters.length >= 11
   // Attack at the top, goalkeeper at the bottom.
   // The XI is saved in team-sheet order (GK, defence, midfield, attack), so each
@@ -58,8 +61,64 @@ export default function LineupPitch({ starters, bench, formation }: { starters: 
           })}
       </div>
       <p className="lineup-tip">Tap a player to see their profile.</p>
+      {onArrange && starters.length === 11 && <button type="button" className="lineup-arrange-open" onClick={() => setArranging(true)}>↔ Move players</button>}
       {unplaced.length > 0 && <div className="lineup-list"><h3>Also starting</h3><ul className="lineup-subs">{unplaced.map((player) => <li key={player.id}><Link to={`/squad/${player.id}`}>{player.number ? `${player.number}. ` : ''}{player.name}</Link></li>)}</ul></div>}
       {bench.length > 0 && <div className="lineup-list"><h3>Subs</h3><ul className="lineup-subs">{bench.map((player) => <li key={player.id}><em className="sub-tag">SUB</em><Link to={`/squad/${player.id}`}>{player.number ? `${player.number}. ` : ''}{player.name}</Link></li>)}</ul></div>}
+    </div>
+  )
+}
+
+/** Admin: tap one player, then another, to swap their places; pick the formation; save. */
+function ArrangePitch({ starters, formation, onSave, onClose }: { starters: Player[]; formation?: string | null; onSave: (order: string[], formation: Formation) => Promise<void>; onClose: () => void }) {
+  const startFormation: Formation = isFormation(formation) ? formation : DEFAULT_FORMATION
+  // Without a saved formation, start from the players' positions (GK, defence, midfield, attack).
+  const [order, setOrder] = useState<Player[]>(() => isFormation(formation) ? starters : arrangeFormation(starters, startFormation).flat())
+  const [shape, setShape] = useState<Formation>(startFormation)
+  const [picked, setPicked] = useState<number | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const roles = slotRoles(shape)
+  const lines = linesBySlot(order.map((player, index) => ({ player, index })), shape).reverse()
+
+  function tap(index: number) {
+    if (picked === null) { setPicked(index); return }
+    if (picked !== index) setOrder((current) => { const next = [...current]; [next[picked], next[index]] = [next[index], next[picked]]; return next })
+    setPicked(null)
+  }
+
+  async function save() {
+    setBusy(true)
+    setError('')
+    try { await onSave(order.map((player) => player.id), shape); onClose() } catch (caught) { setError(caught instanceof Error ? caught.message : 'Not saved. Try again.') } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="lineup lineup-arranging">
+      <div className="lineup-arrange-bar">
+        <label>Formation <select value={shape} onChange={(event) => { setShape(event.target.value as Formation); setPicked(null) }}>{FORMATIONS.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <span>{picked === null ? 'Tap a player to move' : `Now tap where ${shortName(order[picked].name)} should go`}</span>
+      </div>
+      <div className="pitch" role="group" aria-label="Move players">
+        <span className="pitch-line pitch-half" aria-hidden="true" />
+        <span className="pitch-line pitch-circle" aria-hidden="true" />
+        <span className="pitch-line pitch-box pitch-box-top" aria-hidden="true" />
+        <span className="pitch-line pitch-box pitch-box-bottom" aria-hidden="true" />
+        {lines.map((line, row) => line.length ? <div className="pitch-row" key={row}>{line.map(({ player, index }) => (
+          <button type="button" key={player.id} className={`pitch-player pitch-player-move${picked === index ? ' picked' : ''}`} aria-pressed={picked === index} onClick={() => tap(index)} aria-label={`${player.name}, ${roles[index]}`}>
+            <span className="pitch-shirt">
+              {player.photoDataUrl ? <img src={player.photoDataUrl} alt="" /> : <span className="pitch-initials">{initials(player.name)}</span>}
+              {player.number != null && <span className="pitch-number">{player.number}</span>}
+            </span>
+            <span className="pitch-name">{shortName(player.name)}</span>
+            <span className="pitch-role">{roles[index]}</span>
+          </button>
+        ))}</div> : null)}
+      </div>
+      {error && <p className="live-error" role="alert">{error}</p>}
+      <div className="lineup-arrange-actions">
+        <button type="button" className="button button-primary" disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Save positions'}</button>
+        <button type="button" className="button button-ghost" disabled={busy} onClick={onClose}>Cancel</button>
+      </div>
     </div>
   )
 }

@@ -1872,3 +1872,15 @@ select.auth-input { appearance: auto; }
 .minutes-played li b { display: inline-block; min-width: 22px; margin-right: 6px; color: #8A6A0A; }
 .minutes-played li small { color: var(--muted); font-size: 11px; }
 .minutes-played li strong { text-align: right; }
+
+/* update-83: admins move players on the line-up pitch */
+.lineup-arrange-open { display: block; margin: 8px auto 0; padding: 8px 16px; color: #6B540E; background: #FBF1CF; border: 1px solid rgb(158 124 18 / 35%); border-radius: 999px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.lineup-arrange-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+.lineup-arrange-bar label { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.lineup-arrange-bar select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.lineup-arrange-bar span { color: #8A6A0A; font-weight: 700; }
+.pitch-player-move { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.pitch-player-move .pitch-shirt { transition: transform .15s, box-shadow .15s; }
+.pitch-player-move.picked .pitch-shirt { transform: scale(1.12); box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--gold); }
+.pitch-role { display: block; margin-top: 1px; color: rgb(255 255 255 / 80%); font-size: 9px; font-weight: 800; letter-spacing: .05em; }
+.lineup-arrange-actions { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
