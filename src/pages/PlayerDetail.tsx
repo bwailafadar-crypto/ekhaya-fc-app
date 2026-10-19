@@ -15,15 +15,6 @@ import { pushSupport, savedFollows, setFollow } from '../utils/push'
 
 const POSITION_NAMES: Record<string, string> = { GK: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }
 
-const stats = [
-  ['Appearances', 'appearances'],
-  ['Goals', 'goals'],
-  ['Assists', 'assists'],
-  ['Starts', 'starts'],
-  ['Minutes', 'minutes'],
-  ['Yellow cards', 'yellowCards'],
-  ['Red cards', 'redCards'],
-] as const
 
 function playerAge(dob: string | null) {
   if (!dob) return null
@@ -165,14 +156,8 @@ export default function PlayerDetailPage() {
         <Fact label="Date of birth" value={player.dob ? `${player.dob}${age == null ? '' : ` · ${age} years`}` : null} />
         <Fact label="Nationality" value={player.nationality} />
         <Fact label="Preferred foot" value={player.preferredFoot} />
-        <Fact label="Height" value={player.heightCm == null ? null : `${player.heightCm} cm`} />
       </section>
 
-      <PageHeader eyebrow="Season totals" title="Statistics" />
-      <section className="player-stats-grid" aria-label="Player statistics">
-        {stats.map(([label, key]) => <Stat key={key} label={label} value={player.stats?.[key] ?? 0} />)}
-        {player.position === 'GK' && <Stat label="Clean sheets" value={player.stats?.cleanSheets ?? 0} />}
-      </section>
     </>
   )
 }
@@ -182,15 +167,6 @@ function Fact({ label, value }: { label: string; value: string | number | null |
     <div className="player-fact">
       <span>{label}</span>
       <strong>{value || 'Not provided'}</strong>
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="player-stat">
-      <strong className="number">{value}</strong>
-      <span>{label}</span>
     </div>
   )
 }
