@@ -1900,3 +1900,9 @@ select.auth-input { appearance: auto; }
 
 /* update-92: event form */
 .event-form-hint { margin: 2px 0 8px; font-size: 11px; }
+
+/* update-93: faces on the bench */
+.lineup-subs li.bench-player { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 6px 0; }
+.bench-face { position: relative; flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; overflow: visible; text-decoration: none; }
+.bench-face img, .bench-face span { display: grid; place-items: center; width: 40px; height: 40px; object-fit: cover; color: #6B540E; background: linear-gradient(145deg, #F8E7A4, #E3BF4D); border: 2px solid #fff; border-radius: 50%; box-shadow: 0 2px 6px rgb(14 14 14 / 15%); font-family: Oswald, sans-serif; font-size: 13px; font-weight: 700; }
+.bench-face b { position: absolute; right: -4px; bottom: -3px; min-width: 17px; height: 17px; padding: 0 3px; color: #fff; background: #1B1A16; border: 1.5px solid #fff; border-radius: 999px; font-size: 9px; line-height: 14px; text-align: center; }
