@@ -1,0 +1,163 @@
+{
+  "source": "Squad list with dates of birth (photo), 19 October 2026",
+  "notes": [
+    "Happy Mphepo's date of birth reads 1/2/1900 (a placeholder), so it is not loaded.",
+    "Gift Chunga appears twice (no. 17: 17/9/2000 and no. 30: 17/10/2000); he is added once with no date of birth until the club confirms which is right.",
+    "Alfred Chizinga and Hermas Masinja both show 4/2/1998; loaded as written.",
+    "No date of birth on the sheet for Sholinga Stambuli, Isaiah Nyirenda, Kenneth Maino Mwale, John Mchema and Christopher Kumwembe."
+  ],
+  "players": [
+    {
+      "playerId": "andrew-lameck",
+      "name": "Andrew Lameck",
+      "dob": "2004-12-25"
+    },
+    {
+      "playerId": "amos-sande",
+      "name": "Amos Sande",
+      "dob": "2007-03-03"
+    },
+    {
+      "playerId": "blessings-malinda",
+      "name": "Blessings Malinda",
+      "dob": "2003-04-21"
+    },
+    {
+      "playerId": "hadji-james",
+      "name": "Hadji James",
+      "dob": "2004-12-01"
+    },
+    {
+      "playerId": "alfred-chizinga",
+      "name": "Alfred Chizinga",
+      "dob": "1998-02-04"
+    },
+    {
+      "playerId": "hermas-masinja",
+      "name": "Hermas Masinja",
+      "dob": "1998-02-04"
+    },
+    {
+      "playerId": "joseph-saiwa",
+      "name": "Joseph Saiwa",
+      "dob": "2004-08-26"
+    },
+    {
+      "playerId": "chimwemwe-chunga",
+      "name": "Chimwemwe Chunga",
+      "dob": "2002-05-11"
+    },
+    {
+      "playerId": "vincent-salawira",
+      "name": "Vincent Salawira",
+      "dob": "2004-08-28"
+    },
+    {
+      "playerId": "clever-mkungula",
+      "name": "Clever Mkungula",
+      "dob": "2000-02-13"
+    },
+    {
+      "playerId": "moses-banda",
+      "name": "Moses Banda",
+      "dob": "2006-02-19"
+    },
+    {
+      "playerId": "charles-mafaiti",
+      "name": "Charles Mafaiti",
+      "dob": "2006-02-11"
+    },
+    {
+      "playerId": "joshua-waka",
+      "name": "Joshua Waka",
+      "dob": "2004-04-28"
+    },
+    {
+      "playerId": "samuel-rukura",
+      "name": "Samuel Rukura",
+      "dob": "2004-06-06"
+    },
+    {
+      "playerId": "joseph-mcdonald",
+      "name": "Joseph McDonald",
+      "dob": "2000-08-22"
+    },
+    {
+      "playerId": "alick-lungu",
+      "name": "Alick Lungu",
+      "dob": "2002-03-24"
+    },
+    {
+      "playerId": "wongani-kaponya",
+      "name": "Wongani Kaponya",
+      "dob": "2003-03-29"
+    },
+    {
+      "playerId": "allen-chihana",
+      "name": "Allen Chihana",
+      "dob": "2002-11-06"
+    },
+    {
+      "playerId": "james-stambuli",
+      "name": "James Stambuli",
+      "dob": "2006-08-05"
+    },
+    {
+      "playerId": "levison-mnyenyembe",
+      "name": "Levison Mnyenyembe",
+      "dob": "2005-12-13"
+    },
+    {
+      "playerId": "aubrey-simbi",
+      "name": "Aubrey Simbi",
+      "dob": "2003-01-12"
+    },
+    {
+      "playerId": "james-lumbe",
+      "name": "James Lumbe",
+      "dob": "2009-12-15"
+    },
+    {
+      "playerId": "lucky-tizitola",
+      "name": "Lucky Tizitola",
+      "dob": "2003-03-25",
+      "new": true
+    },
+    {
+      "playerId": "gift-chunga",
+      "name": "Gift Chunga",
+      "dob": null,
+      "new": true
+    },
+    {
+      "playerId": "gift-magola",
+      "name": "Gift Magola",
+      "dob": "2000-01-01",
+      "new": true
+    },
+    {
+      "playerId": "fanizo-mwansambo",
+      "name": "Fanizo Mwansambo",
+      "dob": "2000-01-03",
+      "new": true
+    },
+    {
+      "playerId": "george-mateyu",
+      "name": "George Mateyu",
+      "dob": "2003-06-14",
+      "new": true
+    },
+    {
+      "playerId": "limbani-kutambe",
+      "name": "Limbani Kutambe",
+      "dob": "2000-09-17",
+      "new": true
+    },
+    {
+      "playerId": "sholinga-stambuli",
+      "name": "Sholinga Stambuli",
+      "dob": null,
+      "new": true
+    }
+  ]
+}

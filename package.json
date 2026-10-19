@@ -35,7 +35,8 @@
     "kickoff-3pm": "node scripts/set-kickoff.cjs",
     "venue": "node scripts/set-venue.cjs",
     "table": "node scripts/sync-table.cjs",
-    "move-match": "node scripts/move-match.cjs"
+    "move-match": "node scripts/move-match.cjs",
+    "squad-dob": "node scripts/load-squad-dob.cjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
