@@ -153,7 +153,7 @@ export default function PlayerDetailPage() {
       <PageHeader eyebrow="Player details" title="Player profile" />
       <section className="player-facts" aria-label="Player details">
         <Fact label="Position" value={position} />
-        <Fact label="Date of birth" value={player.dob ? `${player.dob}${age == null ? '' : ` · ${age} years`}` : null} />
+        <Fact label="Age" value={age == null ? null : `${age} years`} />
         <Fact label="Nationality" value={player.nationality} />
         <Fact label="Preferred foot" value={player.preferredFoot} />
       </section>
