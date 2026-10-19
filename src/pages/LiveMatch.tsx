@@ -48,9 +48,28 @@ function errorMessage(error: unknown) {
 }
 
 
+/** Who is on the pitch now: the starting XI, plus subs who came on, minus players taken off or sent off. */
+function playersOnPitch(fixture: Fixture, events: MatchEvent[]) {
+  const onPitch = new Set(fixture.startingPlayerIds ?? [])
+  const used = new Set<string>()
+  for (const matchEvent of [...events].sort((a, b) => a.minute - b.minute)) {
+    if (!sameTeam(matchEvent.team, CLUB_NAME)) continue
+    if (matchEvent.kind === 'substitution') {
+      if (matchEvent.subbedOutPlayerId) { onPitch.delete(matchEvent.subbedOutPlayerId); used.add(matchEvent.subbedOutPlayerId) }
+      if (matchEvent.subbedInPlayerId) { onPitch.add(matchEvent.subbedInPlayerId); used.add(matchEvent.subbedInPlayerId) }
+    }
+    if (matchEvent.kind === 'card' && matchEvent.card === 'red' && matchEvent.playerId) { onPitch.delete(matchEvent.playerId); used.add(matchEvent.playerId) }
+  }
+  return { onPitch, used }
+}
+
+const byNumber = (a: Player, b: Player) => (a.number ?? 999) - (b.number ?? 999) || a.name.localeCompare(b.name)
+const playerLabel = (player: Player) => `${player.number != null ? `${player.number} · ` : ''}${player.name}${player.position ? ` (${player.position})` : ''}`
+
 function EventForm({
   fixture,
   players,
+  events,
   minute,
   kind,
   defaultSide,
@@ -60,6 +79,7 @@ function EventForm({
 }: {
   fixture: Fixture
   players: Player[]
+  events: MatchEvent[]
   minute: number
   kind: MatchEventKind
   defaultSide: 'home' | 'away'
@@ -70,11 +90,15 @@ function EventForm({
   const [side, setSide] = useState<'home' | 'away'>(defaultSide)
   const teamName = side === 'home' ? fixture.home : fixture.away
   const isClubSide = sameTeam(teamName, CLUB_NAME)
-  const matchdayIds = [...(fixture.startingPlayerIds ?? []), ...(fixture.benchPlayerIds ?? [])]
-  const sidePlayers = players.filter((player) => player.team === 'senior' && (!matchdayIds.length || matchdayIds.includes(player.id)))
-  const subIds = fixture.benchPlayerIds ?? []
-  const offPlayers = sidePlayers.filter((player) => !subIds.includes(player.id) || !(fixture.startingPlayerIds ?? []).length)
-  const onPlayers = subIds.length ? sidePlayers.filter((player) => subIds.includes(player.id)) : sidePlayers
+  const [scorerId, setScorerId] = useState('')
+  const hasLineup = (fixture.startingPlayerIds ?? []).length > 0
+  const { onPitch, used } = playersOnPitch(fixture, events)
+  const senior = players.filter((player) => player.team === 'senior')
+  // With a confirmed line-up only the players on the pitch can score, assist or be taken off.
+  const pitchPlayers = (hasLineup ? senior.filter((player) => onPitch.has(player.id)) : senior).sort(byNumber)
+  const benchIds = fixture.benchPlayerIds ?? []
+  const benchPlayers = senior.filter((player) => benchIds.includes(player.id) && !onPitch.has(player.id)).sort(byNumber)
+  const subsAvailable = (benchIds.length ? benchPlayers.filter((player) => !used.has(player.id)) : senior.filter((player) => !onPitch.has(player.id))).sort(byNumber)
 
   return <form className="live-event-form" key={`${fixture.id}-${kind}-${defaultSide}-${defaultCard}`} onSubmit={onSubmit}>
     <input type="hidden" name="kind" value={kind} />
@@ -85,17 +109,20 @@ function EventForm({
     {kind === 'commentary' ? <label className="admin-field"><span>Commentary</span><textarea name="text" rows={2} maxLength={180} placeholder="Chance for Stambuli!" required /></label>
       : kind === 'substitution' ? <div className="live-form-grid">
       {isClubSide ? <>
-        <label className="admin-field"><span>Player off</span><select name="playerOff" required defaultValue=""><option value="" disabled>Choose player</option>{offPlayers.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></label>
-        <label className="admin-field"><span>Player on (sub)</span><select name="playerOn" required defaultValue=""><option value="" disabled>Choose sub</option>{onPlayers.map((player) => <option key={player.id} value={player.id}>{player.name} · Sub</option>)}</select></label>
+        <label className="admin-field"><span>Player off (on the pitch)</span><select name="playerOff" required defaultValue=""><option value="" disabled>Choose player</option>{pitchPlayers.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</select></label>
+        <label className="admin-field"><span>Player on (sub)</span><select name="playerOn" required defaultValue=""><option value="" disabled>{subsAvailable.length ? 'Choose sub' : 'No subs left'}</option>{subsAvailable.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</select></label>
       </> : <><label className="admin-field"><span>Player off</span><input name="playerOffName" required /></label><label className="admin-field"><span>Player on</span><input name="playerOnName" required /></label></>}
     </div> : <div className="live-form-grid">
-      {isClubSide ? <label className="admin-field"><span>{kind === 'goal' ? 'Scorer' : 'Player'}</span><select name="player" required defaultValue=""><option value="" disabled>Choose player</option>{sidePlayers.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></label>
+      {isClubSide ? <label className="admin-field"><span>{kind === 'goal' ? 'Scorer (on the pitch)' : 'Player'}</span><select name="player" required value={scorerId} onChange={(event) => setScorerId(event.target.value)}><option value="" disabled>Choose player</option>{kind === 'card' && hasLineup && benchPlayers.length
+        ? <><optgroup label="On the pitch">{pitchPlayers.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</optgroup><optgroup label="Bench">{benchPlayers.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</optgroup></>
+        : pitchPlayers.map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</select></label>
         : <label className="admin-field"><span>{kind === 'goal' ? 'Opponent scorer (optional)' : 'Player (optional)'}</span><input name="playerName" /></label>}
       {kind === 'goal' && (isClubSide
-        ? <label className="admin-field"><span>Assist (optional)</span><select name="assist" defaultValue=""><option value="">No assist</option>{sidePlayers.map((player) => <option key={player.id} value={player.id}>{player.name}</option>)}</select></label>
+        ? <label className="admin-field"><span>Assist (optional)</span><select name="assist" defaultValue=""><option value="">No assist</option>{pitchPlayers.filter((player) => player.id !== scorerId).map((player) => <option key={player.id} value={player.id}>{playerLabel(player)}</option>)}</select></label>
         : <label className="admin-field"><span>Assist (optional)</span><input name="assistName" /></label>)}
       {kind === 'card' && <label className="admin-field"><span>Card</span><select name="card" defaultValue={defaultCard}><option value="yellow">Yellow</option><option value="red">Red</option></select></label>}
     </div>}
+    {isClubSide && hasLineup && kind !== 'commentary' && <p className="live-help event-form-hint">{pitchPlayers.length} on the pitch{kind === 'substitution' ? ` · ${subsAvailable.length} sub${subsAvailable.length === 1 ? '' : 's'} left` : ''}</p>}
     <Button type="submit" disabled={busy} icon={<SquareArrowOutUpRight size={16} />}>{kind === 'commentary' ? 'Post update' : `Add ${kind === 'substitution' ? 'sub' : kind}`}</Button>
   </form>
 }
@@ -235,6 +262,11 @@ export default function LiveMatch() {
 
   function reportError(error: unknown) {
     setProblem(errorMessage(error))
+    setMessage('')
+  }
+
+  function showReactionProblem() {
+    setProblem('Your reaction was not saved. Sign out and sign in again, then tap it once more.')
     setMessage('')
   }
 
@@ -531,7 +563,9 @@ export default function LiveMatch() {
       if (reactions.find((reaction) => reaction.uid === user.uid)?.emoji === emoji) await deleteDoc(reactionRef)
       else await setDoc(reactionRef, { emoji, updatedAt: serverTimestamp() })
     } catch (error) {
-      reportError(error)
+      const code = (error as { code?: string }).code
+      if (code === 'permission-denied') showReactionProblem()
+      else reportError(error)
     }
   }
 
@@ -1088,7 +1122,7 @@ export default function LiveMatch() {
         {activePeriod(selectedFixture.period) && <div className="added-time-controls"><span>Added time <b>+{selectedFixture.addedTime ?? 0}</b></span>{[1, 2, 3].map((amount) => <button key={amount} type="button" className={selectedFixture.addedTime === amount ? 'selected' : ''} onClick={() => void setAddedTime(amount)}>+{amount}</button>)}</div>}
       </div>
       <div className="matchpad-actions">{QUICK_ACTIONS.map(({ action, label, icon: Icon }) => <button type="button" key={action} className={`matchpad-action${quickAction === action ? ' active' : ''} matchpad-${action}`} onClick={() => setQuickAction((current) => current === action ? null : action)}><Icon size={20} /><span>{label}</span></button>)}<button type="button" className="matchpad-action matchpad-undo" disabled={busy || !events.length} onClick={() => void undoLastEvent()}><CornerUpLeft size={20} /><span>Undo last</span></button></div>
-      {actionKind && <div className="matchpad-form"><EventForm fixture={selectedFixture} players={players} minute={currentEventMinute(selectedFixture, clockNow)} kind={actionKind} defaultSide={actionSide} defaultCard={cardColor} busy={busy} onSubmit={(event) => void addEvent(event)} />{quickAction === 'opponent-goal' && <p className="matchpad-hint">Adds a goal to {selectedFixture.home === CLUB_NAME ? selectedFixture.away : selectedFixture.home}.</p>}</div>}
+      {actionKind && <div className="matchpad-form"><EventForm fixture={selectedFixture} players={players} events={events} minute={currentEventMinute(selectedFixture, clockNow)} kind={actionKind} defaultSide={actionSide} defaultCard={cardColor} busy={busy} onSubmit={(event) => void addEvent(event)} />{quickAction === 'opponent-goal' && <p className="matchpad-hint">Adds a goal to {selectedFixture.home === CLUB_NAME ? selectedFixture.away : selectedFixture.home}.</p>}</div>}
       <section className="opponent-score-control" aria-label="Opponent score controls">
         <div className="opponent-score-value"><span>Opponent score</span><strong>{opponentScore}</strong></div>
         <div className="opponent-score-buttons" role="group" aria-label="Set opponent score">

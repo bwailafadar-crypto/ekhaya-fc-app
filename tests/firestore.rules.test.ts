@@ -221,3 +221,11 @@ test('Ekhaya TV, match photos and the club page: admins add, fans watch', async 
   await assertSucceeds(getDoc(doc(fan, 'clubInfo/history')))
 })
 
+
+test('a signed-in fan can react even before confirming their email, a blocked fan cannot', async () => {
+  const unverified = testEnvironment.authenticatedContext('fan-9', { email: 'fan-9@example.com', email_verified: false }).firestore()
+  await seedDocument('fixtures/match-9', { status: 'live', home: 'Ekhaya FC', away: 'Blue Eagles' })
+  await assertSucceeds(setDoc(doc(unverified, 'fixtures/match-9/reactions/fan-9'), { emoji: '🔥', updatedAt: serverTimestamp() }))
+  await seedDocument('users/fan-8', { role: 'fan', disabled: true })
+  await assertFails(setDoc(doc(signedIn('fan-8'), 'fixtures/match-9/reactions/fan-8'), { emoji: '🔥', updatedAt: serverTimestamp() }))
+})

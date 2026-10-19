@@ -5,7 +5,7 @@
   "Player position, DOB, foot, height and stats are null/0 - fill in via the admin panel. Four players have no jersey number yet.",
   "Team logos are null - upload via the admin panel.",
   "cupFixtures: 2026 Airtel Top 8 results from FAM (fam.mw), Nyasa Big Bullets, Nation Online and Nyasa Times match reports. The final's goal minutes were not published, so its scorers are listed in the note. Kick-off times are approximate (the 1st leg was an evening match). Load with the \"Update cup results\" workflow.",
-  "standings: official FDH Championship table after week 17 (18 Oct 2026), as pasted by the club. Form is stored oldest -> newest (the source shows newest first)."
+  "standings: official FDH Bank Premiership log after week 17 (18 Oct 2026). The official image showed Blue Eagles 24:11 and Luanar Mitundu 14:14, which do not add up (a win with no goals; a 1-1 draw from 13:14); the consistent figures 27:18 and 14:15 are used. Form is stored oldest -> newest."
  ],
  "teams": [
   {
@@ -203,8 +203,28 @@
    ]
   },
   {
-   "id": "chitipa-united",
+   "id": "masters-fc",
    "position": 5,
+   "team": "Masters FC",
+   "played": 17,
+   "won": 7,
+   "drawn": 4,
+   "lost": 6,
+   "goalsFor": 21,
+   "goalsAgainst": 18,
+   "goalDifference": 3,
+   "points": 25,
+   "form": [
+    "D",
+    "L",
+    "D",
+    "L",
+    "W"
+   ]
+  },
+  {
+   "id": "chitipa-united",
+   "position": 6,
    "team": "Chitipa United",
    "played": 17,
    "won": 7,
@@ -224,7 +244,7 @@
   },
   {
    "id": "ekhaya-fc",
-   "position": 6,
+   "position": 7,
    "team": "Ekhaya FC",
    "played": 17,
    "won": 5,
@@ -240,26 +260,6 @@
     "D",
     "W",
     "D"
-   ]
-  },
-  {
-   "id": "masters-fc",
-   "position": 7,
-   "team": "Masters FC",
-   "played": 16,
-   "won": 6,
-   "drawn": 4,
-   "lost": 6,
-   "goalsFor": 17,
-   "goalsAgainst": 17,
-   "goalDifference": 0,
-   "points": 22,
-   "form": [
-    "W",
-    "D",
-    "L",
-    "D",
-    "L"
    ]
   },
   {
@@ -366,20 +366,20 @@
    "id": "karonga-united",
    "position": 13,
    "team": "Karonga United",
-   "played": 16,
+   "played": 17,
    "won": 4,
    "drawn": 5,
-   "lost": 7,
-   "goalsFor": 15,
-   "goalsAgainst": 23,
-   "goalDifference": -8,
+   "lost": 8,
+   "goalsFor": 16,
+   "goalsAgainst": 27,
+   "goalDifference": -11,
    "points": 17,
    "form": [
     "L",
-    "L",
     "D",
     "D",
-    "W"
+    "W",
+    "L"
    ]
   },
   {

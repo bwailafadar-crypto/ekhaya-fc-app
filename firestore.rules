@@ -200,9 +200,11 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
+      // Reactions are light-hearted, so any signed-in fan who is not blocked can
+      // react (no email check, unlike votes and predictions).
       match /reactions/{uid} {
         allow read: if signedIn();
-        allow create, update: if canAct()
+        allow create, update: if signedIn() && !isBlocked()
           && request.auth.uid == uid
           && request.resource.data.keys().hasOnly(['emoji', 'updatedAt'])
           && request.resource.data.emoji in ['⚽', '🔥', '👏', '😱']
