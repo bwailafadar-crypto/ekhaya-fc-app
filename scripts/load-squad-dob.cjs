@@ -26,11 +26,20 @@ async function main() {
   const live = (await db.collection('players').get()).docs.map((d) => ({ id: d.id, ref: d.ref, ...d.data() }))
   const batch = db.batch()
   let changes = 0
+  const sheetNames = new Set(sheet.players.map((row) => norm(row.name)))
+  const taken = new Set(live.map((p) => p.id))
   for (const row of sheet.players) {
-    const match = live.find((p) => p.id === row.playerId) || live.find((p) => norm(p.name) === norm(row.name))
+    // Match by NAME first. A record id is only trusted when that record has not
+    // been renamed to another player on the sheet (ids keep their first name).
+    const byId = live.find((p) => p.id === row.playerId)
+    const match = live.find((p) => norm(p.name) === norm(row.name))
+      || (byId && !sheetNames.has(norm(byId.name)) ? byId : undefined)
     if (!match) {
+      let newId = row.playerId
+      for (let n = 2; taken.has(newId); n += 1) newId = `${row.playerId}-${n}`
+      taken.add(newId)
       console.log(`  + add ${row.name}${row.dob ? `, born ${row.dob} (${age(row.dob)})` : ''}`)
-      batch.set(db.collection('players').doc(row.playerId), {
+      batch.set(db.collection('players').doc(newId), {
         name: row.name, number: null, team: 'senior', position: null, dob: row.dob ?? null, nationality: 'Malawian',
         preferredFoot: null, heightCm: null, photoDataUrl: null, stats: { ...EMPTY_STATS },
         createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
