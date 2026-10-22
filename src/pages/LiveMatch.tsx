@@ -11,6 +11,7 @@ import { DEFAULT_FORMATION, FORMATIONS, isFormation, slotRoles, type Formation }
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import LineupPitch, { type PlayerMarks } from '../components/LineupPitch'
 import MatchSummary from '../components/MatchSummary'
+import MinutesEditor from './admin/MinutesEditor'
 import { collection, deleteField, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
 import { Activity, Clock3, CornerUpLeft, FlaskConical, Goal, MessageSquareText, Radio, ShieldAlert, Square, SquareArrowOutUpRight, Trash2, Users, Zap } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
@@ -1136,6 +1137,7 @@ export default function LiveMatch() {
     </section>}
 
     {isAdmin && isFinished && <Card className="admin-card live-admin-card"><h2>Match finished</h2><p className="live-help"><strong>Edit match</strong> to correct scorers, minutes, cards, the score or stats. The table and player stats are fixed when you save. <strong>Reset</strong> wipes the match back to upcoming.</p><div className="finished-actions"><Button type="button" disabled={busy} onClick={() => void resetMatch('edit')}>Edit match</Button><Button type="button" variant="ghost" disabled={busy} onClick={() => void resetMatch()}>Reset match</Button></div></Card>}
+    {isAdmin && isFinished && !selectedFixture.isTest && (selectedFixture.startingPlayerIds ?? []).length > 0 && <MinutesEditor key={`${selectedFixture.id}:${JSON.stringify(selectedFixture.officialMinutes ?? {})}:${events.length}`} fixture={selectedFixture} players={players} events={events} />}
     {isLive && !isAdmin && <div className="live-fan-note"><span className="live-pulse-dot" />Live from {selectedFixture.venue || (/^ekhaya/i.test(selectedFixture.home) ? 'Chiwembe Stadium' : 'the stadium')}</div>}
     {eventsError && <p className="live-error" role="alert"><ShieldAlert size={15} />{eventsError}</p>}
 

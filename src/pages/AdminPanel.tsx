@@ -14,6 +14,8 @@ import NewsArticleEditor from '../components/NewsArticleEditor'
 import SquadSheet from './admin/SquadSheet'
 import MemberCardCheck from './admin/MemberCardCheck'
 import ShrinkImages from './admin/ShrinkImages'
+import TableEditor from './admin/TableEditor'
+import FixtureTools from './admin/FixtureTools'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage, IMAGE_SIZES } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
@@ -905,8 +907,8 @@ export default function AdminPanel() {
               <div className="admin-actions"><Button type="submit" disabled={saving || uploading || importingLogos}>Save team</Button><Button type="button" variant="ghost" disabled={importingLogos} onClick={() => setTeamLogo(null)}>Remove logo</Button></div>
             </form>}
           </Card></>
-            : section === 'standings' ? <Card className="admin-card">
-              <div className="admin-card-heading"><h2>League table row</h2><select aria-label="Choose team row" value={selectedStandingId} onChange={(event) => setSelectedStandingId(event.target.value)}><option value="">Select team</option>{standings.items.map((row) => <option key={row.id} value={row.id}>{row.position ?? 0}. {row.team}</option>)}</select></div>
+            : section === 'standings' ? <><TableEditor key={standings.items.map((row) => `${row.id}:${row.played}:${row.points}:${row.position}`).join('|')} standings={standings.items} /><Card className="admin-card">
+              <div className="admin-card-heading"><h2>One team (arrow and details)</h2><select aria-label="Choose team row" value={selectedStandingId} onChange={(event) => setSelectedStandingId(event.target.value)}><option value="">Select team</option>{standings.items.map((row) => <option key={row.id} value={row.id}>{row.position ?? 0}. {row.team}</option>)}</select></div>
               {selectedStanding && <form className="admin-form" key={selectedStanding.id} onSubmit={saveStanding}>
                 <div className="admin-form-grid"><Field label="Position" name="position" type="number" min={1} defaultValue={selectedStanding.position ?? 0} required /><Field label="Team" name="team" defaultValue={selectedStanding.team} required /><Field label="Played" name="played" type="number" min={0} defaultValue={selectedStanding.played ?? 0} /><Field label="Won" name="won" type="number" min={0} defaultValue={selectedStanding.won ?? 0} /><Field label="Drawn" name="drawn" type="number" min={0} defaultValue={selectedStanding.drawn ?? 0} /><Field label="Lost" name="lost" type="number" min={0} defaultValue={selectedStanding.lost ?? 0} /><Field label="Goals for" name="goalsFor" type="number" defaultValue={selectedStanding.goalsFor ?? 0} /><Field label="Goals against" name="goalsAgainst" type="number" defaultValue={selectedStanding.goalsAgainst ?? 0} /><Field label="Points" name="points" type="number" min={0} defaultValue={selectedStanding.points ?? 0} /><Field label="Last five form (e.g. WDLWW)" name="form" defaultValue={(selectedStanding.form ?? []).join('')} /></div>
                 <div className="admin-form-grid table-arrow-fields">
@@ -915,13 +917,13 @@ export default function AdminPanel() {
                 </div>
                 <div className="admin-actions"><Button type="submit" disabled={saving}>Save table row</Button></div>
               </form>}
-            </Card>
-              : <Card className="admin-card">
+            </Card></>
+              : <><FixtureTools fixtures={fixtures.items} teams={teams.items} /><Card className="admin-card">
                 <div className="admin-card-heading"><h2>Fixture and result</h2><select aria-label="Choose fixture" value={selectedFixtureId} onChange={(event) => setSelectedFixtureId(event.target.value)}><option value="">Add a fixture</option>{fixtures.items.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.date.slice(0, 10)} · {fixture.home} v {fixture.away}</option>)}</select></div>
                 <form className="admin-form" key={selectedFixture?.id ?? 'new-fixture'} onSubmit={saveFixture}>
                   <div className="admin-form-grid"><Field label="Competition" name="competition" defaultValue={selectedFixture?.competition ?? 'FDH Championship'} required list="competition-options" /><datalist id="competition-options">{COMPETITIONS.map((item) => <option key={item.id} value={item.name} />)}</datalist><Field label="Cup round (cups only)" name="round" defaultValue={selectedFixture?.round} placeholder="e.g. Quarter-final · 1st leg" /><Field label="Result note (optional)" name="note" defaultValue={selectedFixture?.note} placeholder="e.g. Won 4–3 on penalties" /><Field label="Season" name="season" defaultValue={selectedFixture?.season ?? '2026'} required /><Field label="Date and CAT kick-off (matches start 15:00)" name="date" type="datetime-local" defaultValue={selectedFixture?.date?.slice(0, 16) ?? nextSaturdayKickoff()} required /><Field label="Venue" name="venue" defaultValue={selectedFixture?.venue} /><Field label="Home team" name="home" defaultValue={selectedFixture?.home} required /><Field label="Away team" name="away" defaultValue={selectedFixture?.away} required /></div>
                   <div className="admin-actions"><Button type="submit" disabled={saving}>{saving ? 'Saving...' : selectedFixture ? 'Save fixture' : 'Add fixture'}</Button>{selectedFixture && <Button type="button" variant="danger" onClick={() => void deleteFixture()}>Delete fixture</Button>}</div>
                 </form>
-              </Card>}
+              </Card></>}
   </>
 }

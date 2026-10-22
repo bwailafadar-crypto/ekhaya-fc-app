@@ -1911,3 +1911,54 @@ select.auth-input { appearance: auto; }
 .poll-templates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 10px; }
 .poll-templates span { color: var(--muted); font-size: 12px; font-weight: 700; }
 .poll-templates button { padding: 6px 10px; color: #6B540E; background: #FBF1CF; border: 1px solid rgb(158 124 18 / 35%); border-radius: 999px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+/* update-98: whole-table editor */
+.table-editor .table-paste { margin: 6px 0 10px; }
+.table-editor .table-paste summary { display: inline-flex; align-items: center; gap: 6px; color: #8A6A0A; font-weight: 700; cursor: pointer; }
+.table-editor .table-paste textarea { width: 100%; margin: 8px 0; padding: 8px; border: 1px solid var(--line); border-radius: 10px; font: 12px/1.4 ui-monospace, monospace; }
+.table-editor-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+.table-editor table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 12px; }
+.table-editor th { padding: 6px 4px; color: #6B540E; background: #FBF1CF; font-size: 10px; text-align: center; }
+.table-editor td { padding: 3px; border-top: 1px solid var(--line); text-align: center; }
+.table-editor td input { width: 38px; padding: 5px 2px; border: 1px solid var(--line); border-radius: 6px; font: inherit; text-align: center; }
+.table-editor td input.te-form { width: 64px; letter-spacing: .08em; text-transform: uppercase; }
+.table-editor .te-team { position: sticky; left: 0; z-index: 1; min-width: 150px; text-align: left; background: #fff; }
+.table-editor th.te-team { background: #FBF1CF; }
+.table-editor td.te-team { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.table-editor td.te-team .team-logo { width: 20px; height: 20px; flex: 0 0 20px; font-size: 8px; }
+.table-editor .te-pos { font-weight: 800; white-space: nowrap; }
+.table-editor .te-pos i { margin-left: 2px; font-size: 9px; font-style: normal; }
+.table-editor .te-gd { font-weight: 700; }
+.table-editor tr.te-changed td { background: #FFFBEA; }
+.table-editor tr.te-changed td.te-team { background: #FFFBEA; }
+.table-editor tr.te-bad td { background: #FDECEC; }
+.table-editor tr.te-bad td.te-team { background: #FDECEC; }
+.te-problems { margin: 8px 0; padding-left: 0; color: var(--loss); font-size: 12px; list-style: none; }
+.te-ok { margin: 8px 0; color: var(--win); font-size: 12px; font-weight: 700; }
+
+/* update-98: fixture tools */
+.fixture-tool { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
+.fixture-tool-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+.fixture-tool-list { color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+/* update-98: official minutes editor */
+.minutes-editor ul { margin: 6px 0; padding: 0; list-style: none; }
+.minutes-editor li { display: grid; grid-template-columns: 34px minmax(0, 1fr) 56px 10px; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.minutes-editor li .player-avatar, .minutes-editor li img { width: 32px; height: 32px; }
+.minutes-editor li span { min-width: 0; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.minutes-editor li span b { display: inline-block; min-width: 22px; margin-right: 4px; color: #8A6A0A; }
+.minutes-editor li span small { margin-left: 6px; color: var(--muted); font-size: 10px; font-weight: 600; }
+.minutes-editor li input { width: 56px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; font: inherit; text-align: center; }
+.minutes-editor li em { color: var(--muted); font-style: normal; }
+
+/* update-98: paste a squad list */
+.sq-paste { margin: 6px 0 10px; }
+.sq-paste summary { display: inline-flex; align-items: center; gap: 6px; color: #8A6A0A; font-weight: 700; cursor: pointer; }
+.sq-paste textarea { width: 100%; margin: 8px 0; padding: 8px; border: 1px solid var(--line); border-radius: 10px; font: 13px/1.4 inherit; }
+.sq-paste-check, .sq-paste-save { padding: 8px 14px; color: #6B540E; background: #FBF1CF; border: 1px solid rgb(158 124 18 / 35%); border-radius: 10px; font: inherit; font-weight: 800; cursor: pointer; }
+.sq-paste-save { color: #fff; background: var(--gold); border-color: var(--gold); }
+.sq-paste-preview ul { margin: 8px 0; padding: 0; list-style: none; }
+.sq-paste-preview li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.sq-paste-preview li span { font-weight: 700; }
+.sq-paste-preview li.new span { color: #1E8E3E; }
+.sq-paste-preview li small { color: var(--muted); }

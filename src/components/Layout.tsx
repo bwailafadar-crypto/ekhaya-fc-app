@@ -10,6 +10,7 @@ import ConnectionBanner from './ConnectionBanner'
 import AlertsPrompt from './AlertsPrompt'
 import CommunitySync from './CommunitySync'
 import SnapshotPublisher from './SnapshotPublisher'
+import AutoShrinkImages from './AutoShrinkImages'
 import { useFlag, useNotice } from '../hooks/useFlag'
 import { config } from '../config'
 
@@ -106,6 +107,7 @@ export default function Layout() {
         <AlertsPrompt />
         <CommunitySync />
         <SnapshotPublisher />
+        <AutoShrinkImages />
 
         <main className="content">
           <div key={pathname} className="page-transition">
