@@ -172,24 +172,6 @@ function PollCard({ poll }: { poll: Poll }) {
   )
 }
 
-function VerifyEmailNotice() {
-  const { user, emailVerified, sendVerificationEmail, refreshEmailVerification } = useAuth()
-  const { showToast } = useToast()
-  const [busy, setBusy] = useState(false)
-  if (!user || emailVerified) return null
-  return <Card className="push-prompt">
-    <Lock size={20} aria-hidden="true" />
-    <div><strong>Verify your email to take part</strong><span>Voting and predictions need a verified email, so every vote is a real fan.</span></div>
-    <Button type="button" variant="secondary" disabled={busy} onClick={async () => {
-      setBusy(true)
-      try {
-        if (await refreshEmailVerification()) showToast('Email verified. You can vote now!')
-        else { await sendVerificationEmail(); showToast(`Verification email sent to ${user.email}.`) }
-      } catch { showToast('Could not send the email. Try again shortly.', 'error') } finally { setBusy(false) }
-    }}>{busy ? '...' : 'Verify'}</Button>
-  </Card>
-}
-
 export default function FanZone() {
   const fanFamily = useFlag('fanFamily')
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
@@ -208,7 +190,6 @@ export default function FanZone() {
     <PageHeader eyebrow="Supporters" title="Fan Zone" description="Predict scores, pick the man of the match and have your say." />
     <FanLevelCard />
     {(fixtures.error || players.error || polls.error) && <p className="live-error" role="alert">Some Fan Zone content could not be loaded. Check your connection.</p>}
-    <VerifyEmailNotice />
     <PushSettings compact />
     {fanFamily && <Link className="community-link" to="/community"><HeartHandshake size={20} aria-hidden="true" /><span><strong>Fan Family</strong><small>Join your district branch and invite friends</small></span><ChevronRight size={18} aria-hidden="true" /></Link>}
     {nextMatch ? <PredictCard fixture={nextMatch} /> : <Card className="fz-card"><h2>Predict the score</h2><p className="fz-note">The next fixture will appear here once it is scheduled.</p></Card>}

@@ -83,16 +83,20 @@ async function recalculateFanPoints(allFixtures: Fixture[], predictionRows: Arra
   const real = allFixtures.filter((fixture) => !fixture.isTest)
   const played = real.filter((fixture) => isPlayed(fixture) || fixture.status === 'live')
   const safe = async <T,>(work: () => Promise<T>, fallback: T) => { try { return await work() } catch { return fallback } }
-  const [motmSets, checkinSets, polls, referrals, fanCards] = await Promise.all([
+  const [motmSets, checkinSets, polls, referrals, fanCards, users] = await Promise.all([
     Promise.all(real.filter(isPlayed).map((fixture) => safe(() => getDocs(collection(db, 'fixtures', fixture.id, 'motm')), null))),
     Promise.all(played.map((fixture) => safe(() => getDocs(collection(db, 'fixtures', fixture.id, 'checkins')), null))),
     safe(() => getDocs(collection(db, 'polls')), null),
     safe(() => getDocs(collection(db, 'referrals')), null),
     safe(() => getDocs(collection(db, 'fanCards')), null),
+    // Profile names (readable by the superadmin), so voters show by name, not "Fan".
+    safe(() => getDocs(collection(db, 'users')), null),
   ])
   const pollSets = polls ? await Promise.all(polls.docs.map((poll) => safe(() => getDocs(collection(db, 'polls', poll.id, 'votes')), null))) : []
   const names: Record<string, string> = {}
+  users?.docs.forEach((item) => { const name = item.data().fullName; if (typeof name === 'string' && name.trim()) names[item.id] = name.trim() })
   fanCards?.docs.forEach((item) => { const name = item.data().name; if (typeof name === 'string' && name) names[item.id] = name })
+  predictionRows.forEach((row) => { if (!names[row.uid] && row.name && row.name !== 'Fan') names[row.uid] = row.name })
   const table = fanPointsTable({
     predictionPoints: predictionRows,
     motmVoters: motmSets.flatMap((set) => set?.docs.map((item) => item.id) ?? []),

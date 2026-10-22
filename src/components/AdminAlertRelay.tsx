@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore'
 import { config } from '../config'
 import { useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
@@ -103,7 +103,20 @@ export default function AdminAlertRelay() {
       newsReady = true
     }, () => undefined)
 
-    return () => { active = false; window.clearTimeout(leaderboardTimer); stopFixtures(); stopNews() }
+    // Fan points also change between matches (poll and MOTM votes, new
+    // predictions): refresh the boards when they are more than 2 hours old,
+    // checked shortly after an admin opens the app and every 30 minutes.
+    const refreshPointsIfOld = async () => {
+      try {
+        const board = await getDoc(doc(db, 'leaderboard', 'fans'))
+        const updated = board.data()?.updatedAt?.toMillis?.() ?? 0
+        if (Date.now() - updated > 2 * 3600000) await recalculateLeaderboard(false)
+      } catch { /* offline: try again later */ }
+    }
+    const pointsFirst = window.setTimeout(() => void refreshPointsIfOld(), 20000)
+    const pointsTimer = window.setInterval(() => void refreshPointsIfOld(), 30 * 60000)
+
+    return () => { active = false; window.clearTimeout(leaderboardTimer); window.clearTimeout(pointsFirst); window.clearInterval(pointsTimer); stopFixtures(); stopNews() }
   }, [isAdmin, showToast])
 
   return null

@@ -229,3 +229,21 @@ test('a signed-in fan can react even before confirming their email, a blocked fa
   await seedDocument('users/fan-8', { role: 'fan', disabled: true })
   await assertFails(setDoc(doc(signedIn('fan-8'), 'fixtures/match-9/reactions/fan-8'), { emoji: '🔥', updatedAt: serverTimestamp() }))
 })
+
+test('Fan Zone: a fan who has not confirmed their email can predict, vote for MOTM and vote in polls', async () => {
+  await seedDocument('users/fan-7', { role: 'fan', fullName: 'Fan Seven' })
+  await seedDocument('fixtures/next', { status: 'upcoming', home: 'Ekhaya FC', away: 'Blue Eagles' })
+  await seedDocument('fixtures/last', { status: 'finished', home: 'Ekhaya FC', away: 'Red Lions' })
+  await seedDocument('players/p1', { name: 'Player One' })
+  await seedDocument('polls/poll-1', { status: 'open', options: ['A', 'B'] })
+  const db = testEnvironment.authenticatedContext('fan-7', { email: 'fan-7@example.com', email_verified: false }).firestore()
+  await assertSucceeds(setDoc(doc(db, 'fixtures/next/predictions/fan-7'), { home: 2, away: 1, name: 'Fan Seven', updatedAt: serverTimestamp() }))
+  await assertSucceeds(setDoc(doc(db, 'fixtures/last/motm/fan-7'), { playerId: 'p1', updatedAt: serverTimestamp() }))
+  await assertSucceeds(setDoc(doc(db, 'polls/poll-1/votes/fan-7'), { option: 1, updatedAt: serverTimestamp() }))
+  // still protected: someone else's vote, a fake name, a blocked fan
+  await assertFails(setDoc(doc(db, 'fixtures/next/predictions/fan-8'), { home: 2, away: 1, name: 'Fan Seven', updatedAt: serverTimestamp() }))
+  await assertFails(setDoc(doc(db, 'fixtures/next/predictions/fan-7'), { home: 2, away: 1, name: 'Someone Else', updatedAt: serverTimestamp() }))
+  await seedDocument('users/fan-6', { role: 'fan', fullName: 'Fan Six', disabled: true })
+  const blocked = testEnvironment.authenticatedContext('fan-6', { email: 'fan-6@example.com', email_verified: true }).firestore()
+  await assertFails(setDoc(doc(blocked, 'polls/poll-1/votes/fan-6'), { option: 0, updatedAt: serverTimestamp() }))
+})

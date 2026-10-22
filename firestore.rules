@@ -38,6 +38,14 @@ service cloud.firestore {
         && !isBlocked();
     }
 
+    // Fan Zone (predictions, man of the match, polls): any signed-in fan with a
+    // profile who is not blocked. Email confirmation is not required here.
+    function canPlay() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && !isBlocked();
+    }
+
     function myName() {
       return get(userPath(request.auth.uid)).data.get('fullName', '');
     }
@@ -151,7 +159,7 @@ service cloud.firestore {
       // Fan Zone: one score prediction per fan, only before kick-off.
       match /predictions/{uid} {
         allow read: if signedIn();
-        allow create, update: if canAct()
+        allow create, update: if canPlay()
           && request.auth.uid == uid
           && fixtureDoc(fixtureId).status == 'upcoming'
           && fixtureDoc(fixtureId).get('predictionsLocked', false) != true
@@ -172,7 +180,7 @@ service cloud.firestore {
       // until an admin closes voting.
       match /motm/{uid} {
         allow read: if signedIn();
-        allow create, update: if canAct()
+        allow create, update: if canPlay()
           && request.auth.uid == uid
           && fixtureDoc(fixtureId).status == 'finished'
           && fixtureDoc(fixtureId).get('isTest', false) != true
@@ -246,7 +254,7 @@ service cloud.firestore {
       // Fan Zone: one vote per fan while the poll is open.
       match /votes/{uid} {
         allow read: if signedIn();
-        allow create, update: if canAct()
+        allow create, update: if canPlay()
           && request.auth.uid == uid
           && get(/databases/$(database)/documents/polls/$(pollId)).data.status == 'open'
           && request.resource.data.keys().hasOnly(['option', 'updatedAt'])

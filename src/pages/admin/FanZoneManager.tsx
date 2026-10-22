@@ -165,6 +165,23 @@ export default function FanZoneManager() {
   const nextMatch = sortByDate(fixtures.items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc')[0]
   const sortedPolls = polls.items.slice().sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0))
 
+  // Ready-made polls from the fixtures and the squad: tap one, edit if needed, publish.
+  const [draftQuestion, setDraftQuestion] = useState('')
+  const [draftOptions, setDraftOptions] = useState('')
+  const isClub = (name: string) => /ekhaya/i.test(name)
+  const opponent = (fixture?: Fixture) => (fixture ? (isClub(fixture.home) ? fixture.away : fixture.home) : '')
+  const senior = players.items.filter((player) => player.team === 'senior')
+  const byGoals = senior.slice().sort((a, b) => (b.stats?.goals ?? 0) - (a.stats?.goals ?? 0) || (b.stats?.assists ?? 0) - (a.stats?.assists ?? 0) || (b.stats?.appearances ?? 0) - (a.stats?.appearances ?? 0))
+  const attackers = byGoals.filter((player) => player.position === 'FWD' || player.position === 'MID' || !player.position)
+  const playedLast = lastMatch ? [...(lastMatch.officialMinutes ? Object.keys(lastMatch.officialMinutes) : lastMatch.startingPlayerIds ?? [])] : []
+  const templates = [
+    nextMatch && { label: `Result v ${opponent(nextMatch)}`, question: `How will Ekhaya FC do against ${opponent(nextMatch)}?`, options: ['Ekhaya FC win', 'Draw', `${opponent(nextMatch)} win`] },
+    nextMatch && attackers.length >= 2 && { label: `First scorer v ${opponent(nextMatch)}`, question: `Who will score first for Ekhaya against ${opponent(nextMatch)}?`, options: [...attackers.slice(0, 5).map((player) => player.name), 'Someone else'] },
+    lastMatch && playedLast.length >= 2 && { label: `Best player v ${opponent(lastMatch)}`, question: `Who was Ekhaya's best player against ${opponent(lastMatch)}?`, options: senior.filter((player) => playedLast.includes(player.id)).sort((a, b) => (b.stats?.goals ?? 0) - (a.stats?.goals ?? 0)).slice(0, 6).map((player) => player.name) },
+    byGoals.length >= 3 && { label: 'Player of the month', question: `Who is Ekhaya's player of the month (${new Date().toLocaleDateString('en-GB', { month: 'long' })})?`, options: byGoals.slice(0, 5).map((player) => player.name) },
+    lastMatch && { label: `Rate the team v ${opponent(lastMatch)}`, question: `How did Ekhaya play against ${opponent(lastMatch)} (${lastMatch.home} ${lastMatch.homeScore ?? 0}–${lastMatch.awayScore ?? 0} ${lastMatch.away})?`, options: ['Excellent', 'Good', 'Average', 'Poor'] },
+  ].filter(Boolean) as Array<{ label: string; question: string; options: string[] }>
+
   async function createPoll(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = event.currentTarget
@@ -177,6 +194,8 @@ export default function FanZoneManager() {
     try {
       await addDoc(collection(db, 'polls'), { question: question.slice(0, 200), options: options.map((option) => option.slice(0, 80)), status: 'open', createdAt: serverTimestamp() })
       form.reset()
+      setDraftQuestion('')
+      setDraftOptions('')
       showToast('Poll published to the Fan Zone.')
     } catch { showToast('The poll was not published.', 'error') } finally { setSaving(false) }
   }
@@ -186,9 +205,10 @@ export default function FanZoneManager() {
     <LeaderboardTools />
     <Card className="admin-card">
       <div className="fz-card-heading"><Vote size={18} /><div><h2>New poll</h2><span>Appears in the Fan Zone straight away</span></div></div>
+      {templates.length > 0 && <div className="poll-templates" role="group" aria-label="Ready-made polls"><span>Quick polls:</span>{templates.map((template) => <button type="button" key={template.label} onClick={() => { setDraftQuestion(template.question); setDraftOptions(template.options.slice(0, 6).join('\n')) }}>{template.label}</button>)}</div>}
       <form className="admin-form" onSubmit={createPoll}>
-        <label className="admin-field"><span>Question</span><input name="question" maxLength={200} placeholder="Who should start up front on Saturday?" required /></label>
-        <label className="admin-field"><span>Answers (one per line, 2–6)</span><textarea className="membership-benefits-input" name="options" rows={4} placeholder={'Player A\nPlayer B\nPlayer C'} required /></label>
+        <label className="admin-field"><span>Question</span><input name="question" maxLength={200} placeholder="Who should start up front on Saturday?" required value={draftQuestion} onChange={(event) => setDraftQuestion(event.target.value)} /></label>
+        <label className="admin-field"><span>Answers (one per line, 2–6)</span><textarea className="membership-benefits-input" name="options" rows={5} placeholder={'Player A\nPlayer B\nPlayer C'} required value={draftOptions} onChange={(event) => setDraftOptions(event.target.value)} /></label>
         <Button type="submit" disabled={saving}><Plus size={15} /> {saving ? 'Publishing...' : 'Publish poll'}</Button>
       </form>
     </Card>

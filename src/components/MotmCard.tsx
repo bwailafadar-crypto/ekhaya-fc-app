@@ -1,6 +1,6 @@
-import { collection, doc, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
+import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import { CheckCircle2, Lock, Star } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
 import { useCounts, useMyDoc } from '../hooks/useCounts'
@@ -28,8 +28,23 @@ export default function MotmCard({ fixture, players }: { fixture: Fixture; playe
   const mine = useMyDoc<Omit<MotmVote, 'id'>>(user ? ['fixtures', fixture.id, 'motm', user.uid] : null)
   const [saving, setSaving] = useState('')
   const [version, setVersion] = useState(0)
-  const lineup = [...(fixture.startingPlayerIds ?? []), ...(fixture.benchPlayerIds ?? [])]
-  const candidates = (lineup.length ? players.filter((player) => lineup.includes(player.id)) : players)
+  // Only players who actually played: the official minutes when loaded,
+  // otherwise the starting XI plus the subs who came on (from the commentary).
+  const [subsOn, setSubsOn] = useState<{ fixtureId: string; ids: string[] } | null>(null)
+  const official = fixture.officialMinutes ? Object.keys(fixture.officialMinutes).filter((id) => (fixture.officialMinutes?.[id] ?? 0) > 0) : []
+  const starters = fixture.startingPlayerIds ?? []
+  useEffect(() => {
+    if (official.length || !starters.length) return
+    let active = true
+    getDocs(query(collection(db, 'fixtures', fixture.id, 'events'), where('kind', '==', 'substitution')))
+      .then((snapshot) => { if (active) setSubsOn({ fixtureId: fixture.id, ids: snapshot.docs.map((item) => String(item.data().subbedInPlayerId ?? '')).filter(Boolean) }) })
+      .catch(() => { if (active) setSubsOn({ fixtureId: fixture.id, ids: [] }) })
+    return () => { active = false }
+  }, [fixture.id, official.length, starters.length])
+  const played = official.length ? official
+    : starters.length ? [...starters, ...(subsOn?.fixtureId === fixture.id ? subsOn.ids : [])]
+      : []
+  const candidates = (played.length ? players.filter((player) => played.includes(player.id)) : players.filter((player) => player.team === 'senior'))
     .slice().sort((a, b) => (a.number ?? 99) - (b.number ?? 99))
   const closed = fixture.motmClosed === true
   const showResults = Boolean(mine.data) || closed
