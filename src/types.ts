@@ -49,6 +49,7 @@ export interface Fixture {
   startingPlayerIds?: string[]
   benchPlayerIds?: string[]
   lineupConfirmed?: boolean
+  chatClosed?: boolean
   /** Minutes played from the club's official match sheet (player id → minutes). */
   officialMinutes?: Record<string, number>
   /** Line-up shape, e.g. '4-3-3'. */

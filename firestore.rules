@@ -50,6 +50,15 @@ service cloud.firestore {
       return get(userPath(request.auth.uid)).data.get('fullName', '');
     }
 
+    function chatIsOpen(match) {
+      return match.get('isTest', false) != true
+        && match.get('chatClosed', false) != true
+        && (match.status == 'live'
+          || (match.status == 'upcoming' && match.get('lineupConfirmed', false) == true)
+          || (match.status == 'finished' && match.get('finishedAt', null) is timestamp
+              && request.time < match.finishedAt + duration.value(2, 'h')));
+    }
+
     function fixtureDoc(fixtureId) {
       return get(/databases/$(database)/documents/fixtures/$(fixtureId)).data;
     }
@@ -154,6 +163,23 @@ service cloud.firestore {
       match /events/{eventId} {
         allow read: if signedIn();
         allow create, update, delete: if isAdmin();
+      }
+
+      // Live fan chat: from team news until 2 hours after full time.
+      match /chat/{msgId} {
+        allow read: if signedIn();
+        allow create: if canPlay()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'text', 'club', 'createdAt'])
+          && request.resource.data.keys().hasAll(['uid', 'name', 'text', 'createdAt'])
+          && request.resource.data.name == myName()
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 200
+          && (!('club' in request.resource.data) || (request.resource.data.club == true && isAdmin()))
+          && request.resource.data.createdAt == request.time
+          && chatIsOpen(fixtureDoc(fixtureId));
+        allow update: if false;
+        allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
       }
 
       // Fan Zone: one score prediction per fan, only before kick-off.

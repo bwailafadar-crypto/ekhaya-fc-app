@@ -23,6 +23,8 @@ import type { Fixture, MatchEvent, MatchEventKind, MatchStats, Player, PlayerSta
 import { isPlayed, sortByDate } from '../utils/football'
 import { activePeriod, currentEventMinute, elapsedMatchSeconds, matchMinute } from '../utils/matchClock'
 import TeamLogo from '../components/TeamLogo'
+import MatchChat from '../components/MatchChat'
+import { useFlag } from '../hooks/useFlag'
 
 const CLUB_NAME = 'ekhaya fc'
 const EMPTY_STATS: PlayerStats = {
@@ -31,7 +33,7 @@ const EMPTY_STATS: PlayerStats = {
 }
 const EMPTY_MATCH_STATS: MatchStats = { shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, offsides: 0 }
 type QuickAction = 'goal' | 'opponent-goal' | 'yellow' | 'red' | 'substitution' | 'commentary'
-const TAB_LABELS = { timeline: 'Commentary', lineups: 'Lineups', stats: 'Stats', vote: 'MOTM vote' } as const
+const TAB_LABELS = { timeline: 'Commentary', lineups: 'Lineups', stats: 'Stats', chat: 'Fan chat', vote: 'MOTM vote' } as const
 const QUICK_ACTIONS: Array<{ action: QuickAction; label: string; icon: typeof Goal }> = [
   { action: 'goal', label: 'Goal', icon: Goal },
   { action: 'opponent-goal', label: 'Opponent goal', icon: Goal },
@@ -131,6 +133,7 @@ function EventForm({
 
 export default function LiveMatch() {
   const { role, user } = useAuth()
+  const chatFlag = useFlag('matchChat')
   const isAdmin = role === 'admin' || role === 'superadmin'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const playersResult = useFirestoreCollection<Player>('players')
@@ -144,7 +147,7 @@ export default function LiveMatch() {
   const [eventState, setEventState] = useState<{ fixtureId: string; items: MatchEvent[]; error: string | null } | null>(null)
   const [reactionState, setReactionState] = useState<{ fixtureId: string; items: Array<{ uid: string; emoji: string }> } | null>(null)
   const [quickAction, setQuickAction] = useState<QuickAction | null>(null)
-  const [activeTab, setActiveTab] = useState<'timeline' | 'lineups' | 'stats' | 'vote'>(() => { const tab = params.get('tab'); return tab === 'vote' || tab === 'lineups' || tab === 'stats' ? tab : 'timeline' })
+  const [activeTab, setActiveTab] = useState<'timeline' | 'lineups' | 'stats' | 'chat' | 'vote'>(() => { const tab = params.get('tab'); return tab === 'vote' || tab === 'lineups' || tab === 'stats' || tab === 'chat' ? tab : 'timeline' })
   // Big-club style GOAL! moment: only for Ekhaya goals that arrive while you watch.
   const [goalMoment, setGoalMoment] = useState<MatchEvent | null>(null)
   const seenGoals = useRef<{ fixtureId: string; ids: Set<string> } | null>(null)
@@ -1072,7 +1075,8 @@ export default function LiveMatch() {
   const benchLineup = (selectedFixture.benchPlayerIds ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
   const countdownSeconds = Math.max(0, Math.floor((new Date(selectedFixture.date).getTime() - clockNow) / 1000))
   const canVote = isPlayed(selectedFixture) && !selectedFixture.isTest && hasClubTeam
-  const tabs = (['timeline', 'lineups', 'stats', 'vote'] as const).filter((tab) => tab !== 'vote' || canVote)
+  const canChat = chatFlag && hasClubTeam && !selectedFixture.isTest && (selectedFixture.status !== 'upcoming' || selectedFixture.lineupConfirmed === true)
+  const tabs = (['timeline', 'lineups', 'stats', 'chat', 'vote'] as const).filter((tab) => (tab !== 'vote' || canVote) && (tab !== 'chat' || canChat))
   const currentTab = tabs.includes(activeTab as typeof tabs[number]) ? activeTab : 'timeline'
   const countdown = `${Math.floor(countdownSeconds / 86400)}d ${String(Math.floor(countdownSeconds % 86400 / 3600)).padStart(2, '0')}:${String(Math.floor(countdownSeconds % 3600 / 60)).padStart(2, '0')}:${String(countdownSeconds % 60).padStart(2, '0')}`
 
@@ -1152,6 +1156,7 @@ export default function LiveMatch() {
     </>}
     {currentTab === 'lineups' && <section className="matchday-lineups"><div className="matchday-section-title"><h2>Lineups</h2>{selectedFixture.status === 'upcoming' && <Badge variant="gold">{homeLineup.length ? 'CONFIRMED' : 'AWAITING'}</Badge>}</div>{homeLineup.length ? <LineupPitch starters={homeLineup} bench={benchLineup} formation={selectedFixture.formation} onArrange={isAdmin ? arrangeLineup : undefined} marks={lineupMarks} /> : <p className="live-timeline-empty">The confirmed Ekhaya XI will appear here before kick-off.</p>}{selectedFixture.officialMinutes && Object.keys(selectedFixture.officialMinutes).length > 0 && <div className="minutes-played"><h3>Minutes played</h3><ul>{Object.entries(selectedFixture.officialMinutes).sort((a, b) => b[1] - a[1]).map(([id, mins]) => { const player = playersResult.items.find((item) => item.id === id); const started = (selectedFixture.startingPlayerIds ?? []).includes(id); return <li key={id}><span>{player?.number != null ? <b>{player.number}</b> : null}{player?.name ?? id}</span><small>{started ? (mins < 90 ? 'Subbed off' : 'Full match') : 'Came on'}</small><strong>{mins}′</strong></li> })}</ul><p className="live-help">From the club's official match sheet.</p></div>}</section>}
     {currentTab === 'stats' && <section className="matchday-stats-view"><div className="matchday-section-title"><h2>Match stats</h2><span>Live comparison</span></div>{(['shots', 'shotsOnTarget', 'shotsOffTarget', 'corners', 'fouls', 'offsides'] as const).map((key) => { const value = (stats: MatchStats) => key === 'shotsOffTarget' ? Math.max(0, stats.shots - stats.shotsOnTarget) : stats[key]; const home = value(homeStats); const away = value(awayStats); const total = Math.max(1, home, away); return <div className="match-stat-compare" key={key}><div><strong>{home}</strong><span>{key === 'shotsOnTarget' ? 'Shots on target' : key === 'shotsOffTarget' ? 'Shots off target' : key[0].toUpperCase() + key.slice(1)}</span><strong>{away}</strong></div><div className="match-stat-bars"><i style={{ width: `${home / total * 50}%` }} /><i style={{ width: `${away / total * 50}%` }} /></div></div> })}<div className="matchday-stat-legend"><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div></section>}
+    {currentTab === 'chat' && <MatchChat key={`chat-${selectedFixture.id}`} fixture={selectedFixture} />}
     {currentTab === 'vote' && <section className="matchday-vote"><MotmCard fixture={selectedFixture} players={clubPlayers} /></section>}
     {isFinished && <MatchSummary fixture={selectedFixture} onEdit={isAdmin ? () => void resetMatch('edit') : undefined} />}
     {!selectedFixture.isTest && selectedFixture.status !== 'upcoming' && <MatchMedia key={selectedFixture.id} fixture={selectedFixture} />}
