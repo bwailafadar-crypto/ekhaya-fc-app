@@ -278,3 +278,11 @@ test('fan chat: signed-in fans can chat only while the chat is open', async () =
   await assertSucceeds(deleteDoc(doc(fan, 'fixtures/live-1/chat/m1')))
   await assertSucceeds(deleteDoc(doc(admin, 'fixtures/live-1/chat/a1')))
 })
+
+test('app switches can be read before sign-in, but not changed', async () => {
+  await seedDocument('appConfig/flags', { flags: { googleSignIn: true }, notice: '' })
+  const visitor = testEnvironment.unauthenticatedContext().firestore()
+  await assertSucceeds(getDoc(doc(visitor, 'appConfig/flags')))
+  await assertFails(setDoc(doc(visitor, 'appConfig/flags'), { flags: {}, notice: 'x', updatedAt: serverTimestamp() }))
+  await assertFails(getDoc(doc(visitor, 'appConfig/other')))
+})

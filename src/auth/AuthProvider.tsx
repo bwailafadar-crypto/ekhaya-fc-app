@@ -25,6 +25,14 @@ function readProfile(data: Record<string, unknown> | undefined): UserProfile | n
 
 // Phones and installed apps sign in within the same tab: pop-up tabs on
 // mobile browsers often fail to hand the result back to the app.
+// Set just before leaving for Google's page, so the app only loads the
+// Google helper on start when a fan is actually coming back from Google.
+const GOOGLE_REDIRECT_KEY = 'ekhaya-google-redirect'
+function goToGoogle(provider: GoogleAuthProvider) {
+  try { sessionStorage.setItem(GOOGLE_REDIRECT_KEY, '1') } catch { /* storage blocked */ }
+  return signInWithRedirect(auth, provider, browserPopupRedirectResolver)
+}
+
 function prefersRedirect() {
   if (typeof window === 'undefined') return false
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches
@@ -80,7 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const startupTimer = window.setTimeout(() => { if (mounted) setLoading(false) }, 6000)
     // Finishes a Google sign-in that used a full-page redirect (only when
     // Google sign-in is switched on) and keeps any error for the sign-in page.
-    if (import.meta.env.VITE_ENABLE_GOOGLE_SIGNIN === 'true') {
+    let cameFromGoogle = false
+    try { cameFromGoogle = sessionStorage.getItem(GOOGLE_REDIRECT_KEY) === '1'; sessionStorage.removeItem(GOOGLE_REDIRECT_KEY) } catch { /* storage blocked */ }
+    if (cameFromGoogle) {
       void getRedirectResult(auth, browserPopupRedirectResolver).catch((error: unknown) => { if (mounted) setGoogleError(error) })
     }
     let previousUser: { uid: string; email: string | null } | null = null
@@ -158,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const provider = new GoogleAuthProvider()
     provider.setCustomParameters({ prompt: 'select_account' })
     if (prefersRedirect()) {
-      await signInWithRedirect(auth, provider, browserPopupRedirectResolver)
+      await goToGoogle(provider)
       return
     }
     try {
@@ -166,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       const code = (error as { code?: string }).code
       if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment' || code === 'auth/network-request-failed') {
-        await signInWithRedirect(auth, provider, browserPopupRedirectResolver)
+        await goToGoogle(provider)
         return
       }
       throw error

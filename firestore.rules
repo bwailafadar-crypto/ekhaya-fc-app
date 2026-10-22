@@ -398,7 +398,8 @@ service cloud.firestore {
 
     // Feature flags and the club-wide notice. Only the superadmin changes them.
     match /appConfig/{docId} {
-      allow read: if signedIn();
+      // Switches and the club notice are not secret: the sign-in page reads them too.
+      allow read: if docId == 'flags' || signedIn();
       allow write: if isSuperadmin()
         && request.resource.data.keys().hasOnly(['flags', 'notice', 'updatedAt'])
         && request.resource.data.flags is map
