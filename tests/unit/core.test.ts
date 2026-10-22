@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { buildMatchSnapshot, buildTeamsSnapshot, fingerprint, SNAPSHOT_MAX_BYTES } from '../../src/data/snapshotPayload.ts'
 import type { Fixture } from '../../src/types.ts'
-import { matchAlerts, newsAlert } from '../../src/utils/alertRules.ts'
+import { cardAlert, matchAlerts, newsAlert } from '../../src/utils/alertRules.ts'
 import { isLiveNow, isPlayed } from '../../src/utils/football.ts'
 import { currentEventMinute, matchMinute } from '../../src/utils/matchClock.ts'
 import { autoStories } from '../../src/utils/stories.ts'
@@ -186,4 +186,15 @@ test('videos: YouTube and Facebook links are understood, anything else is refuse
   assert.equal(parseVideo('https://www.facebook.com/EkhayaFC'), null)
   assert.equal(parseVideo('https://example.com/video.mp4'), null)
   assert.equal(parseVideo('not a link'), null)
+})
+
+test('card alerts: one per card in a live Ekhaya match, never for practice or other matches', () => {
+  const live = { id: 'm1', home: 'Ekhaya FC', away: 'Blue Eagles', status: 'live' as const, homeScore: 1, awayScore: 0, kickoffAt: { seconds: 5 } as never }
+  const yellow = cardAlert(live, { id: 'e1', kind: 'card', card: 'yellow', minute: 40, team: 'Blue Eagles', playerName: 'No. 6' })
+  assert.ok(yellow && yellow.title.includes('Yellow card') && yellow.title.includes("40'") && yellow.body.includes('Ekhaya FC 1–0 Blue Eagles'))
+  const red = cardAlert(live, { id: 'e2', kind: 'card', card: 'red', minute: 61, team: 'Ekhaya FC', playerName: 'Charles Mafaiti' })
+  assert.ok(red && red.title.includes('Red card') && red.key !== yellow?.key)
+  assert.equal(cardAlert({ ...live, isTest: true }, { id: 'e3', kind: 'card', card: 'red', minute: 1, team: 'Ekhaya FC' }), null)
+  assert.equal(cardAlert({ ...live, home: 'Red Lions', away: 'Blue Eagles' }, { id: 'e4', kind: 'card', card: 'red', minute: 1, team: 'Red Lions' }), null)
+  assert.equal(cardAlert(live, { id: 'e5', kind: 'goal', minute: 1, team: 'Ekhaya FC' }), null)
 })

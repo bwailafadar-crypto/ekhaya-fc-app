@@ -1,6 +1,6 @@
 // Decides which push alert a match or news change should send.
 // Pure functions (no Firebase) so they are easy to test.
-import type { Fixture, NewsItem } from '../types'
+import type { Fixture, MatchEvent, NewsItem } from '../types'
 
 export type AlertKind = 'match' | 'news'
 export type PlannedAlert = { key: string; kind: AlertKind; title: string; body: string; path: string; scorerTeam?: string }
@@ -61,4 +61,18 @@ export function newsAlert(before: Pick<NewsItem, 'status'> | undefined, after: (
   if (!after || after.status !== 'published') return null
   if (before?.status === 'published') return null
   return { key: `news-${after.id}`, kind: 'news', title: 'Ekhaya FC News', body: String(after.title || 'New article').slice(0, 140), path: `/news/${after.id}` }
+}
+
+/** Yellow and red cards in a live Ekhaya match (one alert per card). */
+export function cardAlert(fixture: FixtureLike, event: Pick<MatchEvent, 'kind' | 'card' | 'minute' | 'team'> & { id: string; playerName?: string }): PlannedAlert | null {
+  if (event.kind !== 'card' || fixture.isTest || fixture.editing || fixture.status !== 'live' || !isClubMatch(fixture)) return null
+  const red = event.card === 'red'
+  const who = event.playerName ? `${event.playerName} (${event.team})` : event.team
+  return {
+    key: `${fixture.id}-${fixture.kickoffAt?.seconds ?? 'k'}-card-${event.id}`,
+    kind: 'match',
+    title: `${red ? '🟥 Red card' : '🟨 Yellow card'} · ${event.minute}'`,
+    body: `${who} · ${scoreLine(fixture)}`,
+    path: `/live?match=${fixture.id}`,
+  }
 }

@@ -53,7 +53,7 @@ export default function AlertsPrompt() {
       <span className="alerts-prompt-icon" aria-hidden="true"><BellRing size={22} /></span>
       <div className="alerts-prompt-copy">
         <strong id="alerts-prompt-title">Never miss a goal</strong>
-        <span>Get kick-off, goals and full-time alerts from Ekhaya FC.</span>
+        <span>Get team news, kick-off, goals, red and yellow cards and full time on your phone, even when the app is closed.</span>
       </div>
       <div className="alerts-prompt-actions">
         <button className="button button-primary" type="button" disabled={busy} onClick={() => void turnOn()}>{busy ? 'Turning on…' : 'Turn on alerts'}</button>

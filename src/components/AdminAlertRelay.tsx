@@ -3,8 +3,8 @@ import { config } from '../config'
 import { useEffect } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
-import type { Fixture, NewsItem } from '../types'
-import { matchAlerts, newsAlert, type PlannedAlert } from '../utils/alertRules'
+import type { Fixture, MatchEvent, NewsItem } from '../types'
+import { cardAlert, isClubMatch, matchAlerts, newsAlert, type PlannedAlert } from '../utils/alertRules'
 import { dispatchAlert, githubKey } from '../utils/githubAlerts'
 import { recalculateLeaderboard } from '../utils/leaderboardStore'
 import { useToast } from './ToastContext'
@@ -77,9 +77,29 @@ export default function AdminAlertRelay() {
       }
     }
 
+    // Cards come from the commentary, so listen to the events of live Ekhaya matches.
+    const eventWatchers = new Map<string, () => void>()
+    const watchEvents = (fixture: Fixture) => {
+      const live = fixture.status === 'live' && !fixture.isTest && isClubMatch(fixture)
+      if (live && !eventWatchers.has(fixture.id)) {
+        let ready = false
+        eventWatchers.set(fixture.id, onSnapshot(collection(db, 'fixtures', fixture.id, 'events'), (snapshot) => {
+          if (ready) snapshot.docChanges().forEach((change) => {
+            if (change.type !== 'added') return
+            const current = lastFixtures.get(fixture.id) ?? fixture
+            const alert = cardAlert(current, { ...(change.doc.data() as MatchEvent), id: change.doc.id })
+            if (alert) void send(alert, fixture.id)
+          })
+          ready = true
+        }, () => undefined))
+      }
+      if (!live && eventWatchers.has(fixture.id)) { eventWatchers.get(fixture.id)?.(); eventWatchers.delete(fixture.id) }
+    }
+
     const stopFixtures = onSnapshot(collection(db, 'fixtures'), (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         const after = { ...(change.doc.data() as Fixture), id: change.doc.id }
+        if (change.type !== 'removed') watchEvents(after)
         const before = lastFixtures.get(change.doc.id)
         if (change.type === 'removed') { lastFixtures.delete(change.doc.id); return }
         lastFixtures.set(change.doc.id, after)
@@ -116,7 +136,7 @@ export default function AdminAlertRelay() {
     const pointsFirst = window.setTimeout(() => void refreshPointsIfOld(), 20000)
     const pointsTimer = window.setInterval(() => void refreshPointsIfOld(), 30 * 60000)
 
-    return () => { active = false; window.clearTimeout(leaderboardTimer); window.clearTimeout(pointsFirst); window.clearInterval(pointsTimer); stopFixtures(); stopNews() }
+    return () => { active = false; window.clearTimeout(leaderboardTimer); window.clearTimeout(pointsFirst); window.clearInterval(pointsTimer); eventWatchers.forEach((stop) => stop()); stopFixtures(); stopNews() }
   }, [isAdmin, showToast])
 
   return null

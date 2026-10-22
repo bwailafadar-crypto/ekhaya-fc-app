@@ -12,7 +12,11 @@ export default function ForegroundAlerts() {
     let stop: (() => void) | undefined
     let cancelled = false
     void import('../utils/push')
-      .then(({ listenForForegroundAlerts }) => listenForForegroundAlerts((title, body) => showToast(body ? `${title} · ${body}` : title, 'info')))
+      .then(({ listenForForegroundAlerts }) => listenForForegroundAlerts((title, body) => {
+        // Match moments already drop down as a live banner inside the app (LiveAlerts).
+        if (/goal|kick-off|full time|half-time|second half|team news|card|scores!/i.test(title)) return
+        showToast(body ? `${title} · ${body}` : title, 'info')
+      }))
       .then((unsubscribe) => { if (cancelled) unsubscribe(); else stop = unsubscribe })
       .catch(() => undefined)
     return () => { cancelled = true; stop?.() }

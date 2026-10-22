@@ -2130,3 +2130,22 @@ select.auth-input { appearance: auto; }
   .score-pop, .fan-level-badge, .matchday-reactions button.selected span, .matchday-lineups, .matchday-stats-view, .live-timeline, .motm-spotlight { animation: none !important; }
   .home-hero::after, .home-live-banner::after, .digital-membership-card::after, .fan-level-card::after { display: none; }
 }
+
+/* update-100: live match alerts inside the app */
+@keyframes live-alert-in { 0% { opacity: 0; transform: translate(-50%, -120%) scale(.96); } 60% { opacity: 1; transform: translate(-50%, 6px) scale(1.02); } 100% { transform: translate(-50%, 0); } }
+@keyframes live-alert-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes live-alert-goal { 0%, 100% { transform: scale(1) rotate(0); } 25% { transform: scale(1.25) rotate(-14deg); } 75% { transform: scale(1.25) rotate(14deg); } }
+.live-alert { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 50%; z-index: 9000; display: flex; align-items: stretch; width: min(440px, calc(100% - 20px)); overflow: hidden; color: #1B1A16; background: linear-gradient(120deg, #FFFFFF, #FFF6D8); border: 1px solid rgb(158 124 18 / 35%); border-radius: 16px; box-shadow: 0 14px 34px rgb(14 14 14 / 22%); transform: translateX(-50%); animation: live-alert-in 520ms cubic-bezier(.2,.8,.3,1.1) both; }
+.live-alert::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--gold); transform-origin: left; animation: live-alert-timer 6s linear forwards; }
+.live-alert-goal { color: #fff; background: linear-gradient(120deg, #9E7C12, #C9A227 50%, #E9C95A); border-color: #C9A227; }
+.live-alert-goal::after { background: #fff; }
+.live-alert-red { border-left: 6px solid #C62828; }
+.live-alert-yellow { border-left: 6px solid #F2C200; }
+.live-alert-main { display: flex; flex: 1; align-items: center; gap: 12px; padding: 12px 6px 12px 14px; color: inherit; background: none; border: 0; font: inherit; text-align: left; cursor: pointer; }
+.live-alert-icon { flex: 0 0 auto; font-size: 26px; }
+.live-alert-goal .live-alert-icon { animation: live-alert-goal 700ms ease-in-out 2; }
+.live-alert-text { display: grid; min-width: 0; }
+.live-alert-text strong { font-family: Oswald, sans-serif; font-size: 16px; letter-spacing: .02em; }
+.live-alert-text small { overflow: hidden; color: inherit; opacity: .85; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.live-alert-close { padding: 0 12px; color: inherit; background: none; border: 0; opacity: .7; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .live-alert, .live-alert::after, .live-alert-goal .live-alert-icon { animation: none; } .live-alert { transform: translateX(-50%); } }

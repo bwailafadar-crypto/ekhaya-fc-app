@@ -11,6 +11,7 @@ import AlertsPrompt from './AlertsPrompt'
 import CommunitySync from './CommunitySync'
 import SnapshotPublisher from './SnapshotPublisher'
 import AutoShrinkImages from './AutoShrinkImages'
+import LiveAlerts from './LiveAlerts'
 import { useFlag, useNotice } from '../hooks/useFlag'
 import { config } from '../config'
 
@@ -108,6 +109,7 @@ export default function Layout() {
         <CommunitySync />
         <SnapshotPublisher />
         <AutoShrinkImages />
+        <LiveAlerts />
 
         <main className="content">
           <div key={pathname} className="page-transition">
