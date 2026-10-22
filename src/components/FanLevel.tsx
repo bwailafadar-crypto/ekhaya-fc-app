@@ -4,6 +4,7 @@ import { useMyDoc } from '../hooks/useCounts'
 import { useMyFanPoints } from '../hooks/useFanPoints'
 import { FAN_POINTS, LEVELS, levelFor, POINTS_EXACT, POINTS_RESULT, type FanPointsRow } from '../utils/leaderboardCalc'
 import { Card, Skeleton } from './UI'
+import CountUp from './CountUp'
 
 type Board = { rows?: Array<Omit<FanPointsRow, 'breakdown'>>; totalFans?: number }
 
@@ -18,7 +19,7 @@ export function FanLevelCard() {
   return <Card className="fz-card fan-level-card">
     <div className="fan-level-top">
       <span className={`fan-level-badge level-${level.index}`}><Award size={22} aria-hidden="true" /></span>
-      <div><small>Your fan level</small><strong>{level.name}</strong><span>{loading ? '…' : `${points} point${points === 1 ? '' : 's'}${mine?.rank ? ` · #${mine.rank} of ${mine.totalFans ?? '?'} fan${mine.totalFans === 1 ? '' : 's'}` : ''}`}</span></div>
+      <div><small>Your fan level</small><strong>{level.name}</strong><span>{loading ? '…' : <><CountUp value={points} /> point{points === 1 ? '' : 's'}{mine?.rank ? ` · #${mine.rank} of ${mine.totalFans ?? '?'} fan${mine.totalFans === 1 ? '' : 's'}` : ''}</>}</span></div>
     </div>
     <div className="fan-level-bar" aria-label={level.next ? `${progress}% of the way to ${level.next.name}` : 'Top level reached'}><i style={{ width: `${progress}%` }} /></div>
     <p className="fz-note">{level.next ? `${level.next.from - points} more point${level.next.from - points === 1 ? '' : 's'} to ${level.next.name}` : 'You reached the top level. Ekhaya legend!'}</p>

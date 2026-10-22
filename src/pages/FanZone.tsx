@@ -17,6 +17,7 @@ import type { Fixture, Player, Poll, PollVote, ScorePrediction } from '../types'
 import { formatMalawiDate, formatMalawiTime, isPlayed, sortByDate } from '../utils/football'
 import { percent, saveErrorText } from '../utils/fanZone'
 import MotmCard, { ResultBar } from '../components/MotmCard'
+import { burst } from '../utils/celebrate'
 
 const MAX_GOALS = 20
 
@@ -65,7 +66,7 @@ function PredictCard({ fixture }: { fixture: Fixture }) {
   const total = totals.counts.total ?? 0
   const popular = Object.entries(totals.counts).filter(([key, count]) => key !== 'total' && count > 0).sort((a, b) => b[1] - a[1]).slice(0, 3)
 
-  async function save() {
+  async function save(button?: HTMLElement | null) {
     if (!user) return
     setSaving(true)
     try {
@@ -75,6 +76,7 @@ function PredictCard({ fixture }: { fixture: Fixture }) {
       setDraft(null)
       setVersion((value) => value + 1)
       showToast(`Prediction saved: ${fixture.home} ${home}–${away} ${fixture.away}`)
+      burst(button ?? null)
     } catch (error) {
       showToast(locked ? 'Predictions are closed for this match.' : saveErrorText(error, 'Your prediction was not saved. Check your connection and try again.'), 'error')
     } finally {
@@ -94,7 +96,7 @@ function PredictCard({ fixture }: { fixture: Fixture }) {
       </div>
       {locked
         ? <p className="fz-note"><Lock size={14} aria-hidden="true" /> Predictions are closed.{mine.data ? ` You said ${mine.data.home}–${mine.data.away}.` : ''}</p>
-        : <Button type="button" disabled={saving || (!changed && Boolean(mine.data))} onClick={() => void save()}>{saving ? 'Saving...' : mine.data ? (changed ? 'Update prediction' : 'Prediction saved ✓') : 'Save prediction'}</Button>}
+        : <Button type="button" disabled={saving || (!changed && Boolean(mine.data))} onClick={(event) => void save(event.currentTarget)}>{saving ? 'Saving...' : mine.data ? (changed ? 'Update prediction' : 'Prediction saved ✓') : 'Save prediction'}</Button>}
       {total > 0 && <div className="fz-popular">
         <span>{total} fan{total === 1 ? '' : 's'} predicted</span>
         {showPopular && popular.length > 0 && <div className="fz-chips">{popular.map(([score, count]) => <span className="fz-chip" key={score}>{score} <small>{percent(count, total)}%</small></span>)}</div>}
@@ -148,11 +150,12 @@ function PollCard({ poll }: { poll: Poll }) {
   const total = counts.reduce((sum, count) => sum + count, 0)
   const top = Math.max(...counts, 0)
 
-  async function vote(option: number) {
+  async function vote(option: number, button?: HTMLElement | null) {
     if (!user || closed) return
     setSaving(option)
     try {
       await setDoc(doc(db, 'polls', poll.id, 'votes', user.uid), { option, updatedAt: serverTimestamp() })
+      burst(button ?? null, 14)
       setVersion((value) => value + 1)
     } catch (error) {
       showToast(saveErrorText(error, 'Your vote was not saved. Check your connection and try again.'), 'error')
@@ -166,7 +169,7 @@ function PollCard({ poll }: { poll: Poll }) {
       <div className="fz-card-heading"><Vote size={18} aria-hidden="true" /><div><h2>{poll.question}</h2><span>{closed ? 'Final results' : 'Club poll'}{showResults ? ` · ${total} vote${total === 1 ? '' : 's'}` : ''}</span></div></div>
       {showResults
         ? (live.loading ? <Skeleton className="fz-board-skeleton" /> : <div className="fz-bars">{poll.options.map((option, index) => <ResultBar key={option + index} label={option} value={counts[index]} total={total} mine={mine.data?.option === index} leading={top > 0 && counts[index] === top} />)}</div>)
-        : <div className="fz-options">{poll.options.map((option, index) => <button key={option + index} type="button" className="fz-option" disabled={saving >= 0} onClick={() => void vote(index)}>{saving === index ? 'Voting...' : option}</button>)}</div>}
+        : <div className="fz-options">{poll.options.map((option, index) => <button key={option + index} type="button" className="fz-option" disabled={saving >= 0} onClick={(event) => void vote(index, event.currentTarget)}>{saving === index ? 'Voting...' : option}</button>)}</div>}
       {mine.data && !closed && <div className="fz-options fz-options-small">{poll.options.map((option, index) => index !== mine.data?.option && <button key={option + index} type="button" className="fz-option" disabled={saving >= 0} onClick={() => void vote(index)}>Switch to {option}</button>)}</div>}
     </Card>
   )

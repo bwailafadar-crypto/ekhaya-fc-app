@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import PlayerAvatar from '../components/PlayerAvatar'
+import CountUp from '../components/CountUp'
 import TeamLogo from '../components/TeamLogo'
 import { useToast } from '../components/ToastContext'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
@@ -121,10 +122,10 @@ export default function PlayerDetailPage() {
       </section>
 
       <section className="player-headline-stats" aria-label="Season at a glance">
-        <div><strong className="number">{player.stats?.appearances ?? 0}</strong><span>Apps</span></div>
-        <div><strong className="number">{player.stats?.goals ?? 0}</strong><span>Goals</span></div>
-        <div><strong className="number">{player.stats?.assists ?? 0}</strong><span>Assists</span></div>
-        <div><strong className="number">{awards.length}</strong><span>MOTM</span></div>
+        <div><strong className="number"><CountUp value={player.stats?.appearances ?? 0} /></strong><span>Apps</span></div>
+        <div><strong className="number"><CountUp value={player.stats?.goals ?? 0} /></strong><span>Goals</span></div>
+        <div><strong className="number"><CountUp value={player.stats?.assists ?? 0} /></strong><span>Assists</span></div>
+        <div><strong className="number"><CountUp value={awards.length} /></strong><span>MOTM</span></div>
       </section>
 
       {awards.length > 0 && <section className="player-awards" aria-label="Man of the match awards">

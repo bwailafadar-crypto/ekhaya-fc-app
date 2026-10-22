@@ -1962,3 +1962,171 @@ select.auth-input { appearance: auto; }
 .sq-paste-preview li span { font-weight: 700; }
 .sq-paste-preview li.new span { color: #1E8E3E; }
 .sq-paste-preview li small { color: var(--muted); }
+
+
+/* ===== update-99: motion ===== */
+@keyframes m-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes m-slide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+@keyframes m-pop { 0% { opacity: 0; transform: scale(.4) translateY(12px); } 70% { opacity: 1; transform: scale(1.08); } 100% { transform: none; } }
+@keyframes m-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes m-score { 0% { transform: scale(1); } 30% { transform: scale(1.35); color: #F2C200; text-shadow: 0 0 18px rgb(242 194 0 / 70%); } 100% { transform: scale(1); } }
+@keyframes m-shine { 0%, 70% { transform: translateX(-120%) skewX(-18deg); } 100% { transform: translateX(220%) skewX(-18deg); } }
+@keyframes m-glow { 0%, 100% { background-color: #FFF1B8; } 50% { background-color: #FFE27A; } }
+@keyframes m-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes m-badge { 0% { transform: scale(.6) rotate(-12deg); opacity: 0; } 60% { transform: scale(1.15) rotate(4deg); opacity: 1; } 100% { transform: none; } }
+
+/* Pages: each section rises in, one after another */
+.page-transition > * { animation: m-rise 340ms cubic-bezier(.2,.7,.2,1) both; }
+.page-transition > *:nth-child(2) { animation-delay: 40ms; }
+.page-transition > *:nth-child(3) { animation-delay: 80ms; }
+.page-transition > *:nth-child(4) { animation-delay: 120ms; }
+.page-transition > *:nth-child(5) { animation-delay: 160ms; }
+.page-transition > *:nth-child(6) { animation-delay: 200ms; }
+.page-transition > *:nth-child(7) { animation-delay: 240ms; }
+.page-transition > *:nth-child(8) { animation-delay: 280ms; }
+.page-transition > *:nth-child(9) { animation-delay: 320ms; }
+.page-transition > *:nth-child(10) { animation-delay: 360ms; }
+
+/* Lists: rows slide in one by one */
+.fz-board li, .player-log li, .menu-item, .minutes-played li, .lineup-subs li, .gps-list li, .fz-players .fz-player, .sq-list .sq-row { animation: m-slide 360ms ease-out both; }
+.fz-board li:nth-child(2) { animation-delay: 45ms; }
+.fz-board li:nth-child(3) { animation-delay: 90ms; }
+.fz-board li:nth-child(4) { animation-delay: 135ms; }
+.fz-board li:nth-child(5) { animation-delay: 180ms; }
+.fz-board li:nth-child(6) { animation-delay: 225ms; }
+.fz-board li:nth-child(7) { animation-delay: 270ms; }
+.fz-board li:nth-child(8) { animation-delay: 315ms; }
+.fz-board li:nth-child(9) { animation-delay: 360ms; }
+.fz-board li:nth-child(10) { animation-delay: 405ms; }
+.fz-board li:nth-child(11) { animation-delay: 450ms; }
+.fz-board li:nth-child(12) { animation-delay: 495ms; }
+.player-log li:nth-child(2) { animation-delay: 50ms; }
+.player-log li:nth-child(3) { animation-delay: 100ms; }
+.player-log li:nth-child(4) { animation-delay: 150ms; }
+.player-log li:nth-child(5) { animation-delay: 200ms; }
+.player-log li:nth-child(6) { animation-delay: 250ms; }
+.player-log li:nth-child(7) { animation-delay: 300ms; }
+.player-log li:nth-child(8) { animation-delay: 350ms; }
+.menu-item:nth-child(2) { animation-delay: 35ms; }
+.menu-item:nth-child(3) { animation-delay: 70ms; }
+.menu-item:nth-child(4) { animation-delay: 105ms; }
+.menu-item:nth-child(5) { animation-delay: 140ms; }
+.menu-item:nth-child(6) { animation-delay: 175ms; }
+.menu-item:nth-child(7) { animation-delay: 210ms; }
+.menu-item:nth-child(8) { animation-delay: 245ms; }
+.menu-item:nth-child(9) { animation-delay: 280ms; }
+.menu-item:nth-child(10) { animation-delay: 315ms; }
+.menu-item:nth-child(11) { animation-delay: 350ms; }
+.menu-item:nth-child(12) { animation-delay: 385ms; }
+.menu-item:nth-child(13) { animation-delay: 420ms; }
+.menu-item:nth-child(14) { animation-delay: 455ms; }
+.minutes-played li:nth-child(2) { animation-delay: 30ms; }
+.minutes-played li:nth-child(3) { animation-delay: 60ms; }
+.minutes-played li:nth-child(4) { animation-delay: 90ms; }
+.minutes-played li:nth-child(5) { animation-delay: 120ms; }
+.minutes-played li:nth-child(6) { animation-delay: 150ms; }
+.minutes-played li:nth-child(7) { animation-delay: 180ms; }
+.minutes-played li:nth-child(8) { animation-delay: 210ms; }
+.minutes-played li:nth-child(9) { animation-delay: 240ms; }
+.minutes-played li:nth-child(10) { animation-delay: 270ms; }
+.minutes-played li:nth-child(11) { animation-delay: 300ms; }
+.minutes-played li:nth-child(12) { animation-delay: 330ms; }
+.minutes-played li:nth-child(13) { animation-delay: 360ms; }
+.minutes-played li:nth-child(14) { animation-delay: 390ms; }
+.minutes-played li:nth-child(15) { animation-delay: 420ms; }
+.minutes-played li:nth-child(16) { animation-delay: 450ms; }
+.minutes-played li:nth-child(17) { animation-delay: 480ms; }
+.minutes-played li:nth-child(18) { animation-delay: 510ms; }
+.minutes-played li:nth-child(19) { animation-delay: 540ms; }
+.minutes-played li:nth-child(20) { animation-delay: 570ms; }
+.lineup-subs li:nth-child(2) { animation-delay: 40ms; }
+.lineup-subs li:nth-child(3) { animation-delay: 80ms; }
+.lineup-subs li:nth-child(4) { animation-delay: 120ms; }
+.lineup-subs li:nth-child(5) { animation-delay: 160ms; }
+.lineup-subs li:nth-child(6) { animation-delay: 200ms; }
+.lineup-subs li:nth-child(7) { animation-delay: 240ms; }
+.lineup-subs li:nth-child(8) { animation-delay: 280ms; }
+.lineup-subs li:nth-child(9) { animation-delay: 320ms; }
+.lineup-subs li:nth-child(10) { animation-delay: 360ms; }
+.lineup-subs li:nth-child(11) { animation-delay: 400ms; }
+.lineup-subs li:nth-child(12) { animation-delay: 440ms; }
+.lineup-subs li:nth-child(13) { animation-delay: 480ms; }
+.lineup-subs li:nth-child(14) { animation-delay: 520ms; }
+.fz-players .fz-player:nth-child(2) { animation-delay: 30ms; }
+.fz-players .fz-player:nth-child(3) { animation-delay: 60ms; }
+.fz-players .fz-player:nth-child(4) { animation-delay: 90ms; }
+.fz-players .fz-player:nth-child(5) { animation-delay: 120ms; }
+.fz-players .fz-player:nth-child(6) { animation-delay: 150ms; }
+.fz-players .fz-player:nth-child(7) { animation-delay: 180ms; }
+.fz-players .fz-player:nth-child(8) { animation-delay: 210ms; }
+.fz-players .fz-player:nth-child(9) { animation-delay: 240ms; }
+.fz-players .fz-player:nth-child(10) { animation-delay: 270ms; }
+.fz-players .fz-player:nth-child(11) { animation-delay: 300ms; }
+.fz-players .fz-player:nth-child(12) { animation-delay: 330ms; }
+.fz-players .fz-player:nth-child(13) { animation-delay: 360ms; }
+.fz-players .fz-player:nth-child(14) { animation-delay: 390ms; }
+.fz-players .fz-player:nth-child(15) { animation-delay: 420ms; }
+.fz-players .fz-player:nth-child(16) { animation-delay: 450ms; }
+.fz-players .fz-player:nth-child(17) { animation-delay: 480ms; }
+.fz-players .fz-player:nth-child(18) { animation-delay: 510ms; }
+.fz-players .fz-player:nth-child(19) { animation-delay: 540ms; }
+.fz-players .fz-player:nth-child(20) { animation-delay: 570ms; }
+.standings-table tbody tr { animation: m-rise 380ms ease-out both; }
+.standings-table tbody tr:nth-child(2) { animation-delay: 35ms; }
+.standings-table tbody tr:nth-child(3) { animation-delay: 70ms; }
+.standings-table tbody tr:nth-child(4) { animation-delay: 105ms; }
+.standings-table tbody tr:nth-child(5) { animation-delay: 140ms; }
+.standings-table tbody tr:nth-child(6) { animation-delay: 175ms; }
+.standings-table tbody tr:nth-child(7) { animation-delay: 210ms; }
+.standings-table tbody tr:nth-child(8) { animation-delay: 245ms; }
+.standings-table tbody tr:nth-child(9) { animation-delay: 280ms; }
+.standings-table tbody tr:nth-child(10) { animation-delay: 315ms; }
+.standings-table tbody tr:nth-child(11) { animation-delay: 350ms; }
+.standings-table tbody tr:nth-child(12) { animation-delay: 385ms; }
+.standings-table tbody tr:nth-child(13) { animation-delay: 420ms; }
+.standings-table tbody tr:nth-child(14) { animation-delay: 455ms; }
+.standings-table tbody tr:nth-child(15) { animation-delay: 490ms; }
+.standings-table tbody tr:nth-child(16) { animation-delay: 525ms; }
+.standings-table tr.standings-ekhaya { animation: m-rise 380ms ease-out both, m-glow 1.6s ease-in-out 700ms 2; }
+
+/* Line-up: players pop onto the pitch, goalkeeper first */
+.pitch-player { animation: m-pop 460ms cubic-bezier(.2,.8,.3,1.2) both; }
+.pitch-row:nth-last-child(1) .pitch-player { animation-delay: 80ms; }
+.pitch-row:nth-last-child(2) .pitch-player { animation-delay: 200ms; }
+.pitch-row:nth-last-child(3) .pitch-player { animation-delay: 320ms; }
+.pitch-row:nth-last-child(4) .pitch-player { animation-delay: 440ms; }
+.pitch-row:nth-last-child(5) .pitch-player { animation-delay: 560ms; }
+.pitch-sub-off, .pitch-goals, .pitch-card { animation: m-badge 420ms ease-out 900ms both; }
+
+/* Bars fill from the left (polls, man of the match, fan level) */
+.fz-bar-fill, .fan-level-bar i, .gps-bar i, .match-stat-bars i { transform-origin: left center; animation: m-grow 900ms cubic-bezier(.2,.7,.2,1) 200ms both; }
+.match-stat-bars i:last-child { transform-origin: right center; }
+
+/* The score jumps when it changes */
+.score-pop { display: inline-block; animation: m-score 900ms ease-out; }
+
+/* Gold shine across the home banner, the live banner and the member card */
+.home-hero, .home-live-banner, .digital-membership-card, .fan-level-card { position: relative; overflow: hidden; }
+.home-hero::after, .home-live-banner::after, .digital-membership-card::after, .fan-level-card::after { content: ''; position: absolute; inset: 0 auto 0 0; width: 40%; background: linear-gradient(90deg, transparent, rgb(255 255 255 / 45%), transparent); pointer-events: none; animation: m-shine 6s ease-in-out 1.2s infinite; }
+.home-live-banner::after { animation-duration: 3.5s; }
+.fan-level-badge { animation: m-badge 600ms ease-out 200ms both, m-float 3.2s ease-in-out 1s infinite; }
+
+/* Tap feedback on everything you can press */
+.menu-item, .home-news-link, .fz-player, .fz-option, .matchday-tabs button, .home-shortcuts a, .squad-card, .match-card, .tv-filter button, .poll-templates button, .matchday-reactions button { transition: transform 140ms ease, box-shadow 160ms ease; }
+.menu-item:active, .home-news-link:active, .fz-player:active, .fz-option:active, .matchday-tabs button:active, .home-shortcuts a:active, .squad-card:active, .match-card:active, .tv-filter button:active, .poll-templates button:active { transform: scale(.97); }
+.matchday-reactions button:active { transform: scale(1.18); }
+.matchday-reactions button.selected span { display: inline-block; animation: m-badge 420ms ease-out; }
+
+/* Tabs in the match centre: content fades in when you switch */
+.matchday-lineups, .matchday-stats-view, .live-timeline, .motm-spotlight { animation: m-rise 360ms ease-out both; }
+
+/* Confetti and floating emoji (see utils/celebrate.ts) */
+.celebrate-layer { position: fixed; inset: 0; z-index: 9999; pointer-events: none; overflow: hidden; }
+.celebrate-layer i, .celebrate-layer span { position: fixed; display: block; will-change: transform, opacity; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition > *, .fz-board li, .player-log li, .menu-item, .minutes-played li, .lineup-subs li, .gps-list li, .fz-players .fz-player, .sq-list .sq-row,
+  .standings-table tbody tr, .standings-table tr.standings-ekhaya, .pitch-player, .pitch-sub-off, .pitch-goals, .pitch-card, .fz-bar-fill, .fan-level-bar i, .gps-bar i, .match-stat-bars i,
+  .score-pop, .fan-level-badge, .matchday-reactions button.selected span, .matchday-lineups, .matchday-stats-view, .live-timeline, .motm-spotlight { animation: none !important; }
+  .home-hero::after, .home-live-banner::after, .digital-membership-card::after, .fan-level-card::after { display: none; }
+}

@@ -6,6 +6,7 @@ import { db } from '../firebase'
 import { useCounts, useMyDoc } from '../hooks/useCounts'
 import type { Fixture, MotmVote, Player } from '../types'
 import { percent, saveErrorText } from '../utils/fanZone'
+import { burst } from '../utils/celebrate'
 import PlayerAvatar from './PlayerAvatar'
 import { useToast } from './ToastContext'
 import { Card, Skeleton } from './UI'
@@ -57,13 +58,14 @@ export default function MotmCard({ fixture, players }: { fixture: Fixture; playe
   const ranked = candidates.slice().sort((a, b) => (tally[b.id] ?? 0) - (tally[a.id] ?? 0))
   const winner = closed && fixture.motmWinnerId ? players.find((player) => player.id === fixture.motmWinnerId) : (ranked[0] && (tally[ranked[0].id] ?? 0) > 0 ? ranked[0] : null)
 
-  async function vote(player: Player) {
+  async function vote(player: Player, button?: HTMLElement | null) {
     if (!user || closed) return
     setSaving(player.id)
     try {
       await setDoc(doc(db, 'fixtures', fixture.id, 'motm', user.uid), { playerId: player.id, updatedAt: serverTimestamp() })
       setVersion((value) => value + 1)
       showToast(`You voted for ${player.name}.`)
+      burst(button ?? null)
     } catch (error) {
       showToast(saveErrorText(error, 'Your vote was not saved. Check your connection and try again.'), 'error')
     } finally {
@@ -80,7 +82,7 @@ export default function MotmCard({ fixture, players }: { fixture: Fixture; playe
             {ranked.slice(0, 8).map((player, index) => <ResultBar key={player.id} label={<><PlayerAvatar player={player} />{player.number ? `${player.number}. ` : ''}{player.name}</>} value={tally[player.id] ?? 0} total={totalVotes} mine={mine.data?.playerId === player.id} leading={index === 0 && (tally[player.id] ?? 0) > 0} />)}
           </div>)
         : <div className="fz-players">
-            {candidates.map((player) => <button key={player.id} type="button" className="fz-player" disabled={Boolean(saving)} onClick={() => void vote(player)}>
+            {candidates.map((player) => <button key={player.id} type="button" className="fz-player" disabled={Boolean(saving)} onClick={(event) => void vote(player, event.currentTarget)}>
               <PlayerAvatar player={player} /><span>{player.number ? <em>{player.number}</em> : null}{player.name}</span>{saving === player.id && <small>Voting...</small>}
             </button>)}
           </div>}
