@@ -50,13 +50,13 @@ service cloud.firestore {
       return get(userPath(request.auth.uid)).data.get('fullName', '');
     }
 
-    function chatIsOpen(match) {
-      return match.get('isTest', false) != true
-        && match.get('chatClosed', false) != true
-        && (match.status == 'live'
-          || (match.status == 'upcoming' && match.get('lineupConfirmed', false) == true)
-          || (match.status == 'finished' && match.get('finishedAt', null) is timestamp
-              && request.time < match.finishedAt + duration.value(2, 'h')));
+    function chatIsOpen(game) {
+      return game.get('isTest', false) != true
+        && game.get('chatClosed', false) != true
+        && (game.status == 'live'
+          || (game.status == 'upcoming' && game.get('lineupConfirmed', false) == true)
+          || (game.status == 'finished' && game.get('finishedAt', null) is timestamp
+              && request.time < game.finishedAt + duration.value(2, 'h')));
     }
 
     function fixtureDoc(fixtureId) {
