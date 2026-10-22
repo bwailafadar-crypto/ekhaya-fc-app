@@ -12,6 +12,7 @@ import './index.css'
 import { captureInviteCode } from './utils/community'
 import { startLiveReconnect } from './utils/liveReconnect'
 import { installGlobalErrorHandlers } from './utils/logger'
+import { reloadOnce } from './utils/reloadOnce'
 import { startAuthDiagnostics } from './utils/authDiagnostics'
 
 // Remember who invited this visitor before the router changes the address.
@@ -24,13 +25,7 @@ startLiveReconnect()
 // If the app was updated while open and an old piece of it is gone, load the
 // new version once instead of showing a broken page.
 window.addEventListener('vite:preloadError', (event) => {
-  try {
-    const last = Number(sessionStorage.getItem('ekhaya-reloaded-at') || 0)
-    if (Date.now() - last < 30000) return
-    sessionStorage.setItem('ekhaya-reloaded-at', String(Date.now()))
-  } catch { /* storage blocked: still try once */ }
-  event.preventDefault()
-  window.location.reload()
+  if (reloadOnce()) event.preventDefault()
 })
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

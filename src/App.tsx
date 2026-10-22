@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { lazyPage } from './utils/lazyPage'
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { ProtectedRoute } from './auth/ProtectedRoute'
@@ -13,24 +14,24 @@ import PwaUpdateNotice from './components/PwaUpdateNotice'
 
 // Only Home and the sign-in pages load up front; every other page downloads
 // the first time it is opened, so the app starts fast on slow connections.
-const AdminPanel = lazy(() => import('./pages/AdminPanel'))
-const PlayerDetailPage = lazy(() => import('./pages/PlayerDetail'))
-const Fixtures = lazy(() => import('./pages/Fixtures'))
-const Results = lazy(() => import('./pages/Results'))
-const LeagueTable = lazy(() => import('./pages/LeagueTable'))
-const LiveMatch = lazy(() => import('./pages/LiveMatch'))
-const Squad = lazy(() => import('./pages/Squad'))
-const News = lazy(() => import('./pages/News'))
-const FanZone = lazy(() => import('./pages/FanZone'))
-const Membership = lazy(() => import('./pages/Membership'))
-const Profile = lazy(() => import('./pages/Profile'))
-const More = lazy(() => import('./pages/More'))
-const InstallPage = lazy(() => import('./pages/InstallPage'))
-const Community = lazy(() => import('./pages/Community'))
-const Competitions = lazy(() => import('./pages/Competitions'))
-const AppHealth = lazy(() => import('./pages/AppHealth'))
-const Tv = lazy(() => import('./pages/Tv'))
-const Club = lazy(() => import('./pages/Club'))
+const AdminPanel = lazyPage(() => import('./pages/AdminPanel'))
+const PlayerDetailPage = lazyPage(() => import('./pages/PlayerDetail'))
+const Fixtures = lazyPage(() => import('./pages/Fixtures'))
+const Results = lazyPage(() => import('./pages/Results'))
+const LeagueTable = lazyPage(() => import('./pages/LeagueTable'))
+const LiveMatch = lazyPage(() => import('./pages/LiveMatch'))
+const Squad = lazyPage(() => import('./pages/Squad'))
+const News = lazyPage(() => import('./pages/News'))
+const FanZone = lazyPage(() => import('./pages/FanZone'))
+const Membership = lazyPage(() => import('./pages/Membership'))
+const Profile = lazyPage(() => import('./pages/Profile'))
+const More = lazyPage(() => import('./pages/More'))
+const InstallPage = lazyPage(() => import('./pages/InstallPage'))
+const Community = lazyPage(() => import('./pages/Community'))
+const Competitions = lazyPage(() => import('./pages/Competitions'))
+const AppHealth = lazyPage(() => import('./pages/AppHealth'))
+const Tv = lazyPage(() => import('./pages/Tv'))
+const Club = lazyPage(() => import('./pages/Club'))
 
 export default function App() {
   return (
