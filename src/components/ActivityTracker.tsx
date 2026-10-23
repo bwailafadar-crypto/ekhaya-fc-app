@@ -51,7 +51,13 @@ export default function ActivityTracker() {
       seconds += TICK / 1000
       if (seconds >= FLUSH_SECONDS) void flush()
     }, TICK)
-    const onHide = () => { if (document.visibilityState === 'hidden' && seconds >= 60) void flush() }
+    // Coming back to the app after 10+ minutes away counts as a new visit.
+    let hiddenAt = 0
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); if (seconds >= 60) void flush(); return }
+      if (hiddenAt && Date.now() - hiddenAt > 10 * 60_000) { visit = true; void flush() }
+      hiddenAt = 0
+    }
     document.addEventListener('visibilitychange', onHide)
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', onHide); void flush() }
   }, [uid])

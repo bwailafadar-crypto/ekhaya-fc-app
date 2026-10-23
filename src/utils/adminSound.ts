@@ -5,7 +5,7 @@ export type AdminSounds = { newFan: boolean; fanOpens: boolean }
 export const SOUNDS_EVENT = 'ekhaya-admin-sounds'
 
 export function getAdminSounds(): AdminSounds {
-  try { return { newFan: true, fanOpens: false, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') } } catch { return { newFan: true, fanOpens: false } }
+  try { return { newFan: true, fanOpens: true, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') } } catch { return { newFan: true, fanOpens: true } }
 }
 export function setAdminSounds(next: AdminSounds) {
   try { localStorage.setItem(KEY, JSON.stringify(next)) } catch { /* storage blocked */ }
