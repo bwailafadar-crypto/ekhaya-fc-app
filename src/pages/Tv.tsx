@@ -13,6 +13,7 @@ import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture } from '../types'
 import { formatMalawiDate, sortByDate } from '../utils/football'
 import { parseVideo, VIDEO_KINDS, type VideoKind } from '../utils/video'
+import { useFlag } from '../hooks/useFlag'
 
 function AddVideo({ fixtures, onDone }: { fixtures: Fixture[]; onDone: () => void }) {
   const { user } = useAuth()
@@ -71,6 +72,7 @@ export default function Tv() {
   const [adding, setAdding] = useState(false)
   // The Facebook feed is heavy on data, so it loads only when the fan asks for it.
   const [showFeed, setShowFeed] = useState(false)
+  const open = useFlag('ekhayaTv')
   const shown = kind === 'All' ? items : items.filter((video) => video.kind === kind)
   const kinds = VIDEO_KINDS.filter((item) => items.some((video) => video.kind === item))
 
@@ -79,7 +81,19 @@ export default function Tv() {
     try { await deleteDoc(doc(db, 'videos', video.id)); showToast('Video removed.') } catch { showToast('The video was not removed.', 'error') }
   }
 
+  // Fans see "Coming soon" until the club switches Ekhaya TV on (Admin → App health).
+  if (!open && !isAdmin) return <>
+    <PageHeader eyebrow="Watch" title="Ekhaya TV" description="Highlights, goals, interviews and training." />
+    <Card className="tv-soon">
+      <span className="tv-soon-icon" aria-hidden="true"><Clapperboard size={34} /></span>
+      <span className="tv-soon-badge">Coming soon</span>
+      <h2>Ekhaya TV is on its way</h2>
+      <p>Match highlights, every goal, player interviews and training videos, all in one place. Watch this space.</p>
+    </Card>
+  </>
+
   return <>
+    {!open && <p className="tv-soon-admin">Fans see <strong>Coming soon</strong> on this page. Switch on "Ekhaya TV open to fans" in Admin → App health when it's ready.</p>}
     <PageHeader eyebrow="Watch" title="Ekhaya TV" description="Highlights, goals, interviews and training." action={isAdmin ? <Button type="button" variant="secondary" icon={<Plus size={16} />} onClick={() => setAdding((value) => !value)}>{adding ? 'Close' : 'Add video'}</Button> : undefined} />
     {adding && <AddVideo fixtures={fixtures.items} onDone={() => setAdding(false)} />}
     {kinds.length > 1 && <div className="tv-filter" role="group" aria-label="Video type">{(['All', ...kinds] as const).map((item) => <button key={item} type="button" className={kind === item ? 'active' : ''} onClick={() => setKind(item)}>{item}</button>)}</div>}

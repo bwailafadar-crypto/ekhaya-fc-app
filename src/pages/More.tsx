@@ -10,7 +10,7 @@ const items = [
   { to: '/results', label: 'Results', icon: Trophy },
   { to: '/squad', label: 'Squad', icon: Users },
   { to: '/news', label: 'News', icon: Newspaper },
-  { to: '/tv', label: 'Ekhaya TV · highlights & interviews', icon: Clapperboard },
+  { to: '/tv', label: 'Ekhaya TV · coming soon', icon: Clapperboard },
   { to: '/club', label: 'Club & honours · trophy cabinet', icon: Landmark },
   { to: '/fanzone', label: 'Fan Zone', icon: Vote },
   { to: '/community', label: 'Fan Family · branches & invites', icon: HeartHandshake },

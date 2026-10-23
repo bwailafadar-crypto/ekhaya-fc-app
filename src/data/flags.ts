@@ -10,6 +10,7 @@ export const FLAGS = {
   celebrationConfetti: { label: 'Confetti on the champions card', default: true },
   smartBars: { label: 'Bars hide while scrolling', default: true },
   googleSignIn: { label: 'Continue with Google on sign-in and sign-up', default: false },
+  ekhayaTv: { label: 'Ekhaya TV open to fans (off shows "Coming soon")', default: false },
   matchChat: { label: 'Fan chat on the match page', default: true },
   membershipPayments: { label: 'Membership payments (off shows "Coming soon")', default: false },
 } as const

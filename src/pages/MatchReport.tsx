@@ -97,7 +97,7 @@ export default function MatchReport() {
   const eventIcon = (event: MatchEvent) => event.kind === 'goal' ? <Goal size={15} aria-label="Goal" />
     : event.kind === 'card' ? <Square size={13} className={event.card === 'red' ? 'card-red' : 'card-yellow'} aria-label={`${event.card === 'red' ? 'Red' : 'Yellow'} card`} />
       : <ArrowRightLeft size={14} aria-label="Substitution" />
-  const eventText = (event: MatchEvent) => event.kind === 'goal' ? <><strong>{event.playerName || 'Goal'}</strong>{event.assistPlayerName && <small>assist {event.assistPlayerName}</small>}</>
+  const eventText = (event: MatchEvent) => event.kind === 'goal' ? <><strong>{event.playerName || 'Goal'}</strong>{event.assistPlayerName && <small>👟 assist {event.assistPlayerName}</small>}</>
     : event.kind === 'card' ? <><strong>{event.playerName || event.team}</strong><small>{event.card === 'red' ? 'Red card' : 'Yellow card'}</small></>
       : <><strong>{event.subbedInPlayerName || 'Sub'}</strong><small>on for {event.subbedOutPlayerName || '—'}</small></>
   const keyEvents = events.filter((event) => event.kind === 'goal' || event.kind === 'card' || event.kind === 'substitution')
@@ -147,7 +147,7 @@ export default function MatchReport() {
             <Link to={`/squad/${player.id}`} className="report-player">{player.number != null && <b>{player.number}</b>}{player.name}</Link>
             <span className="report-player-marks">
               {Array.from({ length: goalsBy(player.id) }, (_, index) => <span key={`g${index}`} aria-label="Goal">⚽</span>)}
-              {assistsBy(player.id) > 0 && <span className="report-assist" aria-label={`${assistsBy(player.id)} assist`}>A{assistsBy(player.id) > 1 ? assistsBy(player.id) : ''}</span>}
+              {Array.from({ length: assistsBy(player.id) }, (_, index) => <span key={`a${index}`} title="Assist" aria-label="Assist">👟</span>)}
               {cardOf(player.id).map((card, index) => <i key={`c${index}`} className={`report-card-mark ${card === 'red' ? 'red' : 'yellow'}`} aria-label={`${card} card`} />)}
               {sub && <ArrowRightLeft size={12} aria-label="Came on" />}
             </span>

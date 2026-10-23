@@ -34,7 +34,7 @@ export default function MatchSummary({ fixture, compact = false, onEdit }: { fix
   const totalPredictions = predictionCounts.counts.total ?? 0
   const exact = predictionCounts.counts.exact ?? 0
 
-  const goalLine = (event: Omit<MatchEvent, 'id'> & { id: string }) => <li key={event.id}><strong>{event.minute}'</strong> {event.playerName || 'Goal'}{event.assistPlayerName && !compact ? <small> (assist {event.assistPlayerName})</small> : null}</li>
+  const goalLine = (event: Omit<MatchEvent, 'id'> & { id: string }) => <li key={event.id}><strong>{event.minute}'</strong> {event.playerName || 'Goal'}{event.assistPlayerName && !compact ? <small> (👟 {event.assistPlayerName})</small> : null}</li>
 
   return (
     <section className={`match-summary${compact ? ' match-summary-compact' : ''}`} aria-label="Full-time summary">

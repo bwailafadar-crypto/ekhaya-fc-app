@@ -1889,6 +1889,7 @@ select.auth-input { appearance: auto; }
 .pitch-shirt { position: relative; }
 .pitch-sub-off { position: absolute; left: -10px; bottom: -4px; padding: 1px 4px; color: #fff; background: #C62828; border: 1.5px solid #fff; border-radius: 999px; font-size: 9px; font-weight: 800; line-height: 1.2; white-space: nowrap; }
 .pitch-goals { position: absolute; right: -8px; top: -6px; padding: 0 3px; background: #fff; border-radius: 999px; font-size: 10px; font-weight: 800; line-height: 1.4; box-shadow: 0 1px 3px rgb(0 0 0 / 25%); }
+.pitch-assists { position: absolute; right: -14px; top: 13px; padding: 0 3px; background: #fff; border-radius: 999px; font-size: 10px; font-weight: 800; line-height: 1.4; box-shadow: 0 1px 3px rgb(0 0 0 / 25%); }
 .pitch-card { position: absolute; left: -4px; top: -4px; width: 9px; height: 12px; border: 1px solid #fff; border-radius: 2px; }
 .pitch-card.yellow { background: #F2C200; }
 .pitch-card.red { background: #C62828; }
@@ -2096,7 +2097,7 @@ select.auth-input { appearance: auto; }
 .pitch-row:nth-last-child(3) .pitch-player { animation-delay: 320ms; }
 .pitch-row:nth-last-child(4) .pitch-player { animation-delay: 440ms; }
 .pitch-row:nth-last-child(5) .pitch-player { animation-delay: 560ms; }
-.pitch-sub-off, .pitch-goals, .pitch-card { animation: m-badge 420ms ease-out 900ms both; }
+.pitch-sub-off, .pitch-goals, .pitch-assists, .pitch-card { animation: m-badge 420ms ease-out 900ms both; }
 
 /* Bars fill from the left (polls, man of the match, fan level) */
 .fz-bar-fill, .fan-level-bar i, .gps-bar i, .match-stat-bars i { transform-origin: left center; animation: m-grow 900ms cubic-bezier(.2,.7,.2,1) 200ms both; }
@@ -2126,7 +2127,7 @@ select.auth-input { appearance: auto; }
 
 @media (prefers-reduced-motion: reduce) {
   .page-transition > *, .fz-board li, .player-log li, .menu-item, .minutes-played li, .lineup-subs li, .gps-list li, .fz-players .fz-player, .sq-list .sq-row,
-  .standings-table tbody tr, .standings-table tr.standings-ekhaya, .pitch-player, .pitch-sub-off, .pitch-goals, .pitch-card, .fz-bar-fill, .fan-level-bar i, .gps-bar i, .match-stat-bars i,
+  .standings-table tbody tr, .standings-table tr.standings-ekhaya, .pitch-player, .pitch-sub-off, .pitch-goals, .pitch-assists, .pitch-card, .fz-bar-fill, .fan-level-bar i, .gps-bar i, .match-stat-bars i,
   .score-pop, .fan-level-badge, .matchday-reactions button.selected span, .matchday-lineups, .matchday-stats-view, .live-timeline, .motm-spotlight { animation: none !important; }
   .home-hero::after, .home-live-banner::after, .digital-membership-card::after, .fan-level-card::after { display: none; }
 }
@@ -2255,3 +2256,13 @@ select.auth-input { appearance: auto; }
 .match-summary-report { display: inline-block; margin-top: 10px; font-weight: 800; color: #7a5d00; text-decoration: none; }
 @keyframes report-pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .report-score > strong { animation: none; } }
+
+/* update-106: Ekhaya TV coming soon */
+.tv-soon { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 34px 20px !important; background: radial-gradient(120% 90% at 50% 0%, #3a2e0a 0%, #15130d 75%) !important; color: #fff; border-radius: 24px; }
+.tv-soon-icon { display: grid; place-items: center; width: 74px; height: 74px; border-radius: 50%; background: linear-gradient(135deg, #f3d36b, #c9a227); color: #15130d; animation: tv-soon-pulse 2.2s ease-in-out infinite; }
+.tv-soon-badge { padding: 4px 12px; border-radius: 999px; border: 1px solid #e9c95a; color: #f3d36b; font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.tv-soon h2 { margin: 0; color: #fff; font-size: 1.4rem; }
+.tv-soon p { margin: 0; max-width: 32ch; color: rgba(255,255,255,.75); font-size: .92rem; }
+.tv-soon-admin { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: #fff8dc; border: 1px solid rgba(201,162,39,.4); font-size: .82rem; }
+@keyframes tv-soon-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(233,201,90,.5); } 50% { box-shadow: 0 0 0 14px rgba(233,201,90,0); } }
+@media (prefers-reduced-motion: reduce) { .tv-soon-icon { animation: none; } }

@@ -1069,6 +1069,7 @@ export default function LiveMatch() {
       if (matchEvent.subbedInPlayerId) Object.assign(markFor(matchEvent.subbedInPlayerId), { on: matchEvent.minute, replaced: shortOf(matchEvent.subbedOutPlayerId, matchEvent.subbedOutPlayerName) })
     }
     if (matchEvent.kind === 'goal' && matchEvent.playerId) markFor(matchEvent.playerId).goals = (markFor(matchEvent.playerId).goals ?? 0) + 1
+    if (matchEvent.kind === 'goal' && matchEvent.assistPlayerId) markFor(matchEvent.assistPlayerId).assists = (markFor(matchEvent.assistPlayerId).assists ?? 0) + 1
     if (matchEvent.kind === 'card' && matchEvent.playerId) { if (matchEvent.card === 'red') markFor(matchEvent.playerId).red = true; else markFor(matchEvent.playerId).yellow = true }
   }
   const homeLineup = (selectedFixture.startingPlayerIds ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
@@ -1168,7 +1169,7 @@ export default function LiveMatch() {
 
 function eventDescription(event: MatchEvent) {
   if (event.kind === 'commentary') return event.text || 'Match update'
-  if (event.kind === 'goal') return `Goal${event.playerName ? ` · ${event.playerName}` : ''}${event.assistPlayerName ? ` (assist: ${event.assistPlayerName})` : ''}`
+  if (event.kind === 'goal') return `Goal${event.playerName ? ` · ${event.playerName}` : ''}${event.assistPlayerName ? ` (👟 assist: ${event.assistPlayerName})` : ''}`
   if (event.kind === 'card') return `${event.card === 'red' ? 'Red' : 'Yellow'} card${event.playerName ? ` · ${event.playerName}` : ''}`
   return `Substitution · ${event.subbedInPlayerName || 'Player on'} for ${event.subbedOutPlayerName || 'Player off'}`
 }
