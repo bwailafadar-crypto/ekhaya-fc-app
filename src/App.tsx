@@ -32,6 +32,7 @@ const Competitions = lazyPage(() => import('./pages/Competitions'))
 const AppHealth = lazyPage(() => import('./pages/AppHealth'))
 const Tv = lazyPage(() => import('./pages/Tv'))
 const Club = lazyPage(() => import('./pages/Club'))
+const MatchReport = lazyPage(() => import('./pages/MatchReport'))
 
 export default function App() {
   return (
@@ -68,6 +69,7 @@ export default function App() {
                 <Route path="/more" element={<More />} />
                 <Route path="/tv" element={<Tv />} />
                 <Route path="/club" element={<Club />} />
+                <Route path="/report/:id" element={<MatchReport />} />
               </Route>
               </Routes>
               <InstallBanner />

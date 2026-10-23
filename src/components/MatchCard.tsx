@@ -11,7 +11,7 @@ export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixtu
   const { role } = useAuth()
   // Tapping a match opens its match centre; admins tapping a result go straight to editing it.
   const canEdit = (role === 'admin' || role === 'superadmin') && isPlayed(fixture) && !fixture.isTest
-  const to = `/live?match=${encodeURIComponent(fixture.id)}${canEdit ? '&edit=1' : ''}`
+  const to = !canEdit && fixture.status === 'finished' && !fixture.isTest ? `/report/${encodeURIComponent(fixture.id)}` : `/live?match=${encodeURIComponent(fixture.id)}${canEdit ? '&edit=1' : ''}`
   const played = fixture.status === 'finished' || fixture.status === 'live'
   const outcome = ekhayaOutcome(fixture)
   const score = played && fixture.homeScore != null && fixture.awayScore != null
@@ -19,7 +19,7 @@ export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixtu
     : formatMalawiTime(fixture.date)
 
   return (
-    <Link className="match-card-link" to={to} aria-label={`${fixture.home} v ${fixture.away}: ${canEdit ? 'open to edit' : 'open match centre'}`}>
+    <Link className="match-card-link" to={to} aria-label={`${fixture.home} v ${fixture.away}: ${canEdit ? 'open to edit' : fixture.status === 'finished' ? 'open match report' : 'open match centre'}`}>
     <Card className="match-card">
       <div className="match-card-meta">
         <span className={isCupCompetition(fixture.competition) ? 'match-card-cup' : undefined}>

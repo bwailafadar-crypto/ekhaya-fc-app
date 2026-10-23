@@ -51,7 +51,7 @@ export function matchAlerts(before: FixtureLike | undefined, after: FixtureLike 
     }
   }
   if (wasLive && after.status === 'finished') {
-    alerts.push({ key: `${run}-ft`, kind: 'match', title: `Full time: ${scoreLine(after)}`, body: 'See the match summary and vote for man of the match.', path: `/live?match=${after.id}&tab=vote` })
+    alerts.push({ key: `${run}-ft`, kind: 'match', title: `Full time: ${scoreLine(after)}`, body: 'Read the match report and vote for man of the match.', path: `/report/${after.id}` })
   }
   return alerts
 }

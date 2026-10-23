@@ -52,6 +52,7 @@ export default function MatchSummary({ fixture, compact = false, onEdit }: { fix
       </div> : !events.loading && !fixture.note && <p className="match-summary-note">{home + away === 0 ? 'A goalless draw.' : 'Goal details were not recorded for this match.'}</p>}
       {fixture.note && <p className="match-summary-note">{fixture.note}</p>}
       {!compact && cards.length > 0 && <ul className="match-summary-cards">{cards.map((event) => <li key={event.id}><Square size={12} className={event.card === 'red' ? 'card-red' : 'card-yellow'} aria-label={`${event.card === 'red' ? 'Red' : 'Yellow'} card`} /> {event.minute}' {event.playerName || event.team}</li>)}</ul>}
+      {!fixture.isTest && fixture.status === 'finished' && !compact && <Link className="match-summary-report" to={`/report/${encodeURIComponent(fixture.id)}`}>Full match report & share →</Link>}
       {!fixture.isTest && (leader || totalPredictions > 0) && <div className="match-summary-extras">
         {leader && <span><Star size={14} aria-hidden="true" /> Fans' man of the match: <strong>{leader.name}</strong>{leaderVotes ? ` (${leaderVotes} vote${leaderVotes === 1 ? '' : 's'})` : ''}</span>}
         {totalPredictions > 0 && <span><Target size={14} aria-hidden="true" /> {exact} of {totalPredictions} fans predicted {home}–{away}</span>}
