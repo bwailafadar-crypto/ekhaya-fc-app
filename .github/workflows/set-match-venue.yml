@@ -1,0 +1,49 @@
+# Changes the stadium of one match (nothing else).
+name: Set match venue
+
+on:
+  workflow_dispatch:
+    inputs:
+      match_id:
+        description: 'Match id, e.g. 2026-10-25-ekhaya-fc-v-blue-eagles'
+        required: true
+      venue:
+        description: 'Stadium name'
+        required: true
+      mode:
+        description: 'preview = show only, apply = save'
+        type: choice
+        options: [preview, apply]
+        default: preview
+
+jobs:
+  venue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Set venue
+        env:
+          MATCH_ID: ${{ inputs.match_id }}
+          VENUE: ${{ inputs.venue }}
+        run: |
+          ARGS=""
+          [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
+          node scripts/set-match-venue.cjs "$MATCH_ID" "$VENUE" $ARGS
+      - name: Refresh shared fan data
+        if: inputs.mode == 'apply'
+        run: node scripts/publish-snapshot.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
