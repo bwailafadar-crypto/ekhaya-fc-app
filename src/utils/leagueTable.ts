@@ -49,9 +49,51 @@ export function rowDifferences(saved: Standing | undefined, computed: ComputedRo
   return out
 }
 
+// Short names used by score apps (Flashscore, SofaScore) → the names in the table.
+const ALIASES: Record<string, string> = {
+  civoutd: 'Civil Service United', civounited: 'Civil Service United', civilservice: 'Civil Service United', csu: 'Civil Service United',
+  dedzadynamos: 'Goshen City Dedza Dynamos', goshencity: 'Goshen City Dedza Dynamos', dedza: 'Goshen City Dedza Dynamos',
+  bigbullets: 'FCB Nyasa Big Bullets', nyasabigbullets: 'FCB Nyasa Big Bullets', bullets: 'FCB Nyasa Big Bullets',
+  mitundubaptist: 'Luanar Mitundu', mitundu: 'Luanar Mitundu', luanar: 'Luanar Mitundu',
+  wanderers: 'Mighty Wanderers', mafco: 'MAFCO F.C', creck: 'Creck Sporting', moyale: 'Moyale Barracks', kb: 'Kamuzu Barracks',
+}
+
+/** "Red LionsRed Lions" (score apps repeat the name) → "Red Lions". */
+function undouble(name: string) {
+  const text = name.trim()
+  const half = text.length / 2
+  return Number.isInteger(half) && text.slice(0, half) === text.slice(half) ? text.slice(0, half) : text
+}
+
+/**
+ * Score-app copy (Flashscore): blocks of "18.10. 09:00", home team, away team,
+ * goals run together ("21" = 2–1) and W/D/L. Turned into "Home 2-1 Away" lines.
+ */
+function fromScoreApp(text: string, year: string) {
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean)
+  if (!lines.some((line) => /^\d{1,2}\.\d{1,2}\.(\d{2,4})?(\s+\d{1,2}:\d{2})?$/.test(line))) return null
+  const out: string[] = []
+  for (let i = 0; i < lines.length; i += 1) {
+    const date = lines[i].match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})?/)
+    if (!date || !/^\d{1,2}\.\d{1,2}\./.test(lines[i])) continue
+    const home = lines[i + 1]; const away = lines[i + 2]; const goals = lines[i + 3] ?? ''
+    if (!home || !away || !/^\d{2,4}$/.test(goals)) { out.push(`${lines[i]} ${home ?? ''} ? ${away ?? ''}`); continue }
+    const [hs, as] = goals.length === 2 ? [goals[0], goals[1]] : goals.length === 4 ? [goals.slice(0, 2), goals.slice(2)] : ['?', '?']
+    const y = date[3] ? (date[3].length === 2 ? `20${date[3]}` : date[3]) : year
+    out.push(`${y}-${date[2].padStart(2, '0')}-${date[1].padStart(2, '0')} ${undouble(home)} ${hs}-${as} ${undouble(away)}`)
+    i += 3
+  }
+  return out.join('\n')
+}
+
 /** Reads pasted results like "Red Lions 0-0 Ekhaya FC" or "Red Lions 0 – 0 Ekhaya FC" (one per line). */
 export function parseResults(text: string, teams: string[], fallbackDate: string) {
-  const known = (name: string) => teams.find((team) => norm(team) === norm(name)) ?? teams.find((team) => norm(team).includes(norm(name)) || norm(name).includes(norm(team)))
+  const known = (raw: string) => {
+    const name = undouble(raw)
+    const alias = ALIASES[norm(name)]
+    return teams.find((team) => norm(team) === norm(alias ?? name)) ?? teams.find((team) => norm(team).includes(norm(name)) || norm(name).includes(norm(team)))
+  }
+  text = fromScoreApp(text, fallbackDate.slice(0, 4)) ?? text
   const lines = text.split('\n').map((line) => line.replace(/\t/g, ' ').trim()).filter(Boolean)
   const parsed: Array<{ line: string; result?: LeagueResult; problem?: string }> = []
   for (const line of lines) {

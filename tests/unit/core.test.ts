@@ -225,3 +225,19 @@ test('a pasted result for a match already counted is not counted twice', async (
   assert.ok(sameMatch({ date: '2026-10-18', home: 'Red Lions', away: 'Ekhaya FC' }, { date: '2026-10-24', home: 'Red Lions', away: 'Ekhaya FC' }))
   assert.ok(!sameMatch({ date: '2026-05-02', home: 'Ekhaya FC', away: 'Red Lions' }, { date: '2026-10-18', home: 'Red Lions', away: 'Ekhaya FC' }))
 })
+
+test('a Flashscore copy of Ekhaya results is read and matches the official results', async () => {
+  const { OFFICIAL_RESULTS } = await import('../../src/data/leagueResults2026')
+  const { parseResults, sameMatch } = await import('../../src/utils/leagueTable')
+  const { readFileSync } = await import('node:fs')
+  const data = JSON.parse(readFileSync(new URL('../../ekhaya-data.json', import.meta.url), 'utf8'))
+  const text = readFileSync(new URL('./flashscore-ekhaya.txt', import.meta.url), 'utf8')
+  const parsed = parseResults(text, data.standings.map((row: { team: string }) => row.team), '2026-10-25')
+  assert.equal(parsed.length, 17)
+  for (const item of parsed) {
+    assert.ok(item.result, item.problem ?? item.line)
+    const official = OFFICIAL_RESULTS.find((other) => sameMatch(other, item.result!))
+    assert.ok(official, item.line)
+    assert.deepEqual([official.homeScore, official.awayScore, official.date], [item.result!.homeScore, item.result!.awayScore, item.result!.date], item.line)
+  }
+})

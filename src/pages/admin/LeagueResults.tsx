@@ -139,7 +139,7 @@ export default function LeagueResults({ standings, fixtures }: { standings: Stan
       {parsed.length > 0 && <ul className="lr-preview">{parsed.map((item, index) => <li key={index} className={item.problem ? 'bad' : results.some((other) => item.result && sameMatch(other, item.result)) ? 'dup' : 'ok'}>
         {item.result ? <>{item.result.home} <b>{item.result.homeScore}–{item.result.awayScore}</b> {item.result.away} <small>{item.result.date}{results.some((other) => sameMatch(other, item.result!)) ? ' · already counted' : ''}</small></> : <>{item.line} <small>{item.problem}</small></>}
       </li>)}</ul>}
-      <p className="live-help">One match per line: home team, score, away team. Ekhaya's own match is counted by the match centre, so you can leave it out. Saving updates the points, order and form for everyone.</p>
+      <p className="live-help">One match per line (home team, score, away team), or paste straight from Flashscore: dates, team names and scores are read for you. Ekhaya's own match is counted by the match centre, so you can leave it out. Saving updates the points, order and form for everyone.</p>
       <Button type="button" disabled={busy || !goodLines.length} onClick={() => void saveWeek()}>{busy ? 'Saving…' : `Add ${goodLines.length} result${goodLines.length === 1 ? '' : 's'}`}</Button>
     </details>
 
