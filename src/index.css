@@ -2266,3 +2266,35 @@ select.auth-input { appearance: auto; }
 .tv-soon-admin { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: #fff8dc; border: 1px solid rgba(201,162,39,.4); font-size: .82rem; }
 @keyframes tv-soon-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(233,201,90,.5); } 50% { box-shadow: 0 0 0 14px rgba(233,201,90,0); } }
 @media (prefers-reduced-motion: reduce) { .tv-soon-icon { animation: none; } }
+
+/* update-107: standings like the big score apps (MP W D L G GD PTS · ? + form boxes) */
+.standings-table { font-size: 12px; min-width: 620px; }
+.standings-table thead th { font-size: 10px; letter-spacing: .04em; }
+.standings-table td, .standings-table th { padding: 5px 6px; }
+.standings-table .standings-position { width: 34px; }
+.standings-goals { font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.standings-points { font-size: 13px; }
+.table-form-boxes { display: inline-flex; align-items: center; gap: 3px; }
+.form-box { display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: 4px; color: #fff; font-size: 10px; font-weight: 800; line-height: 1; }
+.form-box-w { background: #00a83f; }
+.form-box-d { background: #f3a000; }
+.form-box-l { background: #dc0000; }
+.form-box-next { background: #fff; color: #8a8a8a; border: 1px solid #cfcfcf; font-weight: 700; }
+.standings-form-heading { text-align: left !important; padding-left: 8px !important; }
+.standings-table { min-width: 560px; }
+.standings-team, .standings-team-heading { width: 150px; min-width: 150px; max-width: 150px; }
+.standings-table td { padding-left: 4px; padding-right: 4px; }
+.form-box { width: 17px; height: 17px; font-size: 9.5px; }
+.standings-view { display: none; }
+@media (max-width: 640px) {
+  .standings-view { display: inline-flex; gap: 4px; padding: 3px; margin-bottom: 8px; border-radius: 999px; background: #fff; border: 1px solid var(--line); }
+  .standings-view button { border: 0; background: none; padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .standings-view button.active { background: var(--ink-2); color: #F8EDC5; }
+  .standings-scroll:not(.standings-full) .col-extra { display: none; }
+  .standings-scroll:not(.standings-full) .standings-table { min-width: 0; }
+  .standings-scroll:not(.standings-full) .standings-team, .standings-scroll:not(.standings-full) .standings-team-heading { width: 112px; min-width: 112px; max-width: 112px; }
+  .standings-scroll:not(.standings-full) .standings-team-content .team-logo { display: none; }
+  .standings-table .standings-position { width: 26px; padding-left: 6px; padding-right: 2px; }
+  .table-form-boxes { gap: 2px; }
+  .form-box { width: 15px; height: 15px; font-size: 8.5px; border-radius: 3px; }
+}
