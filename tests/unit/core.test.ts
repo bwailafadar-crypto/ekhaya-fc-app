@@ -241,3 +241,11 @@ test('a Flashscore copy of Ekhaya results is read and matches the official resul
     assert.deepEqual([official.homeScore, official.awayScore, official.date], [item.result!.homeScore, item.result!.awayScore, item.result!.date], item.line)
   }
 })
+
+test('pressing added time early does not jump the clock to 90+', () => {
+  const now = Date.now()
+  const fixture = { period: 'second-half', firstHalfSeconds: 2988, clockElapsedSeconds: 2988 + 20 * 60 + 1, periodStartedAt: { toMillis: () => now }, addedTime: 1 }
+  assert.equal(matchMinute(fixture as never, now), "66'")
+  const late = { ...fixture, clockElapsedSeconds: 2988 + 46 * 60 }
+  assert.equal(matchMinute(late as never, now), "90+1'")
+})

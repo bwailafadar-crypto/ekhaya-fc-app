@@ -16,9 +16,10 @@ export function matchMinute(fixture: Fixture, now = Date.now()) {
   const elapsed = elapsedMatchSeconds(fixture, now)
   const secondHalf = fixture.period === 'second-half'
   const halfSeconds = secondHalf ? Math.max(0, elapsed - (fixture.firstHalfSeconds ?? 45 * 60)) : elapsed
-  const added = Math.max(Number(fixture.addedTime ?? 0), Math.ceil(Math.max(0, halfSeconds - 45 * 60) / 60))
-  if (halfSeconds > 45 * 60 || added > 0) {
-    return `${secondHalf ? 90 : 45}+${Math.max(1, added)}'`
+  // Added time only shows once the 45 minutes of the half are up (pressing
+  // "Added time" early just announces it; the clock keeps its real minute).
+  if (halfSeconds > 45 * 60) {
+    return `${secondHalf ? 90 : 45}+${Math.max(1, Math.ceil((halfSeconds - 45 * 60) / 60))}'`
   }
   return `${(secondHalf ? 45 : 0) + Math.max(1, Math.ceil(halfSeconds / 60))}'`
 }
