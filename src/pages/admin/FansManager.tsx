@@ -3,6 +3,7 @@ import { Activity, BellRing, Clock3, Download, Search, ShieldCheck, Trash2, User
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { getUsersSeenAt, markUsersSeen, requestPhoneAlerts } from '../../utils/adminAlerts'
+import { getAdminSounds, playAdminSound, setAdminSounds } from '../../utils/adminSound'
 import { useToast } from '../../components/ToastContext'
 import { Button, Card, Skeleton } from '../../components/UI'
 import { db } from '../../firebase'
@@ -100,6 +101,7 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
   const [activity, setActivity] = useState<Map<string, FanActivity>>(new Map())
   const [now, setNow] = useState(() => Date.now())
   const [names, setNames] = useState<Record<string, string>>({})
+  const [sounds, setSoundState] = useState(getAdminSounds)
   useEffect(() => onSnapshot(collection(db, 'activity'), (snapshot) => setActivity(new Map(snapshot.docs.map((item) => {
     const data = item.data()
     return [item.id, { lastSeen: data.lastSeenAt instanceof Timestamp ? data.lastSeenAt.toDate() : null, day: String(data.day ?? ''), minutesTotal: Number(data.minutesTotal ?? 0), minutesToday: Number(data.minutesToday ?? 0), visits: Number(data.visits ?? 0) }]
@@ -296,6 +298,10 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
 
     <Card className="fans-activity">
       <div className="fans-activity-head"><Activity size={17} aria-hidden="true" /><div><h2>Time in the app</h2><span>{activeToday.length} fan{activeToday.length === 1 ? '' : 's'} today · {minutesLabel(activeToday.reduce((sum, [, item]) => sum + todayMinutes(item), 0))} in total today</span></div></div>
+      <div className="fans-sounds" role="group" aria-label="Sound alerts on this device">
+        <label><input type="checkbox" checked={sounds.newFan} onChange={(event) => { const next = { ...sounds, newFan: event.target.checked }; setSoundState(next); setAdminSounds(next); if (event.target.checked) playAdminSound('join') }} /> 🔔 Sound when a new fan joins</label>
+        <label><input type="checkbox" checked={sounds.fanOpens} onChange={(event) => { const next = { ...sounds, fanOpens: event.target.checked }; setSoundState(next); setAdminSounds(next); if (event.target.checked) playAdminSound('open') }} /> 🔈 Soft sound when a fan opens the app</label>
+      </div>
       {online.length > 0 && <div className="fans-online"><strong><i className="live-pulse-dot" /> In the app now</strong><ul>{online.map(([id, item]) => <li key={id}>{nameOf(id)}<small>{minutesLabel(todayMinutes(item))} today</small></li>)}</ul></div>}
       {topToday.length > 0 ? <ol className="fans-top">{topToday.map(([id, item], index) => <li key={id}><b>{index + 1}</b><span>{nameOf(id)}</span><small>{minutesLabel(todayMinutes(item))}</small></li>)}</ol>
         : <p className="fans-note">No one has used the app yet today. Times show here as fans open the app (counted only while the app is on their screen).</p>}

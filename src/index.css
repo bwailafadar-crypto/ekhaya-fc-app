@@ -2355,3 +2355,6 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .fans-top small { font-weight: 700; font-variant-numeric: tabular-nums; }
 .fan-account-seen { color: var(--muted); }
 .fan-account-seen.online { color: #1E8E3E; font-weight: 700; }
+.fans-sounds { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: #FFF8DE; }
+.fans-sounds label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fans-sounds input { width: 18px; height: 18px; accent-color: var(--gold-dark); }

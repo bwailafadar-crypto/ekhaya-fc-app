@@ -1,4 +1,4 @@
-import { collection, getCountFromServer, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore'
+import { collection, doc, getCountFromServer, getDoc, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore'
 import { Bell } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
 import { useToast } from './ToastContext'
 import { getUsersSeenAt, SEEN_EVENT, systemNotify } from '../utils/adminAlerts'
+import { getAdminSounds, playAdminSound, SOUNDS_EVENT } from '../utils/adminSound'
 
 /** Bell for the superadmin: counts fans who joined since last check and pending membership requests. */
 export default function AdminAlerts() {
@@ -16,6 +17,37 @@ export default function AdminAlerts() {
   const [pending, setPending] = useState(0)
   const firstSnapshot = useRef(true)
   const isSuperadmin = role === 'superadmin'
+  const [sounds, setSounds] = useState(getAdminSounds)
+  const soundsRef = useRef(sounds)
+  useEffect(() => { soundsRef.current = sounds }, [sounds])
+  useEffect(() => {
+    const update = () => setSounds(getAdminSounds())
+    window.addEventListener(SOUNDS_EVENT, update)
+    return () => window.removeEventListener(SOUNDS_EVENT, update)
+  }, [])
+
+  // A fan opening the app (their visit count goes up): soft sound and a note.
+  useEffect(() => {
+    if (!isSuperadmin || !sounds.fanOpens) return
+    let first = true
+    const visits = new Map<string, number>()
+    return onSnapshot(collection(db, 'activity'), (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        const count = Number(change.doc.data().visits ?? 0)
+        const before = visits.get(change.doc.id)
+        visits.set(change.doc.id, count)
+        if (first || change.type === 'removed' || (before != null && count <= before)) return
+        void getDoc(doc(db, 'users', change.doc.id)).then((user) => {
+          const data = user.data() ?? {}
+          if (data.role === 'superadmin') return
+          const name = (typeof data.fullName === 'string' && data.fullName) || 'A fan'
+          playAdminSound('open')
+          showToast(`${name} opened the app`, 'info')
+        }).catch(() => undefined)
+      })
+      first = false
+    }, () => undefined)
+  }, [isSuperadmin, sounds.fanOpens, showToast])
 
   useEffect(() => {
     const update = () => setSeenAt(getUsersSeenAt())
@@ -37,6 +69,7 @@ export default function AdminAlerts() {
         const data = change.doc.data()
         const name = (typeof data.fullName === 'string' && data.fullName) || data.email || 'A new fan'
         showToast(`New fan joined: ${name}`, 'success')
+        if (soundsRef.current.newFan) playAdminSound('join')
         void systemNotify('New Ekhaya FC fan', `${name} just joined the app.`)
       })
     }, () => setNewFans(0))
