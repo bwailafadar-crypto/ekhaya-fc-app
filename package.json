@@ -28,6 +28,7 @@
     "seed:emulator": "node scripts/seed-emulator.cjs",
     "dev:emulators": "VITE_USE_EMULATORS=true vite --host 0.0.0.0",
     "health": "node scripts/check-app.cjs",
+    "form": "node scripts/fix-form.cjs",
     "compare": "node scripts/compare-data.cjs",
     "cleanup": "node scripts/purge-deleted.cjs",
     "build:android:play": "node scripts/build-android-release.mjs --bundle",
