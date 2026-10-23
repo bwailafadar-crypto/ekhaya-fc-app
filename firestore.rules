@@ -261,6 +261,26 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // When each fan was last in the app and minutes spent (only the fan writes
+    // their own; only the superadmin reads). Minutes can't grow faster than
+    // real time, so nobody can inflate them.
+    match /activity/{uid} {
+      allow read: if isSuperadmin();
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['lastSeenAt', 'day', 'minutesTotal', 'minutesToday', 'visits'])
+        && request.resource.data.lastSeenAt == request.time
+        && request.resource.data.day is string && request.resource.data.day.size() == 10
+        && request.resource.data.minutesTotal is int && request.resource.data.minutesToday is int && request.resource.data.visits is int
+        && request.resource.data.minutesToday >= 0 && request.resource.data.minutesToday <= 1440
+        && (request.method == 'create'
+          ? request.resource.data.minutesTotal <= 10 && request.resource.data.visits <= 1
+          : request.resource.data.minutesTotal >= resource.data.minutesTotal
+            && request.resource.data.visits <= resource.data.visits + 1
+            && request.time > resource.data.lastSeenAt + duration.value(10, 's')
+            && request.resource.data.minutesTotal - resource.data.minutesTotal <= (request.time.toMillis() - resource.data.lastSeenAt.toMillis()) / 60000 + 1);
+      allow delete: if isSuperadmin() || (signedIn() && request.auth.uid == uid);
+    }
+
     match /standings/{standingId} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();

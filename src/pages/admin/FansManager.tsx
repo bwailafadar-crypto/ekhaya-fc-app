@@ -1,6 +1,6 @@
-import { collection, doc, getCountFromServer, getDocs, limit, orderBy, query, serverTimestamp, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
-import { BellRing, Download, Search, ShieldCheck, Trash2, UserCheck, UserPlus, Users, UserX } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { collection, doc, getCountFromServer, getDoc, getDocs, onSnapshot, limit, orderBy, query, serverTimestamp, startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
+import { Activity, BellRing, Clock3, Download, Search, ShieldCheck, Trash2, UserCheck, UserPlus, Users, UserX } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../auth/AuthContext'
 import { getUsersSeenAt, markUsersSeen, requestPhoneAlerts } from '../../utils/adminAlerts'
 import { useToast } from '../../components/ToastContext'
@@ -22,7 +22,28 @@ type FanAccount = {
 }
 
 type Stats = { total: number; today: number; week: number; admins: number; blocked: number; pending: number }
-type Filter = 'all' | 'fans' | 'admins' | 'blocked' | 'new'
+type Filter = 'all' | 'fans' | 'admins' | 'blocked' | 'new' | 'online' | 'today'
+type FanActivity = { lastSeen: Date | null; day: string; minutesTotal: number; minutesToday: number; visits: number }
+const ONLINE_MS = 7 * 60 * 1000
+const malawiDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Blantyre' }).format(new Date())
+
+/** "2 h 05 min" style. */
+function minutesLabel(minutes: number) {
+  if (minutes < 60) return `${minutes} min`
+  const hours = Math.floor(minutes / 60)
+  return `${hours} h ${String(minutes % 60).padStart(2, '0')} min`
+}
+
+function seenLabel(date: Date | null, now: number) {
+  if (!date) return 'Not seen yet'
+  const ago = now - date.getTime()
+  if (ago < ONLINE_MS) return 'In the app now'
+  if (ago < 60 * 60 * 1000) return `Last seen ${Math.round(ago / 60000)} min ago`
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  if (ago < DAY && new Date(now).getDate() === date.getDate()) return `Last seen today, ${time}`
+  if (ago < 2 * DAY) return `Last seen yesterday, ${time}`
+  return `Last seen ${date.toLocaleDateString()}, ${time}`
+}
 
 function toAccount(snapshot: QueryDocumentSnapshot<DocumentData>): FanAccount {
   const data = snapshot.data()
@@ -75,6 +96,31 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
   const [filter, setFilter] = useState<Filter>('all')
   const [alertsState, setAlertsState] = useState(() => ('Notification' in window ? Notification.permission : 'unsupported'))
   const cursor = useRef<QueryDocumentSnapshot<DocumentData> | null>(null)
+  // Time in the app, live: last seen, minutes today and in total, visits.
+  const [activity, setActivity] = useState<Map<string, FanActivity>>(new Map())
+  const [now, setNow] = useState(() => Date.now())
+  const [names, setNames] = useState<Record<string, string>>({})
+  useEffect(() => onSnapshot(collection(db, 'activity'), (snapshot) => setActivity(new Map(snapshot.docs.map((item) => {
+    const data = item.data()
+    return [item.id, { lastSeen: data.lastSeenAt instanceof Timestamp ? data.lastSeenAt.toDate() : null, day: String(data.day ?? ''), minutesTotal: Number(data.minutesTotal ?? 0), minutesToday: Number(data.minutesToday ?? 0), visits: Number(data.visits ?? 0) }]
+  }))), () => undefined), [])
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(timer) }, [])
+  const today = malawiDay()
+  const todayMinutes = (item?: FanActivity) => (item && item.day === today ? item.minutesToday : 0)
+  const online = [...activity.entries()].filter(([, item]) => item.lastSeen && now - item.lastSeen.getTime() < ONLINE_MS)
+  const activeToday = [...activity.entries()].filter(([, item]) => item.day === today)
+  const topToday = [...activeToday].sort((a, b) => todayMinutes(b[1]) - todayMinutes(a[1])).slice(0, 10)
+  // Names for fans in the activity panels who are not in the loaded page.
+  const nameIds = [...online, ...topToday].map(([id]) => id).join(',')
+  useEffect(() => {
+    const wanted = nameIds.split(',').filter(Boolean).filter((id) => !(id in names) && !accounts.some((account) => account.id === id)).slice(0, 30)
+    if (!wanted.length) return
+    let active = true
+    void Promise.all(wanted.map(async (id) => { try { const snap = await getDoc(doc(db, 'users', id)); return [id, String(snap.data()?.fullName || snap.data()?.email || 'Fan')] as const } catch { return [id, 'Fan'] as const } }))
+      .then((pairs) => { if (active) setNames((current) => ({ ...current, ...Object.fromEntries(pairs) })) })
+    return () => { active = false }
+  }, [nameIds, accounts, names])
+  const nameOf = (id: string) => accounts.find((account) => account.id === id)?.fullName || names[id] || 'Fan'
 
   const fetchStats = useCallback(async (): Promise<Stats> => {
     const users = collection(db, 'users')
@@ -159,6 +205,7 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
       const batch = writeBatch(db)
       batch.delete(doc(db, 'memberships', account.id))
       batch.delete(doc(db, 'fanCards', account.id))
+      batch.delete(doc(db, 'activity', account.id))
       batch.delete(doc(db, 'referrals', account.id))
       batch.delete(doc(db, 'users', account.id))
       await batch.commit()
@@ -178,8 +225,8 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
       const snapshot = await getDocs(collection(db, 'users'))
       const rows = snapshot.docs.map(toAccount).sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0))
       const lines = [
-        ['Name', 'Email', 'Phone', 'Role', 'Status', 'Joined'].join(','),
-        ...rows.map((row) => [row.fullName, row.email, row.phone ?? '', row.role, row.disabled ? 'blocked' : 'active', row.createdAt?.toISOString() ?? ''].map(csvCell).join(',')),
+        ['Name', 'Email', 'Phone', 'Role', 'Status', 'Joined', 'Last seen', 'Minutes today', 'Minutes in total', 'Visits'].join(','),
+        ...rows.map((row) => { const a = activity.get(row.id); return [row.fullName, row.email, row.phone ?? '', row.role, row.disabled ? 'blocked' : 'active', row.createdAt?.toISOString() ?? '', a?.lastSeen?.toISOString() ?? '', String(todayMinutes(a)), String(a?.minutesTotal ?? 0), String(a?.visits ?? 0)].map(csvCell).join(',') }),
       ]
       const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
@@ -203,17 +250,19 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
     else if (result === 'denied') showToast('Alerts are blocked. Allow notifications for this site in your browser settings.', 'error')
   }
 
-  const visible = useMemo(() => {
+  const visible = (() => {
     const term = search.trim().toLowerCase()
     return accounts.filter((account) => {
       if (filter === 'fans' && account.role !== 'fan') return false
       if (filter === 'admins' && account.role === 'fan') return false
       if (filter === 'blocked' && !account.disabled) return false
       if (filter === 'new' && !(account.createdAt && account.createdAt.getTime() > seenAt)) return false
+      if (filter === 'online' && !online.some(([id]) => id === account.id)) return false
+      if (filter === 'today' && activity.get(account.id)?.day !== today) return false
       if (!term) return true
       return [account.fullName, account.email, account.phone ?? ''].some((value) => value.toLowerCase().includes(term))
     })
-  }, [accounts, filter, search, seenAt])
+  })()
 
   if (loading) return <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
   if (error) return <p className="live-error" role="alert">{error}</p>
@@ -222,11 +271,15 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
     { label: 'Total fans', value: stats?.total ?? 0, icon: Users },
     { label: 'Joined today', value: stats?.today ?? 0, icon: UserPlus },
     { label: 'Last 7 days', value: stats?.week ?? 0, icon: UserPlus },
+    { label: 'In the app now', value: online.length, icon: Activity },
+    { label: 'Used it today', value: activeToday.length, icon: Clock3 },
     { label: 'Admins', value: stats?.admins ?? 0, icon: ShieldCheck },
   ]
   const filters: Array<{ key: Filter; label: string }> = [
     { key: 'all', label: 'All' },
     { key: 'new', label: 'New' },
+    { key: 'online', label: `In the app now (${online.length})` },
+    { key: 'today', label: 'Used today' },
     { key: 'fans', label: 'Fans' },
     { key: 'admins', label: 'Admins' },
     { key: 'blocked', label: `Blocked${stats?.blocked ? ` (${stats.blocked})` : ''}` },
@@ -240,6 +293,13 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
         <span>{label}</span>
       </Card>)}
     </div>
+
+    <Card className="fans-activity">
+      <div className="fans-activity-head"><Activity size={17} aria-hidden="true" /><div><h2>Time in the app</h2><span>{activeToday.length} fan{activeToday.length === 1 ? '' : 's'} today · {minutesLabel(activeToday.reduce((sum, [, item]) => sum + todayMinutes(item), 0))} in total today</span></div></div>
+      {online.length > 0 && <div className="fans-online"><strong><i className="live-pulse-dot" /> In the app now</strong><ul>{online.map(([id, item]) => <li key={id}>{nameOf(id)}<small>{minutesLabel(todayMinutes(item))} today</small></li>)}</ul></div>}
+      {topToday.length > 0 ? <ol className="fans-top">{topToday.map(([id, item], index) => <li key={id}><b>{index + 1}</b><span>{nameOf(id)}</span><small>{minutesLabel(todayMinutes(item))}</small></li>)}</ol>
+        : <p className="fans-note">No one has used the app yet today. Times show here as fans open the app (counted only while the app is on their screen).</p>}
+    </Card>
 
     {(stats?.pending ?? 0) > 0 && <Card className="fans-requests">
       <div><strong>{stats?.pending} membership request{stats?.pending === 1 ? '' : 's'} waiting</strong><span>Fans who asked to join a membership tier.</span></div>
@@ -270,6 +330,7 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
               <strong>{name}{isSelf && <em> (you)</em>}</strong>
               <span>{account.email || 'No email'}</span>
               <small>{joinedLabel(account.createdAt)}{account.phone ? ` · ${account.phone}` : ''}</small>
+              {(() => { const a = activity.get(account.id); return <small className={`fan-account-seen${a?.lastSeen && now - a.lastSeen.getTime() < ONLINE_MS ? ' online' : ''}`}>{seenLabel(a?.lastSeen ?? null, now)}{a ? ` · ${minutesLabel(todayMinutes(a))} today · ${minutesLabel(a.minutesTotal)} in total · ${a.visits} visit${a.visits === 1 ? '' : 's'}` : ''}</small> })()}
             </div>
             <div className="fan-account-tags">
               {isNew && <span className="fan-tag fan-tag-new">New</span>}

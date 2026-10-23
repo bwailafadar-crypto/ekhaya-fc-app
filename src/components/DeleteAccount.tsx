@@ -36,6 +36,7 @@ export default function DeleteAccount() {
       await setDoc(doc(db, 'deletionRequests', current.uid), { email: current.email ?? '', createdAt: serverTimestamp() })
       await disablePush().catch(() => undefined)
       await deleteDoc(doc(db, 'fanCards', current.uid)).catch(() => undefined)
+      await deleteDoc(doc(db, 'activity', current.uid)).catch(() => undefined)
       await deleteDoc(doc(db, 'users', current.uid))
       await deleteUser(current)
       showToast('Your account has been deleted.')

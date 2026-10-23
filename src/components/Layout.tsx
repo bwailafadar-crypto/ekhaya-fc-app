@@ -12,6 +12,7 @@ import CommunitySync from './CommunitySync'
 import SnapshotPublisher from './SnapshotPublisher'
 import AutoShrinkImages from './AutoShrinkImages'
 import LiveAlerts from './LiveAlerts'
+import ActivityTracker from './ActivityTracker'
 import { useFlag, useNotice } from '../hooks/useFlag'
 import { config } from '../config'
 
@@ -110,6 +111,7 @@ export default function Layout() {
         <SnapshotPublisher />
         <AutoShrinkImages />
         <LiveAlerts />
+        <ActivityTracker />
 
         <main className="content">
           <div key={pathname} className="page-transition">

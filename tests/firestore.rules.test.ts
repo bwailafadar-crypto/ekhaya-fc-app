@@ -286,3 +286,17 @@ test('app switches can be read before sign-in, but not changed', async () => {
   await assertFails(setDoc(doc(visitor, 'appConfig/flags'), { flags: {}, notice: 'x', updatedAt: serverTimestamp() }))
   await assertFails(getDoc(doc(visitor, 'appConfig/other')))
 })
+
+test('time in the app: fans write only their own, minutes cannot jump, only the superadmin reads', async () => {
+  await seedDocument('users/fan-a', { role: 'fan', fullName: 'Fan A' })
+  await seedDocument('users/boss', { role: 'superadmin', fullName: 'Boss' })
+  const fan = signedIn('fan-a')
+  await assertSucceeds(setDoc(doc(fan, 'activity/fan-a'), { lastSeenAt: serverTimestamp(), day: '2026-10-23', minutesTotal: 0, minutesToday: 0, visits: 1 }))
+  await assertFails(setDoc(doc(signedIn('fan-b'), 'activity/fan-a'), { lastSeenAt: serverTimestamp(), day: '2026-10-23', minutesTotal: 0, minutesToday: 0, visits: 1 }))
+  await assertFails(getDoc(doc(fan, 'activity/fan-a')))
+  await assertSucceeds(getDoc(doc(signedIn('boss'), 'activity/fan-a')))
+  await seedDocument('activity/fan-a', { lastSeenAt: Timestamp.fromMillis(Date.now() - 5 * 60000), day: '2026-10-23', minutesTotal: 10, minutesToday: 10, visits: 1 })
+  await assertSucceeds(setDoc(doc(fan, 'activity/fan-a'), { lastSeenAt: serverTimestamp(), day: '2026-10-23', minutesTotal: 15, minutesToday: 15, visits: 1 }))
+  await seedDocument('activity/fan-a', { lastSeenAt: Timestamp.fromMillis(Date.now() - 5 * 60000), day: '2026-10-23', minutesTotal: 10, minutesToday: 10, visits: 1 })
+  await assertFails(setDoc(doc(fan, 'activity/fan-a'), { lastSeenAt: serverTimestamp(), day: '2026-10-23', minutesTotal: 500, minutesToday: 10, visits: 1 }))
+})
