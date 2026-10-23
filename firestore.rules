@@ -248,6 +248,19 @@ service cloud.firestore {
       }
     }
 
+    // Form tracker: league results and fixtures added by the club each week.
+    match /leagueResults/{resultId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.homeScore is int && request.resource.data.homeScore >= 0 && request.resource.data.homeScore <= 30
+        && request.resource.data.awayScore is int && request.resource.data.awayScore >= 0 && request.resource.data.awayScore <= 30
+        && request.resource.data.home is string && request.resource.data.away is string;
+      allow delete: if isAdmin();
+    }
+    match /leagueFixtures/{fixtureId} {
+      allow read, write: if isAdmin();
+    }
+
     match /standings/{standingId} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();

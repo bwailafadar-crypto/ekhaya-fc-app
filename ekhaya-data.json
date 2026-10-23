@@ -632,9 +632,9 @@
    "home": "Ekhaya FC",
    "away": "Kamuzu Barracks",
    "venue": "Chiwembe Stadium",
-   "status": "upcoming",
-   "homeScore": null,
-   "awayScore": null
+   "status": "finished",
+   "homeScore": 2,
+   "awayScore": 0
   },
   {
    "id": "2026-10-18-red-lions-v-ekhaya-fc",

@@ -198,6 +198,8 @@ export interface PlayerStats {
   cleanSheets: number
 }
 
+export type FormEntry = { fixtureId: string; result: 'W' | 'D' | 'L'; opponent?: string; score?: string; date?: string; home?: boolean }
+
 export interface Standing {
   id: string
   position: number
@@ -211,7 +213,10 @@ export interface Standing {
   goalDifference: number
   points: number
   form: Array<'W' | 'D' | 'L'>
-  formHistory?: Array<{ fixtureId: string; result: 'W' | 'D' | 'L' }>
+  /** Results behind the form, oldest first (details shown when a form box is tapped). */
+  formHistory?: FormEntry[]
+  /** Next league match, when known. */
+  next?: { opponent: string; date: string; home: boolean; venue?: string } | null
   /** Position before the latest result (for the up/down arrows). */
   previousPosition?: number
 }

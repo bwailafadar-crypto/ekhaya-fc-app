@@ -106,10 +106,16 @@ export default function TableEditor({ standings }: { standings: Standing[] }) {
         const s = saved.get(row.id)
         const result = row.formTouched ? null : newResult(row, s)
         const form = result ? [...row.form, result].slice(-5) : row.form
+        // Keep the match history in step with the form (details unknown for typed results).
+        const history = s?.formHistory ?? []
+        const fresh = history.length > 0 && history.slice(-5).map((item) => item.result).join('') === row.form.slice(-5).join('') && !row.formTouched
+        const formHistory = fresh
+          ? (result ? [...history, { fixtureId: `table-${row.id}-${row.played}`, result }] : history).slice(-10)
+          : form.map((value, i) => ({ fixtureId: `table-${row.id}-${row.played}-${i}`, result: value }))
         batch.set(doc(db, 'standings', row.id), {
           id: row.id, team: row.team, position: index + 1, previousPosition: row.oldPosition || index + 1,
           played: row.played, won: row.won, drawn: row.drawn, lost: row.lost, goalsFor: row.goalsFor, goalsAgainst: row.goalsAgainst,
-          goalDifference: row.goalsFor - row.goalsAgainst, points: row.points, form, updatedAt: serverTimestamp(),
+          goalDifference: row.goalsFor - row.goalsAgainst, points: row.points, form, formHistory, updatedAt: serverTimestamp(),
         }, { merge: true })
       })
       await batch.commit()

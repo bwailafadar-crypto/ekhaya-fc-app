@@ -3,7 +3,7 @@ import { useState } from 'react'
 import TeamLogo from '../components/TeamLogo'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import type { Fixture, Standing } from '../types'
+import type { Fixture, FormEntry, Standing } from '../types'
 import { formatMalawiDate } from '../utils/football'
 
 const TOP8 = 8
@@ -15,6 +15,15 @@ export default function LeagueTable() {
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   // Phones show the short table (MP, G, PTS, form); "All columns" adds W, D, L and GD.
   const [full, setFull] = useState(false)
+  // Tapping a form box shows the match behind it.
+  const [detail, setDetail] = useState<{ team: string; text: string } | null>(null)
+  // Last 5, latest first, with match details when the app knows them.
+  const formEntries = (row: Standing): FormEntry[] => {
+    const form = (row.form ?? []).slice(-5)
+    const history = row.formHistory ?? []
+    const known = history.length && history.slice(-5).map((item) => item.result).join('') === form.join('') ? history.slice(-5) : form.map((result) => ({ fixtureId: '', result }))
+    return [...known].reverse()
+  }
   const norm = (name: string) => name.trim().toLowerCase()
   // Next league match for a team, when the app knows it (Ekhaya's fixtures).
   const nextFor = (team: string) => fixtures.items
@@ -44,14 +53,23 @@ export default function LeagueTable() {
                     <td className="standings-goals">{row.goalsFor ?? 0}:{row.goalsAgainst ?? 0}</td><td className="col-extra">{row.goalDifference ?? 0}</td>
                     <td className="standings-points">{row.points ?? 0}</td>
                     <td><div className="table-form-boxes" aria-label={`Last results, latest first: ${form.slice(-5).reverse().join(' ')}`}>
-                      {(() => { const next = nextFor(row.team); const opponent = next ? (norm(next.home) === norm(row.team) ? next.away : next.home) : ''; return <span className="form-box form-box-next" title={next ? `Next: ${norm(next.home) === norm(row.team) ? 'v' : 'at'} ${opponent} · ${formatMalawiDate(next.date)}` : 'Next match'}>?</span> })()}
-                      {form.slice(-5).reverse().map((result, index) => <span key={`${result}-${index}`} className={`form-box form-box-${result.toLowerCase()}`} title={result === 'W' ? 'Win' : result === 'D' ? 'Draw' : 'Loss'}>{result}</span>)}
+                      {(() => {
+                        const saved = row.next
+                        const fixture = saved ? null : nextFor(row.team)
+                        const next = saved ?? (fixture ? { opponent: norm(fixture.home) === norm(row.team) ? fixture.away : fixture.home, date: fixture.date, home: norm(fixture.home) === norm(row.team), venue: fixture.venue ?? undefined } : null)
+                        const label = next ? `Next: ${next.home ? 'v' : 'at'} ${next.opponent} · ${formatMalawiDate(next.date)}${next.venue ? ` · ${next.venue}` : ''}` : 'Next match not known yet'
+                        return <button type="button" className="form-box form-box-next" title={label} aria-label={label} onClick={() => setDetail({ team: row.team, text: label })}>?</button>
+                      })()}
+                      {formEntries(row).map((entry, index) => {
+                        const label = `${entry.result === 'W' ? 'Win' : entry.result === 'D' ? 'Draw' : 'Loss'}${entry.score ? ` ${entry.score}` : ''}${entry.opponent ? ` ${entry.home === false ? 'at' : 'v'} ${entry.opponent}` : ''}${entry.date ? ` · ${formatMalawiDate(entry.date)}` : ''}`
+                        return <button type="button" key={`${entry.result}-${index}`} className={`form-box form-box-${entry.result.toLowerCase()}`} title={label} aria-label={label} onClick={() => setDetail({ team: row.team, text: label })}>{entry.result}</button>
+                      })}
                     </div></td>
                   </tr>
                 })}
               </tbody>
             </table>
-          </div></>}
+          </div>{detail && <div className="form-detail" role="status"><strong>{detail.team}</strong><span>{detail.text}</span><button type="button" aria-label="Close" onClick={() => setDetail(null)}>×</button></div>}</>}
     {rows.length > TOP8 + RELEGATED && <ul className="table-zones" aria-label="What the colours mean">
       <li><i className="zone-key zone-key-top8" aria-hidden="true" />1–{TOP8}: Airtel Top 8</li>
       <li><i className="zone-key zone-key-relegation" aria-hidden="true" />Last {RELEGATED}: relegated</li>

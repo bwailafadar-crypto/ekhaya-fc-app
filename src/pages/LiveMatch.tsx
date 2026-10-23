@@ -811,8 +811,8 @@ export default function LiveMatch() {
         const outcome = homeGoals === awayGoals ? 'D' : homeGoals > awayGoals ? 'W' : 'L'
         const awayOutcome = outcome === 'W' ? 'L' : outcome === 'L' ? 'W' : 'D'
         const nextRows = !homeRow || !awayRow ? [] : tableRows.map((row) => {
-          if (row.ref.path === homeRow.ref.path) return { ...row, data: applyResult(row.data, homeGoals, awayGoals, outcome, fixtureSnapshot.id) }
-          if (row.ref.path === awayRow.ref.path) return { ...row, data: applyResult(row.data, awayGoals, homeGoals, awayOutcome, fixtureSnapshot.id) }
+          if (row.ref.path === homeRow.ref.path) return { ...row, data: applyResult(row.data, homeGoals, awayGoals, outcome, { fixtureId: fixtureSnapshot.id, opponent: fixture.away, date: String(fixture.date).slice(0, 10), home: true }) }
+          if (row.ref.path === awayRow.ref.path) return { ...row, data: applyResult(row.data, awayGoals, homeGoals, awayOutcome, { fixtureId: fixtureSnapshot.id, opponent: fixture.home, date: String(fixture.date).slice(0, 10), home: false }) }
           return row
         })
         nextRows.sort((a, b) => b.data.points - a.data.points || b.data.goalDifference - a.data.goalDifference || b.data.goalsFor - a.data.goalsFor || a.data.position - b.data.position)
@@ -978,7 +978,9 @@ export default function LiveMatch() {
               goalDifference: Number(row.data.goalDifference ?? 0) - (change.goalsFor - change.goalsAgainst),
               points: Number(row.data.points ?? 0) - change.points,
             }
-            const history = Array.isArray(row.data.formHistory) ? row.data.formHistory.filter((item) => item.fixtureId !== selectedFixture.id) : null
+            const fullHistory = Array.isArray(row.data.formHistory) ? row.data.formHistory : []
+            const historyFresh = fullHistory.length > 0 && fullHistory.slice(-5).map((item) => item.result).join('') === (Array.isArray(row.data.form) ? row.data.form : []).slice(-5).join('') && fullHistory.some((item) => item.fixtureId === selectedFixture.id)
+            const history = historyFresh ? fullHistory.filter((item) => item.fixtureId !== selectedFixture.id) : null
             if (history) return { ...row, data: { ...data, formHistory: history, form: history.slice(-5).map((item) => item.result) } }
             const form = [...(Array.isArray(row.data.form) ? row.data.form : [])]
             const formIndex = form.lastIndexOf(change.result)
@@ -1174,17 +1176,21 @@ function eventDescription(event: MatchEvent) {
   return `Substitution · ${event.subbedInPlayerName || 'Player on'} for ${event.subbedOutPlayerName || 'Player off'}`
 }
 
-function applyResult(row: Standing, goalsFor: number, goalsAgainst: number, result: 'W' | 'D' | 'L', fixtureId: string): Standing {
+function applyResult(row: Standing, goalsFor: number, goalsAgainst: number, result: 'W' | 'D' | 'L', match: { fixtureId: string; opponent: string; date: string; home: boolean }): Standing {
   const played = Number(row.played ?? 0) + 1
   const won = Number(row.won ?? 0) + (result === 'W' ? 1 : 0)
   const drawn = Number(row.drawn ?? 0) + (result === 'D' ? 1 : 0)
   const lost = Number(row.lost ?? 0) + (result === 'L' ? 1 : 0)
   const totalFor = Number(row.goalsFor ?? 0) + goalsFor
   const totalAgainst = Number(row.goalsAgainst ?? 0) + goalsAgainst
-  const priorHistory = Array.isArray(row.formHistory)
-    ? row.formHistory
-    : (Array.isArray(row.form) ? row.form : []).map((formResult, index) => ({ fixtureId: `legacy-${row.id}-${index}`, result: formResult }))
-  const formHistory = [...priorHistory, { fixtureId, result }]
+  // The saved form is the truth: the history is used only when it still matches
+  // it (the table editor may have changed the form since).
+  const savedForm = Array.isArray(row.form) ? row.form : []
+  const history = Array.isArray(row.formHistory) ? row.formHistory : []
+  const priorHistory = history.length && history.slice(-5).map((item) => item.result).join('') === savedForm.slice(-5).join('')
+    ? history
+    : savedForm.map((formResult, index) => ({ fixtureId: `legacy-${row.id}-${index}`, result: formResult }))
+  const formHistory = [...priorHistory.filter((item) => item.fixtureId !== match.fixtureId), { ...match, result, score: `${goalsFor}–${goalsAgainst}` }].slice(-10)
   return {
     ...row, played, won, drawn, lost, goalsFor: totalFor, goalsAgainst: totalAgainst,
     goalDifference: totalFor - totalAgainst,

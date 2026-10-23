@@ -198,3 +198,30 @@ test('card alerts: one per card in a live Ekhaya match, never for practice or ot
   assert.equal(cardAlert({ ...live, home: 'Red Lions', away: 'Blue Eagles' }, { id: 'e4', kind: 'card', card: 'red', minute: 1, team: 'Red Lions' }), null)
   assert.equal(cardAlert(live, { id: 'e5', kind: 'goal', minute: 1, team: 'Ekhaya FC' }), null)
 })
+
+test('official results rebuild the week 17 table and form exactly', async () => {
+  const { OFFICIAL_RESULTS } = await import('../../src/data/leagueResults2026')
+  const { computeTable, norm, parseResults } = await import('../../src/utils/leagueTable')
+  const { readFileSync } = await import('node:fs')
+  const data = JSON.parse(readFileSync(new URL('../../ekhaya-data.json', import.meta.url), 'utf8'))
+  const table = computeTable(OFFICIAL_RESULTS)
+  assert.equal(OFFICIAL_RESULTS.length, 136)
+  for (const row of data.standings) {
+    const c = table.get(norm(row.team))
+    assert.ok(c, row.team)
+    assert.deepEqual([c.played, c.won, c.drawn, c.lost, c.goalsFor, c.goalsAgainst, c.points], [row.played, row.won, row.drawn, row.lost, row.goalsFor, row.goalsAgainst, row.points], row.team)
+    assert.deepEqual(c.history.slice(-5).map((item) => item.result), row.form, `${row.team} form`)
+  }
+  const ekhaya = table.get(norm('Ekhaya FC'))
+  assert.equal(ekhaya?.history.at(-1)?.opponent, 'Red Lions')
+  const parsed = parseResults('Creck Sporting 2-1 Red Lions\nKaronga Utd 0 – 3 Mighty Wanderers\nnonsense', data.standings.map((row: { team: string }) => row.team), '2026-10-25')
+  assert.equal(parsed[0].result?.homeScore, 2)
+  assert.equal(parsed[1].result?.home, 'Karonga United')
+  assert.ok(parsed[2].problem)
+})
+
+test('a pasted result for a match already counted is not counted twice', async () => {
+  const { sameMatch } = await import('../../src/utils/leagueTable')
+  assert.ok(sameMatch({ date: '2026-10-18', home: 'Red Lions', away: 'Ekhaya FC' }, { date: '2026-10-24', home: 'Red Lions', away: 'Ekhaya FC' }))
+  assert.ok(!sameMatch({ date: '2026-05-02', home: 'Ekhaya FC', away: 'Red Lions' }, { date: '2026-10-18', home: 'Red Lions', away: 'Ekhaya FC' }))
+})
