@@ -2298,3 +2298,23 @@ select.auth-input { appearance: auto; }
   .table-form-boxes { gap: 2px; }
   .form-box { width: 15px; height: 15px; font-size: 8.5px; border-radius: 3px; }
 }
+
+/* update-108: club poster stories */
+.story-composer-form, .story-design { display: flex; flex-direction: column; gap: 12px; }
+.story-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: #F4F1E8; }
+.story-mode button { border: 0; background: none; padding: 9px; border-radius: 999px; font-weight: 700; font-size: 13px; color: var(--muted); cursor: pointer; }
+.story-mode button.active { background: var(--ink-2); color: #F8EDC5; }
+.story-design-kinds { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.story-design-kinds button { flex: none; padding: 7px 13px; border-radius: 999px; border: 1px solid rgb(201 162 39 / 45%); background: #fff; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+.story-design-kinds button.active { background: linear-gradient(135deg, #f3d36b, #c9a227); border-color: transparent; color: #111; }
+.story-design-preview { position: relative; display: grid; place-items: center; padding: 10px; border-radius: 16px; background: #15130d; }
+.story-design-preview canvas { width: auto; height: min(52vh, 460px); max-width: 100%; aspect-ratio: 9 / 16; border-radius: 12px; box-shadow: 0 10px 30px rgb(0 0 0 / 35%); }
+.story-design-loading { position: absolute; color: #f3d36b; font-weight: 700; }
+.story-design-photo { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.story-design-photo .admin-field { flex: 1 1 180px; }
+.story-design-upload { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1.5px dashed rgb(201 162 39 / 60%); background: #FFF8DE; color: var(--gold-dark); font-weight: 700; font-size: 13px; cursor: pointer; }
+.story-design-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.story-design-clear { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 999px; border: 0; background: #F4F1E8; font-size: 12px; cursor: pointer; }
+.story-design-actions { display: grid; gap: 8px; }
+.story-design-save { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 14px; border: 1px solid rgb(201 162 39 / 50%); background: #fff; font-weight: 700; cursor: pointer; }
+.story-design-empty { margin: 0; color: var(--muted); }

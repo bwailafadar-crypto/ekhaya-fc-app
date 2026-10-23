@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
 import type { Fixture } from '../types'
 import { compressImage } from '../utils/compressImage'
+import StoryDesigner from './StoryDesigner'
 import { autoStories, markSeen, postedStory, seenStories, STORY_HOURS, STORY_LABELS, STORY_LINKS, type Story, type StoredStory, type StoryLabel } from '../utils/stories'
 import TeamLogo from './TeamLogo'
 import { useToast } from './ToastContext'
@@ -56,7 +57,7 @@ export default function StoriesBar({ fixtures }: { fixtures: Fixture[] }) {
       </button>)}
     </section>
     {open && <StoryViewer stories={open.list} start={open.index} isAdmin={isAdmin} onSeen={onSeen} onClose={closeViewer} />}
-    {composing && <StoryComposer onClose={() => setComposing(false)} />}
+    {composing && <StoryComposer fixtures={fixtures} onClose={() => setComposing(false)} />}
   </>
 }
 
@@ -120,15 +121,17 @@ function StoryViewer({ stories, start, isAdmin, onSeen, onClose }: { stories: St
       onPointerLeave={() => setPaused(false)}>
       {image ? <img className="story-image" src={image} alt="" draggable={false} />
         : <div className="story-card">{story.crest && <TeamLogo name={story.crest} crest />}<strong>{story.title}</strong>{story.text && <span>{story.text}</span>}</div>}
-      {image && <div className="story-caption"><strong>{story.title}</strong>{story.text && <span>{story.text}</span>}</div>}
+      {image && (story.title || story.text) && <div className="story-caption"><strong>{story.title}</strong>{story.text && <span>{story.text}</span>}</div>}
     </div>
     {story.path && <button type="button" className="story-open" onClick={() => { onClose(); navigate(story.path ?? '/') }}>Open <ChevronRight size={16} aria-hidden="true" /></button>}
   </div>, document.body)
 }
 
-function StoryComposer({ onClose }: { onClose: () => void }) {
+function StoryComposer({ fixtures, onClose }: { fixtures: Fixture[]; onClose: () => void }) {
   const { user } = useAuth()
   const { showToast } = useToast()
+  // "design" = club poster made by the app; "photo" = your own photo or graphic.
+  const [mode, setMode] = useState<'design' | 'photo'>('design')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
   const [busy, setBusy] = useState(false)
@@ -138,51 +141,62 @@ function StoryComposer({ onClose }: { onClose: () => void }) {
     try { setPreview(await compressImage(chosen, { maxDimension: 320, maxBytes: 40 * 1024 })); setFile(chosen) } catch (error) { showToast(error instanceof Error ? error.message : 'This photo could not be used.', 'error') }
   }
 
-  async function post(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!user) return
-    const form = new FormData(event.currentTarget)
-    const caption = String(form.get('caption') ?? '').trim()
-    if (!caption && !file) { showToast('Add a photo or a line of text.', 'error'); return }
+  async function publish(image: File | null, caption: string, label: StoryLabel, path: string) {
+    if (!user) return false
+    if (!caption && !image) { showToast('Add a photo or a line of text.', 'error'); return false }
     setBusy(true)
     try {
       const ref = doc(collection(db, 'stories'))
       const batch = writeBatch(db)
       let thumb: string | null = null
-      if (file) {
-        const [full, small] = await Promise.all([compressImage(file, { maxDimension: 1080, maxBytes: 220 * 1024 }), compressImage(file, { maxDimension: 160, maxBytes: 12 * 1024 })])
+      if (image) {
+        const [full, small] = await Promise.all([compressImage(image, { maxDimension: 1920, maxBytes: 280 * 1024 }), compressImage(image, { maxDimension: 160, maxBytes: 12 * 1024 })])
         thumb = small
         batch.set(doc(db, 'storyImages', ref.id), { image: full, createdAt: serverTimestamp() })
       }
-      const path = String(form.get('path') ?? '')
       batch.set(ref, {
-        caption: caption.slice(0, 160), label: String(form.get('label')) as StoryLabel, thumb, hasImage: Boolean(file),
+        caption: caption.slice(0, 160), label, thumb, hasImage: Boolean(image),
         ...(path ? { path } : {}),
         createdAt: serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + STORY_HOURS * 3_600_000), by: user.uid,
       })
       await batch.commit()
       showToast('Story posted. Fans see it for 24 hours.')
       onClose()
+      return true
     } catch (error) {
       showToast(error instanceof Error ? `Not posted: ${error.message}` : 'Not posted. Check your connection.', 'error')
+      return false
     } finally {
       setBusy(false)
     }
   }
 
+  function post(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    void publish(file, String(form.get('caption') ?? '').trim(), String(form.get('label')) as StoryLabel, String(form.get('path') ?? ''))
+  }
+
   return createPortal(<div className="story-composer-backdrop" role="dialog" aria-modal="true" aria-label="Add a story">
-    <form className="story-composer" onSubmit={(event) => void post(event)}>
+    <div className="story-composer">
       <div className="story-composer-head"><h2>Add a story</h2><button type="button" aria-label="Close" onClick={onClose}><X size={20} /></button></div>
-      <label className="story-photo-pick">
-        <input type="file" accept="image/*" onChange={(event) => void pick(event.currentTarget.files?.[0])} />
-        {preview ? <img src={preview} alt="Story photo preview" /> : <span><ImagePlus size={22} aria-hidden="true" />Choose or take a photo</span>}
-      </label>
-      <label className="admin-field"><span>Text</span><textarea name="caption" maxLength={160} rows={2} placeholder="e.g. Warm-up done. Kick-off in 30 minutes!" /></label>
-      <div className="admin-form-grid">
-        <label className="admin-field"><span>Type</span><select name="label" defaultValue="Match day">{STORY_LABELS.map((label) => <option key={label}>{label}</option>)}</select></label>
-        <label className="admin-field"><span>Open button</span><select name="path" defaultValue="">{STORY_LINKS.map((link) => <option key={link.path} value={link.path}>{link.label}</option>)}</select></label>
+      <div className="story-mode" role="tablist" aria-label="Story type">
+        <button type="button" role="tab" aria-selected={mode === 'design'} className={mode === 'design' ? 'active' : ''} onClick={() => setMode('design')}>✨ Club poster</button>
+        <button type="button" role="tab" aria-selected={mode === 'photo'} className={mode === 'photo' ? 'active' : ''} onClick={() => setMode('photo')}>📷 My photo</button>
       </div>
-      <Button type="submit" disabled={busy}>{busy ? 'Posting…' : 'Post story (24 hours)'}</Button>
-    </form>
+      {mode === 'design' ? <StoryDesigner fixtures={fixtures} busy={busy} onPost={(image, label, path) => publish(image, '', label, path)} />
+        : <form className="story-composer-form" onSubmit={post}>
+          <label className="story-photo-pick">
+            <input type="file" accept="image/*" onChange={(event) => void pick(event.currentTarget.files?.[0])} />
+            {preview ? <img src={preview} alt="Story photo preview" /> : <span><ImagePlus size={22} aria-hidden="true" />Choose or take a photo</span>}
+          </label>
+          <label className="admin-field"><span>Text</span><textarea name="caption" maxLength={160} rows={2} placeholder="e.g. Warm-up done. Kick-off in 30 minutes!" /></label>
+          <div className="admin-form-grid">
+            <label className="admin-field"><span>Type</span><select name="label" defaultValue="Match day">{STORY_LABELS.map((label) => <option key={label}>{label}</option>)}</select></label>
+            <label className="admin-field"><span>Open button</span><select name="path" defaultValue="">{STORY_LINKS.map((link) => <option key={link.path} value={link.path}>{link.label}</option>)}</select></label>
+          </div>
+          <Button type="submit" disabled={busy}>{busy ? 'Posting…' : 'Post story (24 hours)'}</Button>
+        </form>}
+    </div>
   </div>, document.body)
 }
