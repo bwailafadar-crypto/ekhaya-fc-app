@@ -24,7 +24,7 @@ type FanAccount = {
 
 type Stats = { total: number; today: number; week: number; admins: number; blocked: number; pending: number }
 type Filter = 'all' | 'fans' | 'admins' | 'blocked' | 'new' | 'online' | 'today'
-type FanActivity = { lastSeen: Date | null; day: string; minutesTotal: number; minutesToday: number; visits: number }
+type FanActivity = { lastSeen: Date | null; since: Date | null; day: string; minutesTotal: number; minutesToday: number; visits: number }
 const ONLINE_MS = 7 * 60 * 1000
 const malawiDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Blantyre' }).format(new Date())
 
@@ -104,7 +104,7 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
   const [sounds, setSoundState] = useState(getAdminSounds)
   useEffect(() => onSnapshot(collection(db, 'activity'), (snapshot) => setActivity(new Map(snapshot.docs.map((item) => {
     const data = item.data()
-    return [item.id, { lastSeen: data.lastSeenAt instanceof Timestamp ? data.lastSeenAt.toDate() : null, day: String(data.day ?? ''), minutesTotal: Number(data.minutesTotal ?? 0), minutesToday: Number(data.minutesToday ?? 0), visits: Number(data.visits ?? 0) }]
+    return [item.id, { lastSeen: data.lastSeenAt instanceof Timestamp ? data.lastSeenAt.toDate() : null, since: data.sessionStartedAt instanceof Timestamp ? data.sessionStartedAt.toDate() : null, day: String(data.day ?? ''), minutesTotal: Number(data.minutesTotal ?? 0), minutesToday: Number(data.minutesToday ?? 0), visits: Number(data.visits ?? 0) }]
   }))), () => undefined), [])
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(timer) }, [])
   const today = malawiDay()
@@ -302,7 +302,18 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
         <label><input type="checkbox" checked={sounds.newFan} onChange={(event) => { const next = { ...sounds, newFan: event.target.checked }; setSoundState(next); setAdminSounds(next); if (event.target.checked) playAdminSound('join') }} /> 🔔 Sound when a new fan joins</label>
         <label><input type="checkbox" checked={sounds.fanOpens} onChange={(event) => { const next = { ...sounds, fanOpens: event.target.checked }; setSoundState(next); setAdminSounds(next); if (event.target.checked) playAdminSound('open') }} /> 🔈 Sound when any fan opens the app</label>
       </div>
-      {online.length > 0 && <div className="fans-online"><strong><i className="live-pulse-dot" /> In the app now</strong><ul>{online.map(([id, item]) => <li key={id}>{nameOf(id)}<small>{minutesLabel(todayMinutes(item))} today</small></li>)}</ul></div>}
+      <div className="fans-online" id="live-now">
+        <strong><i className="live-pulse-dot" /> Live in the app now: {online.length}</strong>
+        {online.length ? <ul className="fans-live-list">{[...online].sort((a, b) => (a[1].since?.getTime() ?? a[1].lastSeen?.getTime() ?? 0) - (b[1].since?.getTime() ?? b[1].lastSeen?.getTime() ?? 0)).map(([id, item]) => {
+          const since = item.since && item.lastSeen && item.lastSeen.getTime() - item.since.getTime() < DAY ? item.since : null
+          const sinceText = since ? `In since ${since.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${minutesLabel(Math.max(0, Math.round((now - since.getTime()) / 60000)))})` : 'In the app'
+          const active = item.lastSeen ? Math.max(0, Math.round((now - item.lastSeen.getTime()) / 60000)) : 0
+          return <li key={id}>
+            <span className="fans-live-dot" aria-hidden="true" />
+            <div><b>{nameOf(id)}</b><small>{sinceText} · active {active ? `${active} min ago` : 'just now'} · {minutesLabel(todayMinutes(item))} today</small></div>
+          </li>
+        })}</ul> : <small>No fans in the app right now.</small>}
+      </div>
       {topToday.length > 0 ? <ol className="fans-top">{topToday.map(([id, item], index) => <li key={id}><b>{index + 1}</b><span>{nameOf(id)}</span><small>{minutesLabel(todayMinutes(item))}</small></li>)}</ol>
         : <p className="fans-note">No one has used the app yet today. Times show here as fans open the app (counted only while the app is on their screen).</p>}
     </Card>

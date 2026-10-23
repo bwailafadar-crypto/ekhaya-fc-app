@@ -38,6 +38,7 @@ export default function ActivityTracker() {
           lastSeenAt: serverTimestamp(), day: today,
           minutesTotal: increment(minutes), minutesToday: sameDay ? increment(minutes) : minutes,
           visits: increment(visit ? 1 : 0),
+          ...(visit ? { sessionStartedAt: serverTimestamp() } : {}),
         }, { merge: true })
         seconds -= minutes * 60
         visit = false

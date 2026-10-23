@@ -10,7 +10,7 @@ import { getAdminSounds, playAdminSound, SOUNDS_EVENT } from '../utils/adminSoun
 
 /** Bell for the superadmin: counts fans who joined since last check and pending membership requests. */
 export default function AdminAlerts() {
-  const { role } = useAuth()
+  const { role, user } = useAuth()
   const { showToast } = useToast()
   const [seenAt, setSeenAt] = useState(getUsersSeenAt)
   const [newFans, setNewFans] = useState(0)
@@ -27,16 +27,22 @@ export default function AdminAlerts() {
   }, [])
 
   // A fan opening the app (their visit count goes up): soft sound and a note.
+  const [seen, setSeen] = useState<Map<string, number>>(new Map())
+  const [clock, setClock] = useState(() => Date.now())
+  useEffect(() => { const timer = window.setInterval(() => setClock(Date.now()), 30_000); return () => window.clearInterval(timer) }, [])
+  const live = [...seen.entries()].filter(([id, at]) => id !== user?.uid && at > clock - 7 * 60_000).length
   useEffect(() => {
-    if (!isSuperadmin || !sounds.fanOpens) return
+    if (!isSuperadmin) return
     let first = true
     const visits = new Map<string, number>()
     return onSnapshot(collection(db, 'activity'), (snapshot) => {
+      setSeen(new Map(snapshot.docs.map((item) => { const at = item.data().lastSeenAt; return [item.id, at instanceof Timestamp ? at.toMillis() : 0] })))
+      setClock(Date.now())
       snapshot.docChanges().forEach((change) => {
         const count = Number(change.doc.data().visits ?? 0)
         const before = visits.get(change.doc.id)
         visits.set(change.doc.id, count)
-        if (first || change.type === 'removed' || (before != null && count <= before)) return
+        if (first || !soundsRef.current.fanOpens || change.type === 'removed' || (before != null && count <= before)) return
         void getDoc(doc(db, 'users', change.doc.id)).then((user) => {
           const data = user.data() ?? {}
           if (data.role === 'superadmin') return
@@ -47,7 +53,7 @@ export default function AdminAlerts() {
       })
       first = false
     }, () => undefined)
-  }, [isSuperadmin, sounds.fanOpens, showToast])
+  }, [isSuperadmin, showToast])
 
   useEffect(() => {
     const update = () => setSeenAt(getUsersSeenAt())
@@ -90,10 +96,11 @@ export default function AdminAlerts() {
   const total = newFans + pending
   const label = `${newFans} new fan${newFans === 1 ? '' : 's'}, ${pending} pending membership request${pending === 1 ? '' : 's'}`
 
-  return (
+  return (<>
+    {live > 0 && <Link className="admin-live" to="/admin?section=fans" aria-label={`${live} fan${live === 1 ? '' : 's'} in the app now`} title="Fans in the app now"><i aria-hidden="true" />{live} live</Link>}
     <Link className="admin-bell" to="/admin?section=fans" aria-label={label} title={label}>
       <Bell size={20} aria-hidden="true" />
       {total > 0 && <span className="admin-bell-badge">{total > 99 ? '99+' : total}</span>}
     </Link>
-  )
+  </>)
 }

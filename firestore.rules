@@ -267,7 +267,8 @@ service cloud.firestore {
     match /activity/{uid} {
       allow read: if isSuperadmin();
       allow create, update: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['lastSeenAt', 'day', 'minutesTotal', 'minutesToday', 'visits'])
+        && request.resource.data.keys().hasOnly(['lastSeenAt', 'day', 'minutesTotal', 'minutesToday', 'visits', 'sessionStartedAt'])
+        && (!('sessionStartedAt' in request.resource.data) || request.resource.data.sessionStartedAt == request.time || (request.method == 'update' && request.resource.data.sessionStartedAt == resource.data.get('sessionStartedAt', null)))
         && request.resource.data.lastSeenAt == request.time
         && request.resource.data.day is string && request.resource.data.day.size() == 10
         && request.resource.data.minutesTotal is int && request.resource.data.minutesToday is int && request.resource.data.visits is int
