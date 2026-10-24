@@ -1,0 +1,45 @@
+# Adds a week's league results and rebuilds the table (points, order, form,
+# next matches) from every result. Results already counted are skipped.
+name: Add league results
+
+on:
+  workflow_dispatch:
+    inputs:
+      results:
+        description: 'One per line or separated by ; e.g. "Luanar Mitundu 2-0 MAFCO 2026-10-24; ..."'
+        required: true
+      mode:
+        type: choice
+        options: [preview, apply]
+        default: preview
+
+jobs:
+  results:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Add results
+        env:
+          RESULTS: ${{ inputs.results }}
+        run: |
+          ARGS=""
+          [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
+          node scripts/add-results.cjs $ARGS
+      - name: Refresh shared fan data
+        if: inputs.mode == 'apply'
+        run: node scripts/publish-snapshot.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
