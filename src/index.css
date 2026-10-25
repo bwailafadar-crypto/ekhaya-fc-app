@@ -2668,3 +2668,56 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .shop-swatches a { display: block; width: 56px; height: 56px; overflow: hidden; border: 2px solid var(--line); border-radius: 50%; }
 .shop-swatches a.active { border-color: var(--ink); box-shadow: 0 0 0 3px var(--gold-light); }
 .shop-swatches img, .shop-swatches i { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* shop: buy bar and checkout steps */
+.shop-buy-space { height: 96px; }
+.shop-qty-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 14px; font-weight: 700; }
+.shop-qty-row > span { margin-right: auto; }
+.shop-buybar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2147482500; display: flex; align-items: center; gap: 10px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgb(255 255 255 / 97%); box-shadow: 0 -8px 24px rgb(0 0 0 / 10%); backdrop-filter: blur(10px); }
+.shop-buybar-total { display: grid; flex: 1; min-width: 0; line-height: 1.1; }
+.shop-buybar-total small { overflow: hidden; color: var(--muted); font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.shop-buybar-total b { font-family: 'Oswald', sans-serif; font-size: 21px; }
+.shop-buybar .button { min-width: 128px; min-height: 48px; font-size: 15px; }
+.shop-buybar-cart { position: relative; display: grid; flex: none; place-items: center; width: 48px; height: 48px; border: 1.5px solid var(--ink); border-radius: 14px; background: #fff; color: var(--ink); cursor: pointer; }
+.shop-buybar-cart .plus { position: absolute; top: 8px; right: 7px; padding: 1px; border-radius: 50%; background: var(--gold); }
+.shop-steps { display: flex; margin: 0 0 14px; padding: 0; list-style: none; }
+.shop-steps li { position: relative; display: grid; flex: 1; justify-items: center; gap: 3px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.shop-steps li::before { content: ''; position: absolute; top: 12px; left: -50%; right: 50%; height: 2px; background: var(--line); }
+.shop-steps li:first-child::before { display: none; }
+.shop-steps li i { position: relative; z-index: 1; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #EFEEE9; font-style: normal; }
+.shop-steps li.now { color: var(--ink); }
+.shop-steps li.now i { background: var(--ink); color: var(--gold-light); }
+.shop-steps li.done i, .shop-steps li.done::before, .shop-steps li.now::before { background: var(--gold); color: var(--ink); }
+.shop-sub { display: block; margin: 10px 0 2px; font-size: 14px; }
+.shop-paylist { display: grid; gap: 8px; margin: 6px 0 10px; }
+.shop-paylist button { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); font-weight: 700; font-size: 15px; text-align: left; cursor: pointer; }
+.shop-paylist button i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: #fff; font-style: normal; font-weight: 800; }
+.shop-paylist .pay-airtel i { background: #E40000; }
+.shop-paylist .pay-mpamba i { background: #0B5FA5; }
+.shop-paylist .pay-cash i { background: var(--win); }
+.shop-paylist button.active { border-color: var(--gold); background: #fbf5e1; box-shadow: 0 0 0 3px rgb(201 162 39 / 18%); }
+.shop-paybox { display: grid; gap: 6px; margin: 0 0 8px; padding: 12px 14px; border: 1px dashed var(--gold); border-radius: 14px; background: #fffbea; font-size: 14px; }
+.shop-paybox p { margin: 0; }
+.shop-paynum { display: grid; }
+.shop-paynum b { font-family: 'Oswald', sans-serif; font-size: 26px; letter-spacing: 1px; }
+.shop-paynum small { color: var(--muted); }
+.shop-done { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.shop-done-check { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--win); color: #fff; font-size: 34px; font-weight: 800; animation: shop-pop .4s ease; }
+@keyframes shop-pop { from { transform: scale(.4); opacity: 0; } }
+.shop-done h3 { margin: 4px 0 0; font-family: 'Oswald', sans-serif; font-size: 24px; text-transform: uppercase; }
+.shop-done p { margin: 0; }
+.shop-next { display: grid; gap: 8px; width: 100%; margin: 8px 0; padding: 0; list-style: none; text-align: left; }
+.shop-next li { display: grid; gap: 2px; padding: 10px 12px 10px 38px; border-radius: 12px; background: var(--card); font-size: 13px; position: relative; }
+.shop-next li::before { content: ''; position: absolute; left: 14px; top: 14px; width: 12px; height: 12px; border: 2px solid var(--gold); border-radius: 50%; }
+.shop-next li.done::before { background: var(--win); border-color: var(--win); }
+.shop-next li span { color: var(--muted); }
+.shop-done .button, .shop-wa.big { width: 100%; min-height: 48px; justify-content: center; }
+.shop-link.center { margin-top: 4px; }
+.shop-track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 4px 0; }
+.shop-track span { height: 5px; border-radius: 3px; background: #EFEEE9; }
+.shop-track span.on { background: var(--gold); }
+.shop-tx { display: flex; gap: 6px; }
+.shop-tx input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.shop-tx button { padding: 8px 14px; border: 0; border-radius: 10px; background: var(--ink); color: var(--gold-light); font-weight: 700; }
+.shop-order-pay { color: var(--ink-2); }
+.shop-paid-btn { padding: 8px 12px; border: 0; border-radius: 10px; background: var(--ink); color: var(--gold-light); font-weight: 700; font-size: 13px; cursor: pointer; }
+.shop-orders > li > .shop-track { display: grid; }

@@ -45,9 +45,14 @@ export interface ShopSettings {
   bannerText?: string
   bannerImage?: string
   paymentNote?: string
+  /** Where fans send mobile money (shown at checkout). */
+  airtelNumber?: string
+  mpambaNumber?: string
+  payName?: string
 }
 
-export const DEFAULT_SETTINGS: Required<Omit<ShopSettings, 'bannerImage' | 'whatsapp'>> & Pick<ShopSettings, 'bannerImage' | 'whatsapp'> = {
+type Optional = 'bannerImage' | 'whatsapp' | 'airtelNumber' | 'mpambaNumber' | 'payName'
+export const DEFAULT_SETTINGS: Required<Omit<ShopSettings, Optional>> & Pick<ShopSettings, Optional> = {
   whatsapp: '',
   printPrice: 5000,
   deliveryPrice: 3000,
@@ -181,5 +186,6 @@ export interface ShopOrder {
   deliveryFee: number
   total: number
   status: OrderStatus
+  payment?: { method: 'airtel' | 'mpamba' | 'cash'; txId?: string }
   createdAt?: { toMillis?: () => number; seconds?: number } | null
 }

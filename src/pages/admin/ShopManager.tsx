@@ -82,7 +82,10 @@ export default function ShopManager() {
         <div className="shop-order-top"><strong>{o.ref}</strong><span>{o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'just now'}</span><b>{mwk(o.total)}</b></div>
         <p>{o.name} · <a href={`tel:${o.phone}`}>{o.phone}</a> · {o.delivery === 'delivery' ? `Deliver: ${o.address ?? ''}` : 'Pick up'}</p>
         <ul>{o.lines.map((l, i) => <li key={i}>{l.qty} × {l.name}{l.variant ? <b>, {l.variant}</b> : null}{l.size ? ` (${l.size})` : ''}{l.printName || l.printNumber ? <em> print {l.printName} {l.printNumber}</em> : null}</li>)}</ul>
+        <p className="shop-order-pay">{o.payment ? <>Payment: <b>{o.payment.method === 'airtel' ? 'Airtel Money' : o.payment.method === 'mpamba' ? 'TNM Mpamba' : 'Cash'}</b>{o.payment.txId ? <> · transaction <b>{o.payment.txId}</b></> : o.payment.method !== 'cash' ? ' · no transaction ID yet' : ''}</> : 'Payment: not chosen'}</p>
         <div className="shop-order-actions">
+          {(o.status === 'new' || o.status === 'confirmed') && <button type="button" className="shop-paid-btn" onClick={() => void setStatus(o, 'paid')}>✓ Mark paid</button>}
+          {o.status === 'paid' && <button type="button" className="shop-paid-btn" onClick={() => void setStatus(o, 'ready')}>✓ Ready to collect</button>}
           <select value={o.status} onChange={(e) => void setStatus(o, e.target.value as OrderStatus)} aria-label="Order status">{ORDER_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select>
           <a className="shop-wa" href={waLink(o.phone, `Hello ${o.name}, about your Ekhaya FC shop order ${o.ref} (${mwk(o.total)}): `)} target="_blank" rel="noopener noreferrer">WhatsApp the fan</a>
         </div>
@@ -178,6 +181,9 @@ function SettingsForm() {
       <label className="admin-field"><span>Name & number printing (MK)</span><input inputMode="numeric" value={v.printPrice ?? ''} onChange={(e) => set('printPrice', Number(e.target.value.replace(/\D/g, '')))} /></label>
       <label className="admin-field"><span>Delivery price (MK)</span><input inputMode="numeric" value={v.deliveryPrice ?? ''} onChange={(e) => set('deliveryPrice', Number(e.target.value.replace(/\D/g, '')))} /></label>
       <label className="admin-field"><span>Free delivery from (MK)</span><input inputMode="numeric" value={v.freeDeliveryFrom ?? ''} onChange={(e) => set('freeDeliveryFrom', Number(e.target.value.replace(/\D/g, '')))} /></label>
+      <label className="admin-field"><span>Airtel Money number (fans pay here)</span><input value={v.airtelNumber ?? ''} inputMode="tel" onChange={(e) => set('airtelNumber', e.target.value)} placeholder="099…" /></label>
+      <label className="admin-field"><span>TNM Mpamba number (fans pay here)</span><input value={v.mpambaNumber ?? ''} inputMode="tel" onChange={(e) => set('mpambaNumber', e.target.value)} placeholder="088…" /></label>
+      <label className="admin-field"><span>Name on the money account</span><input value={v.payName ?? ''} onChange={(e) => set('payName', e.target.value)} placeholder="Ekhaya FC" /></label>
       <label className="admin-field"><span>Pick up place</span><input value={v.pickupPlace ?? ''} onChange={(e) => set('pickupPlace', e.target.value)} /></label>
       <label className="admin-field"><span>Shop window title</span><input value={v.bannerTitle ?? ''} maxLength={40} onChange={(e) => set('bannerTitle', e.target.value)} /></label>
     </div>

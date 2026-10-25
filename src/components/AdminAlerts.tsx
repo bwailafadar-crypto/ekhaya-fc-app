@@ -55,6 +55,22 @@ export default function AdminAlerts() {
     }, () => undefined)
   }, [isSuperadmin, showToast])
 
+  // New shop order: chime, a note and a phone notification.
+  useEffect(() => {
+    if (!isSuperadmin) return
+    let first = true
+    return onSnapshot(query(collection(db, 'shopOrders'), where('status', '==', 'new')), (snapshot) => {
+      if (!first) snapshot.docChanges().filter((change) => change.type === 'added').forEach((change) => {
+        const o = change.doc.data()
+        const text = `${o.ref ?? 'Order'} · MK ${Number(o.total ?? 0).toLocaleString('en-US')} from ${o.name ?? 'a fan'}`
+        playAdminSound('join')
+        showToast(`New shop order ${text}`, 'success')
+        void systemNotify('New Ekhaya shop order', text)
+      })
+      first = false
+    }, () => undefined)
+  }, [isSuperadmin, showToast])
+
   useEffect(() => {
     const update = () => setSeenAt(getUsersSeenAt())
     window.addEventListener(SEEN_EVENT, update)
