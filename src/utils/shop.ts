@@ -22,8 +22,18 @@ export interface ShopProduct {
   active?: boolean
   order?: number
   /** Jersey colours for the drawn shirt when there is no photo. */
-  colour?: 'home' | 'away' | 'third' | 'training'
+  colour?: 'home' | 'away' | 'third' | 'training' | 'purple'
+  /** Versions with their own price, e.g. Fan version / Player version. */
+  variants?: ShopVariant[]
+  /** Products in the same group (e.g. the 2026 jerseys) show colour swatches. */
+  group?: string
+  swatch?: string
 }
+
+export interface ShopVariant { label: string; price: number; note?: string }
+
+/** Cheapest price, for "From MK …" on cards. */
+export const fromPrice = (p: ShopProduct) => p.variants?.length ? Math.min(...p.variants.map((v) => v.price)) : p.price
 
 export interface ShopSettings {
   whatsapp?: string
@@ -90,6 +100,7 @@ export interface CartLine {
   name: string
   price: number
   size: string
+  variant?: string
   qty: number
   printName?: string
   printNumber?: string
@@ -128,7 +139,7 @@ export function orderLine(line: CartLine) {
 export const lineTotal = (l: CartLine) => (l.price + (l.printPrice ?? 0)) * l.qty
 
 export function addToCart(line: Omit<CartLine, 'key' | 'qty'>, qty = 1) {
-  const key = [line.productId, line.size, line.printName ?? '', line.printNumber ?? ''].join('|')
+  const key = [line.productId, line.variant ?? '', line.size, line.printName ?? '', line.printNumber ?? ''].join('|')
   const found = store.cart.find((l) => l.key === key)
   set({ ...store, cart: found ? store.cart.map((l) => l.key === key ? { ...l, qty: Math.min(10, l.qty + qty) } : l) : [...store.cart, { ...line, key, qty }] })
 }
@@ -139,7 +150,7 @@ export function clearCart() { set({ ...store, cart: [] }) }
 export function toggleWish(id: string) { set({ ...store, wish: store.wish.includes(id) ? store.wish.filter((w) => w !== id) : [...store.wish, id] }) }
 
 export function orderText(o: { ref: string; name: string; phone: string; lines: CartLine[]; delivery: 'pickup' | 'delivery'; address?: string; deliveryFee: number; total: number; pickupPlace: string }) {
-  const rows = o.lines.map((l) => `• ${l.qty} × ${l.name}${l.size ? ` (${l.size})` : ''}${l.printName || l.printNumber ? ` – print: ${l.printName ?? ''} ${l.printNumber ?? ''}`.trimEnd() : ''} = ${mwk(lineTotal(l))}`)
+  const rows = o.lines.map((l) => `• ${l.qty} × ${l.name}${l.variant ? `, ${l.variant}` : ''}${l.size ? ` (${l.size})` : ''}${l.printName || l.printNumber ? ` – print: ${l.printName ?? ''} ${l.printNumber ?? ''}`.trimEnd() : ''} = ${mwk(lineTotal(l))}`)
   return [
     `Ekhaya FC shop order ${o.ref}`,
     ...rows,

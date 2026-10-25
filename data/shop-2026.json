@@ -1,0 +1,38 @@
+{
+  "settings": {
+    "whatsapp": "0892308718",
+    "bannerTitle": "Ekhaya Jerseys 2026",
+    "bannerText": "All colours. All sizes. All yours. Player version MK 75,000 · Fan version MK 50,000.",
+    "bannerImage": "./shop/jerseys-2026-banner.jpg"
+  },
+  "products": [
+    {
+      "id": "jersey-2026-gold", "name": "Gold Jersey 2026", "category": "kits", "colour": "home", "swatch": "#C99A2E",
+      "images": ["./shop/jersey-gold-flat.jpg", "./shop/jersey-gold-model.jpg"],
+      "description": "The official Ekhaya FC 2026 jersey in gold, with the club crest and Stevensons Paints on the front.",
+      "badge": "New", "featured": true, "order": 1
+    },
+    {
+      "id": "jersey-2026-white", "name": "White Jersey 2026", "category": "kits", "colour": "third", "swatch": "#F4F2EC",
+      "images": ["./shop/jersey-white-flat.jpg", "./shop/jersey-white-model.jpg", "./shop/jersey-white-goal.jpg"],
+      "description": "The official Ekhaya FC 2026 jersey in white with gold collar and cuffs, the club crest and Stevensons Paints on the front.",
+      "badge": "New", "featured": false, "order": 2
+    },
+    {
+      "id": "jersey-2026-purple", "name": "Purple Jersey 2026", "category": "kits", "colour": "purple", "swatch": "#5B21B6",
+      "images": ["./shop/jersey-purple-flat.jpg", "./shop/jersey-purple-stadium.jpg"],
+      "description": "The official Ekhaya FC 2026 jersey in purple, with the club crest and Stevensons Paints on the front.",
+      "badge": "New", "featured": false, "order": 3
+    }
+  ],
+  "common": {
+    "group": "jersey-2026",
+    "sizes": ["S", "M", "L", "XL", "XXL"],
+    "personalisable": true,
+    "active": true,
+    "variants": [
+      { "label": "Fan version", "price": 50000, "note": "Supporters' jersey, same design" },
+      { "label": "Player version", "price": 75000, "note": "The version the players wear" }
+    ]
+  }
+}

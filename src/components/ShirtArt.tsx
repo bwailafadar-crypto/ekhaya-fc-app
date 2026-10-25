@@ -7,6 +7,7 @@ const COLOURS: Record<NonNullable<ShopProduct['colour']>, { body: string; trim: 
   away: { body: '#0E0E0E', trim: '#C9A227', text: '#E8C95A' },
   third: { body: '#F6F5F1', trim: '#C9A227', text: '#0E0E0E' },
   training: { body: '#1C1C1C', trim: '#E8C95A', text: '#E8C95A' },
+  purple: { body: '#5B21B6', trim: '#F6F5F1', text: '#F6F5F1' },
 }
 
 export default function ShirtArt({ colour = 'home', back = false, name = '', number = '', className = '' }: { colour?: ShopProduct['colour']; back?: boolean; name?: string; number?: string; className?: string }) {

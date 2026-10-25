@@ -81,7 +81,7 @@ export default function ShopManager() {
       : <ul className="shop-admin-orders">{orders.map((o) => <li key={o.id} className={`s-${o.status}`}>
         <div className="shop-order-top"><strong>{o.ref}</strong><span>{o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'just now'}</span><b>{mwk(o.total)}</b></div>
         <p>{o.name} · <a href={`tel:${o.phone}`}>{o.phone}</a> · {o.delivery === 'delivery' ? `Deliver: ${o.address ?? ''}` : 'Pick up'}</p>
-        <ul>{o.lines.map((l, i) => <li key={i}>{l.qty} × {l.name}{l.size ? ` (${l.size})` : ''}{l.printName || l.printNumber ? <em> print {l.printName} {l.printNumber}</em> : null}</li>)}</ul>
+        <ul>{o.lines.map((l, i) => <li key={i}>{l.qty} × {l.name}{l.variant ? <b>, {l.variant}</b> : null}{l.size ? ` (${l.size})` : ''}{l.printName || l.printNumber ? <em> print {l.printName} {l.printNumber}</em> : null}</li>)}</ul>
         <div className="shop-order-actions">
           <select value={o.status} onChange={(e) => void setStatus(o, e.target.value as OrderStatus)} aria-label="Order status">{ORDER_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select>
           <a className="shop-wa" href={waLink(o.phone, `Hello ${o.name}, about your Ekhaya FC shop order ${o.ref} (${mwk(o.total)}): `)} target="_blank" rel="noopener noreferrer">WhatsApp the fan</a>
@@ -96,6 +96,7 @@ function ProductForm({ value, onDone }: { value: Omit<ShopProduct, 'id'> & { id?
   const { showToast } = useToast()
   const [p, setP] = useState(value)
   const [busy, setBusy] = useState(false)
+  const [versionsText, setVersionsText] = useState((value.variants ?? []).map((v) => [v.label, v.price, v.note].filter((x) => x !== undefined && x !== '').join(' = ')).join('\n'))
   const set = <K extends keyof ShopProduct>(k: K, v: ShopProduct[K]) => setP((old) => ({ ...old, [k]: v }))
   const sizes = p.sizes ?? []
   const toggleSize = (s: string) => set('sizes', sizes.includes(s) ? sizes.filter((x) => x !== s) : [...ADULT_SIZES, ...KIDS_SIZES].filter((x) => x === s || sizes.includes(x)))
@@ -113,8 +114,9 @@ function ProductForm({ value, onDone }: { value: Omit<ShopProduct, 'id'> & { id?
     if (p.name.trim().length < 2) { showToast('Give the product a name.', 'error'); return }
     if (p.active && !(p.price > 0)) { showToast('A product on sale needs a price.', 'error'); return }
     setBusy(true)
+    const variants = versionsText.split('\n').map((line) => line.split('=').map((x) => x.trim())).filter(([label, price]) => label && Number(price.replace(/\D/g, '')) > 0).map(([label, price, note]) => ({ label, price: Number(price.replace(/\D/g, '')), ...(note ? { note } : {}) }))
     const { id, ...data } = p
-    const clean = { ...data, name: p.name.trim(), price: Number(p.price) || 0, oldPrice: Number(p.oldPrice) || null, updatedAt: serverTimestamp() }
+    const clean = { ...data, variants, group: p.group ?? null, name: p.name.trim(), price: variants.length ? Math.min(...variants.map((v) => v.price)) : Number(p.price) || 0, oldPrice: Number(p.oldPrice) || null, updatedAt: serverTimestamp() }
     try {
       if (id) await setDoc(doc(db, 'shopProducts', id), clean)
       else await addDoc(collection(db, 'shopProducts'), { ...clean, createdAt: serverTimestamp() })
@@ -140,6 +142,8 @@ function ProductForm({ value, onDone }: { value: Omit<ShopProduct, 'id'> & { id?
       <label className="admin-field"><span>Order in the shop (1 = first)</span><input inputMode="numeric" value={p.order ?? ''} onChange={(e) => set('order', Number(e.target.value.replace(/\D/g, '')) || 99)} /></label>
     </div>
     <label className="admin-field"><span>Description</span><textarea rows={3} value={p.description ?? ''} maxLength={600} onChange={(e) => set('description', e.target.value)} /></label>
+    <label className="admin-field"><span>Versions with their own price (one per line: name = price = short note). Leave empty for one price.</span><textarea rows={2} value={versionsText} onChange={(e) => setVersionsText(e.target.value)} placeholder={'Fan version = 50000 = Supporters’ shirt\nPlayer version = 75000 = Match shirt, as worn by the players'} /></label>
+    <label className="admin-field"><span>Colour group (same word on each colour of one shirt shows colour circles)</span><input value={p.group ?? ''} onChange={(e) => set('group', e.target.value.trim() || undefined)} placeholder="jersey-2026" /></label>
     <div className="shop-block"><strong>Sizes</strong> <small className="live-help">(none = one size, like a scarf)</small>
       <div className="shop-sizes">{[...ADULT_SIZES, ...KIDS_SIZES].map((s) => <button type="button" key={s} className={sizes.includes(s) ? 'active' : ''} onClick={() => toggleSize(s)}>{s}</button>)}</div>
       {sizes.length > 0 && <><small className="live-help">Sold out sizes (tap):</small><div className="shop-sizes">{sizes.map((s) => <button type="button" key={s} className={(p.soldOutSizes ?? []).includes(s) ? 'soldout' : ''} onClick={() => toggleSoldOut(s)}>{s}</button>)}</div></>}

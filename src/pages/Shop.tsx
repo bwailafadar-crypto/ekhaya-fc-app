@@ -17,7 +17,7 @@ import { useShopSettings } from '../hooks/useShopSettings'
 import { useFlag } from '../hooks/useFlag'
 import type { Player } from '../types'
 import {
-  addToCart, CATEGORIES, newOrderRef, orderLine, clearCart, isPublished, lineTotal, mwk, orderText, setQty, settingsWithDefaults, SIZE_GUIDE, STATUS_LABEL, toggleWish, useShopStore, waLink,
+  addToCart, CATEGORIES, fromPrice, newOrderRef, orderLine, clearCart, isPublished, lineTotal, mwk, orderText, setQty, settingsWithDefaults, SIZE_GUIDE, STATUS_LABEL, toggleWish, useShopStore, waLink,
   type ShopCategory, type ShopOrder, type ShopProduct,
 } from '../utils/shop'
 
@@ -35,8 +35,10 @@ function ProductPicture({ product, className = '' }: { product: Pick<ShopProduct
   return <div className={`shop-img shop-img-crest ${className}`}><img src="./team-logos/ekhaya-fc.png" alt="" /></div>
 }
 
-function Price({ product }: { product: ShopProduct }) {
-  return <span className="shop-price">{product.oldPrice && product.oldPrice > product.price && <s>{mwk(product.oldPrice)}</s>}<b>{mwk(product.price)}</b></span>
+function Price({ product, exact }: { product: ShopProduct; exact?: number }) {
+  const many = !exact && (product.variants?.length ?? 0) > 1
+  const price = exact ?? fromPrice(product)
+  return <span className="shop-price">{product.oldPrice && product.oldPrice > price && <s>{mwk(product.oldPrice)}</s>}{many && <small>From</small>}<b>{mwk(price)}</b></span>
 }
 
 export default function Shop() {
@@ -82,7 +84,7 @@ export default function Shop() {
 
   if (all.loading) return <div className="shop">{bar}<p className="page-loading">Loading the shop…</p></div>
 
-  if (id) return <div className="shop">{bar}{product ? <ProductPage key={product.id} product={product} settings={settings} onAdded={() => openPanel('cart')} /> : <EmptyState icon={Shirt} title="Not in the shop" description="This item was sold out or taken off the shop." />}{panels}</div>
+  if (id) return <div className="shop">{bar}{product ? <ProductPage key={product.id} product={product} siblings={product.group ? products.filter((p) => p.group === product.group) : []} settings={settings} onAdded={() => openPanel('cart')} /> : <EmptyState icon={Shirt} title="Not in the shop" description="This item was sold out or taken off the shop." />}{panels}</div>
 
   if (!products.length) return <div className="shop">{bar}
     <section className="shop-hero shop-hero-soon"><ShirtArt colour="home" className="shop-hero-shirt" /><div><small>Ekhaya FC</small><h2>The shop opens soon</h2><p>Kits, training wear, scarves and caps, with your name and number printed.</p></div></section>
@@ -92,10 +94,15 @@ export default function Shop() {
 
   return <div className="shop">
     {bar}
-    {hero && <Link to={`/shop/${hero.id}`} className="shop-hero">
-      {settings.bannerImage ? <img className="shop-hero-photo" src={settings.bannerImage} alt="" /> : <ProductPicture product={hero} className="shop-hero-shirt" />}
-      <div><small>{hero.badge || 'Ekhaya FC'}</small><h2>{settings.bannerTitle}</h2><p>{settings.bannerText}</p><span className="shop-hero-cta">Shop now · {mwk(hero.price)}</span></div>
-    </Link>}
+    {hero && (settings.bannerImage
+      ? <Link to={`/shop/${hero.id}`} className="shop-banner">
+        <img src={settings.bannerImage} alt={settings.bannerTitle} />
+        <div className="shop-banner-text"><small>Ekhaya FC · Official</small><h2>{settings.bannerTitle}</h2><p>{settings.bannerText}</p><span className="shop-hero-cta">Shop now · from {mwk(fromPrice(hero))}</span></div>
+      </Link>
+      : <Link to={`/shop/${hero.id}`} className="shop-hero">
+        <ProductPicture product={hero} className="shop-hero-shirt" />
+        <div><small>{hero.badge || 'Ekhaya FC'}</small><h2>{settings.bannerTitle}</h2><p>{settings.bannerText}</p><span className="shop-hero-cta">Shop now · from {mwk(fromPrice(hero))}</span></div>
+      </Link>)}
 
     <div className="shop-perks">
       <span><Shirt size={15} aria-hidden="true" /> Name & number printing</span>
@@ -131,13 +138,17 @@ export default function Shop() {
   </div>
 }
 
-function ProductPage({ product, settings, onAdded }: { product: ShopProduct; settings: ReturnType<typeof settingsWithDefaults>; onAdded: () => void }) {
+function ProductPage({ product, siblings, settings, onAdded }: { product: ShopProduct; siblings: ShopProduct[]; settings: ReturnType<typeof settingsWithDefaults>; onAdded: () => void }) {
   const { showToast } = useToast()
   const { wish } = useShopStore()
   const players = useFirestoreCollection<Player>('players').items
   const squad = players.filter((p) => p.team === 'senior' && p.number != null).sort((a, b) => (a.number ?? 0) - (b.number ?? 0))
   const pictures = product.images?.length ? product.images : []
   const [picture, setPicture] = useState(0)
+  const variants = product.variants ?? []
+  const [variantIndex, setVariantIndex] = useState(variants.length > 1 ? -1 : 0)
+  const variant = variants[variantIndex]
+  const basePrice = variant?.price ?? product.price
   const sizes = product.sizes ?? []
   const [size, setSize] = useState(sizes.length === 0 ? 'One size' : '')
   const [print, setPrint] = useState<'none' | 'player' | 'own'>('none')
@@ -150,17 +161,18 @@ function ProductPage({ product, settings, onAdded }: { product: ShopProduct; set
   const printName = print === 'player' ? surname(chosenPlayer?.name ?? '') : print === 'own' ? ownName.trim() : ''
   const printNumber = print === 'player' ? String(chosenPlayer?.number ?? '') : print === 'own' ? ownNumber : ''
   const printing = print !== 'none' && Boolean(printName || printNumber)
-  const unit = product.price + (printing ? settings.printPrice : 0)
+  const unit = (variant?.price ?? fromPrice(product)) + (printing ? settings.printPrice : 0)
   const soldOutSizes = product.soldOutSizes ?? []
   const kids = sizes.filter((s) => /Y$/.test(s))
   const adults = sizes.filter((s) => !/Y$/.test(s))
 
   function add() {
     if (product.soldOut) return
+    if (variants.length > 1 && !variant) { showToast('Choose Fan or Player version first.', 'error'); return }
     if (!size) { showToast('Choose a size first.', 'error'); return }
     if (print === 'player' && !chosenPlayer) { showToast('Choose a player for the printing.', 'error'); return }
     if (print === 'own' && !ownName.trim() && !ownNumber) { showToast('Write the name or number to print.', 'error'); return }
-    addToCart({ productId: product.id, name: product.name, price: product.price, size: size === 'One size' ? '' : size, image: pictures[0], colour: product.colour, ...(printing ? { printName, printNumber, printPrice: settings.printPrice } : {}) }, qty)
+    addToCart({ productId: product.id, name: product.name, price: basePrice, ...(variant && variants.length > 1 ? { variant: variant.label } : {}), size: size === 'One size' ? '' : size, image: pictures[0], colour: product.colour, ...(printing ? { printName, printNumber, printPrice: settings.printPrice } : {}) }, qty)
     showToast(`${product.name} added to your cart.`)
     onAdded()
   }
@@ -179,8 +191,18 @@ function ProductPage({ product, settings, onAdded }: { product: ShopProduct; set
     <div className="shop-info">
       <small className="shop-cat">{CATEGORIES.find((c) => c.key === product.category)?.label}</small>
       <h2>{product.name}</h2>
-      <Price product={product} />
+      <Price product={product} exact={variant ? variant.price : undefined} />
       {product.description && <p className="shop-desc">{product.description}</p>}
+
+      {siblings.length > 1 && <div className="shop-block">
+        <div className="shop-block-head"><strong>Colour: {product.name.replace(/\s*(jersey|kit).*$/i, '')}</strong></div>
+        <div className="shop-swatches">{siblings.map((s) => <Link key={s.id} to={`/shop/${s.id}`} replace className={s.id === product.id ? 'active' : ''} aria-label={s.name} title={s.name}>{s.images?.[0] ? <img src={s.images[0]} alt="" /> : <i style={{ background: s.swatch ?? '#ccc' }} />}</Link>)}</div>
+      </div>}
+
+      {variants.length > 1 && <div className="shop-block">
+        <div className="shop-block-head"><strong>Version</strong></div>
+        <div className="shop-variants" role="radiogroup" aria-label="Version">{variants.map((v, i) => <button type="button" key={v.label} role="radio" aria-checked={variantIndex === i} className={variantIndex === i ? 'active' : ''} onClick={() => setVariantIndex(i)}><span><b>{v.label}</b>{v.note && <small>{v.note}</small>}</span><em>{mwk(v.price)}</em></button>)}</div>
+      </div>}
 
       {sizes.length > 0 && <div className="shop-block">
         <div className="shop-block-head"><strong>Size{size ? `: ${size}` : ''}</strong><button type="button" className="shop-link" onClick={() => setGuide(true)}><Ruler size={14} aria-hidden="true" /> Size guide</button></div>
@@ -275,7 +297,7 @@ function CartPanel({ settings, products, onClose, onOrders }: { settings: Return
         {toFree > 0 ? <div className="shop-free"><span>Add {mwk(toFree)} more for free delivery</span><i style={{ width: `${Math.min(100, (subtotal / settings.freeDeliveryFrom) * 100)}%` }} /></div> : <div className="shop-free done"><span>✓ Free delivery</span><i style={{ width: '100%' }} /></div>}
         <ul className="shop-lines">{lines.map((l) => { const p = pic(l.productId); return <li key={l.key}>
           <div className="shop-line-pic">{p ? <ProductPicture product={p} /> : <ShirtArt colour={l.colour} />}</div>
-          <div className="shop-line-info"><strong>{l.name}</strong><small>{[l.size, l.printName || l.printNumber ? `Print: ${l.printName ?? ''} ${l.printNumber ?? ''}`.trim() : ''].filter(Boolean).join(' · ')}</small>
+          <div className="shop-line-info"><strong>{l.name}</strong><small>{[l.variant, l.size, l.printName || l.printNumber ? `Print: ${l.printName ?? ''} ${l.printNumber ?? ''}`.trim() : ''].filter(Boolean).join(' · ')}</small>
             <div className="shop-qty small"><button type="button" onClick={() => setQty(l.key, l.qty - 1)} aria-label="Less"><Minus size={13} /></button><span>{l.qty}</span><button type="button" onClick={() => setQty(l.key, l.qty + 1)} aria-label="More"><Plus size={13} /></button></div></div>
           <b>{mwk(lineTotal(l))}</b>
         </li> })}</ul>
@@ -312,7 +334,7 @@ function OrdersPanel({ onClose }: { onClose: () => void }) {
     {orders === null ? <p className="page-loading">Loading…</p> : !orders.length ? <EmptyState icon={Package} title="No orders yet" description="Your shop orders and their status show here." />
       : <ul className="shop-orders">{orders.map((o) => <li key={o.id}>
         <div><strong>{o.ref}</strong><span className={`shop-status s-${o.status}`}>{STATUS_LABEL[o.status] ?? o.status}</span></div>
-        <small>{o.lines.map((l) => `${l.qty} × ${l.name}${l.size ? ` (${l.size})` : ''}`).join(', ')}</small>
+        <small>{o.lines.map((l) => `${l.qty} × ${l.name}${l.variant ? `, ${l.variant}` : ''}${l.size ? ` (${l.size})` : ''}`).join(', ')}</small>
         <b>{mwk(o.total)}</b>
       </li>)}</ul>}
   </Sheet>
