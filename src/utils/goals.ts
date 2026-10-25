@@ -9,12 +9,14 @@ export type GoalLine = {
   minute: number
   added?: number
   approx?: boolean
+  /** Minute not known at all (only the scorer). */
+  unknown?: boolean
   penalty?: boolean
   assist?: string
   assistId?: string
 }
 
-type GoalEvent = Pick<MatchEvent, 'kind' | 'minute' | 'team' | 'playerName' | 'playerId' | 'assistPlayerName' | 'assistPlayerId'> & { minuteApprox?: boolean; addedTime?: number; penalty?: boolean }
+type GoalEvent = Pick<MatchEvent, 'kind' | 'minute' | 'team' | 'playerName' | 'playerId' | 'assistPlayerName' | 'assistPlayerId'> & { minuteApprox?: boolean; minuteUnknown?: boolean; addedTime?: number; penalty?: boolean }
 
 const same = (a = '', b = '') => a.trim().toLowerCase() === b.trim().toLowerCase()
 
@@ -28,6 +30,7 @@ export function buildGoals(events: GoalEvent[], fixture: Pick<Fixture, 'home' | 
       ...(event.playerId ? { playerId: event.playerId } : {}),
       ...(event.addedTime ? { added: event.addedTime } : {}),
       ...(event.minuteApprox ? { approx: true } : {}),
+      ...(event.minuteUnknown ? { unknown: true } : {}),
       ...(event.penalty ? { penalty: true } : {}),
       ...(event.assistPlayerName ? { assist: event.assistPlayerName } : {}),
       ...(event.assistPlayerId ? { assistId: event.assistPlayerId } : {}),
@@ -35,7 +38,8 @@ export function buildGoals(events: GoalEvent[], fixture: Pick<Fixture, 'home' | 
 }
 
 /** "21'", "45+2'", "1st half" (when only the half is known). */
-export function minuteLabel(goal: { minute: number; added?: number; approx?: boolean; minuteApprox?: boolean; addedTime?: number }) {
+export function minuteLabel(goal: { minute: number; added?: number; approx?: boolean; minuteApprox?: boolean; addedTime?: number; unknown?: boolean; minuteUnknown?: boolean }) {
+  if (goal.unknown || goal.minuteUnknown) return '–'
   if (goal.approx || goal.minuteApprox) return goal.minute <= 45 ? '1st half' : '2nd half'
   const added = goal.added ?? goal.addedTime
   if (added) return `${goal.minute}+${added}'`

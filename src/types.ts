@@ -110,6 +110,8 @@ export interface MatchEvent {
   subbedOutPlayerName?: string
   /** Only the half is known (goals loaded from match reports). */
   minuteApprox?: boolean
+  /** Minute not known at all. */
+  minuteUnknown?: boolean
   /** Stoppage-time minutes, e.g. 45+2 is minute 45 with addedTime 2. */
   addedTime?: number
   penalty?: boolean

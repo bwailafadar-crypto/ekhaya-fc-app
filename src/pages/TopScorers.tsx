@@ -32,13 +32,11 @@ export default function TopScorers() {
     return rows.get(key) as Row
   }
   let clubGoals = 0
-  const missing: Fixture[] = []
   for (const fixture of finished) {
     const side = isClub(fixture.home) ? 'home' : 'away'
     const score = Number(side === 'home' ? fixture.homeScore : fixture.awayScore) || 0
     const ours = (fixture.goals ?? []).filter((goal) => goal.side === side)
     clubGoals += score
-    if (ours.filter((goal) => goal.name).length < score) missing.push(fixture)
     for (const goal of ours) {
       if (!goal.name) continue
       const scorer = row(goal.name, goal.playerId)
@@ -72,14 +70,14 @@ export default function TopScorers() {
         <button type="button" className={scope === 'league' ? 'active' : ''} onClick={() => setScope('league')}>League</button>
         <button type="button" className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>All matches (with cups)</button>
       </div>
+      {scorers.length > 0 && <div className="scorers-ga-head" aria-hidden="true"><span>⚽ Goals</span><span>👟 Assists</span></div>}
       {fixtures.loading ? <Skeleton /> : scorers.length ? <ol className="scorers-list">
         {scorers.map((item, index) => { const player = playerOf(item); const rank = scorers.findIndex((other) => other.goals === item.goals) + 1; return <li key={item.key} style={{ animationDelay: `${index * 40}ms` }}>
           <b>{rank}</b>{player ? <PlayerAvatar player={player} /> : <span className="scorers-blank" />}
-          <span>{player ? <Link to={`/squad/${player.id}`}><strong>{player.name}</strong></Link> : <strong>{item.name}</strong>}<small>{item.matches.size} match{item.matches.size === 1 ? '' : 'es'}{item.penalties ? ` · ${item.penalties} pen` : ''}{item.assists ? ` · 👟 ${item.assists}` : ''}</small></span>
-          <em>{item.goals}</em>
+          <span>{player ? <Link to={`/squad/${player.id}`}><strong>{player.name}</strong></Link> : <strong>{item.name}</strong>}{item.penalties ? <small>{item.penalties} penalt{item.penalties === 1 ? 'y' : 'ies'}</small> : null}</span>
+          <span className="scorers-ga"><em>{item.goals}</em><i>{item.assists}</i></span>
         </li> })}
       </ol> : <EmptyState icon={Goal} title="No scorers yet" description="Goals entered in the match centre appear here." />}
-      {missing.length > 0 && <details className="scorers-missing"><summary>{missing.length} match{missing.length === 1 ? '' : 'es'} still missing a scorer</summary><ul>{missing.map((fixture) => <li key={fixture.id}><Link to={`/report/${encodeURIComponent(fixture.id)}`}>{fixture.home} {fixture.homeScore}–{fixture.awayScore} {fixture.away}</Link><small>{formatMalawiDate(fixture.date)}</small></li>)}</ul></details>}
     </Card>
 
     {assisters.length > 0 && <Card className="scorers-card">

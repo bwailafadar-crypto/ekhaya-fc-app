@@ -67,7 +67,7 @@ async function main() {
       const event = {
         kind: 'goal', minute, team: ours ? club : opp, playerName: player?.name || scorer,
         ...(player ? { playerId: player.id } : {}), ...(assistName ? { assistPlayerName: assist?.name || assistName, ...(assist ? { assistPlayerId: assist.id } : {}) } : {}),
-        ...(half || !m ? { minuteApprox: true } : {}), ...(m && m[2] ? { addedTime: Number(m[2]) } : {}), ...(/pen/i.test(pen) ? { penalty: true } : {}),
+        ...(half || !m ? { minuteApprox: true } : {}), ...(!half && !m ? { minuteUnknown: true } : {}), ...(m && m[2] ? { addedTime: Number(m[2]) } : {}), ...(/pen/i.test(pen) ? { penalty: true } : {}),
         source: 'match reports', createdAt: FieldValue.serverTimestamp(),
       }
       batch.set(ref.collection('events').doc(), event); events.push(event)
@@ -90,7 +90,7 @@ async function main() {
   const home = f.home
   update.goals = events.filter((e) => e.kind === 'goal').sort((a, b) => a.minute + (a.addedTime || 0) / 100 - (b.minute + (b.addedTime || 0) / 100)).map((e) => ({
     side: norm(e.team) === norm(home) ? 'home' : 'away', name: e.playerName || '', minute: e.minute,
-    ...(e.playerId ? { playerId: e.playerId } : {}), ...(e.addedTime ? { added: e.addedTime } : {}), ...(e.minuteApprox ? { approx: true } : {}),
+    ...(e.playerId ? { playerId: e.playerId } : {}), ...(e.addedTime ? { added: e.addedTime } : {}), ...(e.minuteApprox ? { approx: true } : {}), ...(e.minuteUnknown ? { unknown: true } : {}),
     ...(e.penalty ? { penalty: true } : {}), ...(e.assistPlayerName ? { assist: e.assistPlayerName } : {}), ...(e.assistPlayerId ? { assistId: e.assistPlayerId } : {}),
   }))
   batch.set(ref, { ...update, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
