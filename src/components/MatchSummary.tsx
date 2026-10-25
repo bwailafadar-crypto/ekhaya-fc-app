@@ -7,6 +7,7 @@ import { db } from '../firebase'
 import { useCounts, useMyDoc } from '../hooks/useCounts'
 import { useLiveDocs } from '../hooks/useLiveDocs'
 import type { Fixture, MatchEvent, Player } from '../types'
+import { minuteLabel } from '../utils/goals'
 
 function sameTeam(a: string, b: string) {
   return a.trim().toLowerCase() === b.trim().toLowerCase()
@@ -34,7 +35,7 @@ export default function MatchSummary({ fixture, compact = false, onEdit }: { fix
   const totalPredictions = predictionCounts.counts.total ?? 0
   const exact = predictionCounts.counts.exact ?? 0
 
-  const goalLine = (event: Omit<MatchEvent, 'id'> & { id: string }) => <li key={event.id}><strong>{event.minute}'</strong> {event.playerName || 'Goal'}{event.assistPlayerName && !compact ? <small> (👟 {event.assistPlayerName})</small> : null}</li>
+  const goalLine = (event: Omit<MatchEvent, 'id'> & { id: string }) => <li key={event.id}><strong>{minuteLabel(event)}</strong> {event.playerName || 'Goal'}{event.penalty ? ' (pen)' : ''}{event.assistPlayerName && !compact ? <small> (👟 {event.assistPlayerName})</small> : null}</li>
 
   return (
     <section className={`match-summary${compact ? ' match-summary-compact' : ''}`} aria-label="Full-time summary">

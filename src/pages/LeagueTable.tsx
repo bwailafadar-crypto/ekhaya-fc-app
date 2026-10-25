@@ -76,6 +76,7 @@ export default function LeagueTable() {
       <li><i className="zone-key zone-key-top8" aria-hidden="true" />1–{TOP8}: Airtel Top 8</li>
       <li><i className="zone-key zone-key-relegation" aria-hidden="true" />Last {RELEGATED}: relegated</li>
     </ul>}
+    <Link className="table-scorers-link" to="/scorers">⚽ Top scorers & Golden Boot race →</Link>
     <p className="table-scroll-hint">{full ? 'Swipe sideways to see all columns. ' : ''}Form: next match (?), then the last 5 results, latest first.</p>
   </>
 }

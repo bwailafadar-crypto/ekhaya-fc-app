@@ -17,6 +17,7 @@ import type { Fixture, MatchEvent, MatchStats, Player } from '../types'
 import { competitionLabel } from '../utils/competitions'
 import { ekhayaOutcome, formatMalawiDate, formatMalawiTime, isPlayed } from '../utils/football'
 import { guessMinutes } from '../utils/minutes'
+import { minuteLabel } from '../utils/goals'
 
 const same = (a = '', b = '') => a.trim().toLowerCase() === b.trim().toLowerCase()
 const CLUB = 'Ekhaya FC'
@@ -78,7 +79,7 @@ export default function MatchReport() {
   const c = counts.counts
 
   const url = `${window.location.origin}${window.location.pathname}#/report/${encodeURIComponent(id)}`
-  const scorerText = (team: string) => goals.filter((event) => same(event.team, team)).map((event) => `${surname(event.playerName) || 'Goal'} ${event.minute}'`).join(', ')
+  const scorerText = (team: string) => goals.filter((event) => same(event.team, team)).map((event) => `${surname(event.playerName) || 'Goal'}${event.minuteApprox ? '' : ` ${minuteLabel(event)}`}`).join(', ')
   const shareText = [
     `FT: ${fixture.home} ${home}–${away} ${fixture.away}`,
     scorerText(fixture.home) && `⚽ ${fixture.home}: ${scorerText(fixture.home)}`,
@@ -97,7 +98,7 @@ export default function MatchReport() {
   const eventIcon = (event: MatchEvent) => event.kind === 'goal' ? <Goal size={15} aria-label="Goal" />
     : event.kind === 'card' ? <Square size={13} className={event.card === 'red' ? 'card-red' : 'card-yellow'} aria-label={`${event.card === 'red' ? 'Red' : 'Yellow'} card`} />
       : <ArrowRightLeft size={14} aria-label="Substitution" />
-  const eventText = (event: MatchEvent) => event.kind === 'goal' ? <><strong>{event.playerName || 'Goal'}</strong>{event.assistPlayerName && <small>👟 assist {event.assistPlayerName}</small>}</>
+  const eventText = (event: MatchEvent) => event.kind === 'goal' ? <><strong>{event.playerName || 'Goal'}{event.penalty ? ' (pen)' : ''}</strong>{event.assistPlayerName && <small>👟 assist {event.assistPlayerName}</small>}</>
     : event.kind === 'card' ? <><strong>{event.playerName || event.team}</strong><small>{event.card === 'red' ? 'Red card' : 'Yellow card'}</small></>
       : <><strong>{event.subbedInPlayerName || 'Sub'}</strong><small>on for {event.subbedOutPlayerName || '—'}</small></>
   const keyEvents = events.filter((event) => event.kind === 'goal' || event.kind === 'card' || event.kind === 'substitution')
@@ -114,8 +115,8 @@ export default function MatchReport() {
       </div>
       {fixture.note && <p className="report-note">{fixture.note}</p>}
       <div className="report-scorers">
-        <span>{goals.filter((event) => same(event.team, fixture.home)).map((event) => `${surname(event.playerName)} ${event.minute}'`).join(' · ')}</span>
-        <span>{goals.filter((event) => same(event.team, fixture.away)).map((event) => `${surname(event.playerName)} ${event.minute}'`).join(' · ')}</span>
+        <span>{goals.filter((event) => same(event.team, fixture.home)).map((event) => `${surname(event.playerName)}${event.minuteApprox ? '' : ` ${minuteLabel(event)}`}`).join(' · ')}</span>
+        <span>{goals.filter((event) => same(event.team, fixture.away)).map((event) => `${surname(event.playerName)}${event.minuteApprox ? '' : ` ${minuteLabel(event)}`}`).join(' · ')}</span>
       </div>
       <p className="report-meta"><CalendarDays size={13} aria-hidden="true" /> {formatMalawiDate(fixture.date)} · {formatMalawiTime(fixture.date)}{fixture.venue ? <><MapPin size={13} aria-hidden="true" /> {fixture.venue}</> : null}</p>
       <button type="button" className="report-share" onClick={() => void share()}><Share2 size={16} aria-hidden="true" /> Share the report</button>
@@ -131,7 +132,7 @@ export default function MatchReport() {
       <h2>Key moments</h2>
       {eventsResult.loading ? <Skeleton /> : keyEvents.length ? <ol className="report-timeline">
         {keyEvents.map((event) => <li key={event.id} className={`${same(event.team, fixture.home) ? 'home' : 'away'} kind-${event.kind}`}>
-          <b>{event.minute}'</b><span className="report-ev-icon">{eventIcon(event)}</span><span className="report-ev-text">{eventText(event)}<em>{event.team}</em></span>
+          <b>{event.kind === 'goal' ? minuteLabel(event) : `${event.minute}'`}</b><span className="report-ev-icon">{eventIcon(event)}</span><span className="report-ev-text">{eventText(event)}<em>{event.team}</em></span>
         </li>)}
       </ol> : <p className="report-empty">{home + away === 0 ? 'A goalless draw. No other moments were recorded.' : 'Match moments were not recorded for this game.'}</p>}
     </section>

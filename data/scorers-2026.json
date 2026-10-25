@@ -1,0 +1,214 @@
+{
+  "_notes": "Goalscorers for Ekhaya FC's 2026 matches, from the club's match reports (ekhayasports.com), Nyasa Times, The Maravi Post, Malawi24, Maravi Express, Nation Online, Africa Brief and SULOM. minuteApprox = the report gave only the half, not the minute. Matches with unknown scorers are listed in 'unknown'.",
+  "matches": {
+    "2026-04-26-blue-eagles-v-ekhaya-fc": [
+      {
+        "minute": 25,
+        "minuteApprox": true,
+        "side": "opp",
+        "player": "Tonic Viyuyi"
+      },
+      {
+        "minute": 42,
+        "minuteApprox": true,
+        "side": "opp",
+        "player": "Pius Saka"
+      },
+      {
+        "minute": 48,
+        "minuteApprox": true,
+        "side": "ekhaya",
+        "player": "Blessings Malinda"
+      }
+    ],
+    "2026-05-09-civo-united-v-ekhaya-fc": [
+      {
+        "minute": 10,
+        "minuteApprox": true,
+        "side": "opp",
+        "player": "John Dambileni"
+      }
+    ],
+    "2026-05-16-ekhaya-fc-v-moyale-barracks": [
+      {
+        "minute": 60,
+        "minuteApprox": true,
+        "side": "ekhaya",
+        "player": "Blessings Malinda"
+      },
+      {
+        "minute": 75,
+        "minuteApprox": true,
+        "side": "ekhaya",
+        "player": "James Lumbe"
+      }
+    ],
+    "2026-05-23-kamuzu-barracks-v-ekhaya-fc": [
+      {
+        "minute": 15,
+        "side": "ekhaya",
+        "player": "Levison Mnyenyembe",
+        "assist": "Allen Chihana"
+      },
+      {
+        "minute": 36,
+        "side": "ekhaya",
+        "player": "Charles Mafaiti",
+        "assist": "Levison Mnyenyembe"
+      },
+      {
+        "minute": 65,
+        "side": "ekhaya",
+        "player": "James Lumbe"
+      },
+      {
+        "minute": 67,
+        "side": "opp",
+        "player": "Rashid Chilomo"
+      }
+    ],
+    "2026-05-30-ekhaya-fc-v-masters-fc": [
+      {
+        "minute": 19,
+        "side": "ekhaya",
+        "player": "Allen Chihana"
+      },
+      {
+        "minute": 55,
+        "side": "ekhaya",
+        "player": "Allen Chihana",
+        "assist": "Levison Mnyenyembe"
+      }
+    ],
+    "2026-06-20-mighty-wanderers-v-ekhaya-fc": [
+      {
+        "minute": 45,
+        "added": 2,
+        "side": "ekhaya",
+        "player": "Blessings Malinda"
+      },
+      {
+        "minute": 91,
+        "side": "opp",
+        "player": "Promise Kamwendo"
+      }
+    ],
+    "2026-06-28-ekhaya-fc-v-mafco": [
+      {
+        "minute": 51,
+        "side": "ekhaya",
+        "player": "Chimwemwe Chunga"
+      }
+    ],
+    "2026-07-25-chitipa-united-v-ekhaya-fc": [
+      {
+        "minute": 56,
+        "side": "opp",
+        "player": "Chancy Kaonga",
+        "assist": "Nelson Sikaona"
+      }
+    ],
+    "2026-08-15-silver-strikers-v-ekhaya-fc": [
+      {
+        "minute": 59,
+        "side": "opp",
+        "player": "Zebron Kalima"
+      },
+      {
+        "minute": 62,
+        "side": "opp",
+        "player": "Zebron Kalima"
+      },
+      {
+        "minute": 91,
+        "side": "opp",
+        "player": "Emmanuel Allan"
+      }
+    ],
+    "2026-08-30-airtel-top-8-final-ekhaya-fc-v-mighty-wanderers": [
+      {
+        "minute": 38,
+        "side": "ekhaya",
+        "player": "Blessings Malinda",
+        "penalty": true
+      },
+      {
+        "minute": 41,
+        "minuteApprox": true,
+        "side": "opp",
+        "player": "Mphatso Kamanga"
+      },
+      {
+        "minute": 60,
+        "side": "ekhaya",
+        "player": "Allen Chihana"
+      }
+    ]
+  },
+  "fixNames": {
+    "2026-10-25-ekhaya-fc-v-blue-eagles": [
+      {
+        "side": "opp",
+        "minute": 62,
+        "player": "Pius Saka"
+      }
+    ]
+  },
+  "unknown": [
+    "2026-05-02-ekhaya-fc-v-red-lions (1-1)",
+    "2026-05-23-kamuzu-barracks-v-ekhaya-fc: Ekhaya's 4th goal",
+    "2026-08-08-ekhaya-fc-v-dedza-dynamos (1-1)",
+    "2026-08-22-creck-sporting-v-ekhaya-fc (3-2)"
+  ],
+  "goldenBoot": {
+    "asOf": "2026-10-22",
+    "source": "Nyasa Times golden boot table, 22 Oct 2026 (before week 18)",
+    "players": [
+      {
+        "name": "Tonic Viyuyi",
+        "club": "Blue Eagles",
+        "goals": 10
+      },
+      {
+        "name": "Ephraim Kondowe",
+        "club": "FCB Nyasa Big Bullets",
+        "goals": 10
+      },
+      {
+        "name": "Marco Chiwaya",
+        "club": "Goshen City Dedza Dynamos",
+        "goals": 6
+      },
+      {
+        "name": "Blessings Malinda",
+        "club": "Ekhaya FC",
+        "goals": 5
+      },
+      {
+        "name": "Festus Duwe",
+        "club": "Silver Strikers",
+        "goals": 5
+      },
+      {
+        "name": "Kelvin Hanganda",
+        "club": "Kamuzu Barracks",
+        "goals": 5
+      },
+      {
+        "name": "Lameck Mithi",
+        "club": "Mighty Wanderers",
+        "goals": 5
+      },
+      {
+        "name": "Lucky Mkandawire",
+        "club": "Moyale Barracks",
+        "goals": 5
+      },
+      {
+        "name": "Raheem Mtondera",
+        "club": "Luanar Mitundu",
+        "goals": 5
+      }
+    ]
+  }
+}

@@ -5,6 +5,7 @@ import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import type { Fixture } from '../types'
 import { ekhayaOutcome, formatMalawiDate, formatMalawiTime, isLiveNow, isPlayed } from '../utils/football'
 import TeamLogo from './TeamLogo'
+import { scorerText } from '../utils/goals'
 import { Badge, Card } from './UI'
 
 export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixture; previousMeeting?: Fixture }) {
@@ -41,6 +42,11 @@ export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixtu
           <span>{fixture.away}</span>
         </div>
       </div>
+      {fixture.goals && played && (scorerText(fixture.goals, 'home') || scorerText(fixture.goals, 'away')) && <div className="match-card-scorers" aria-label="Goalscorers">
+        <span>{scorerText(fixture.goals, 'home')}</span>
+        <i aria-hidden="true">⚽</i>
+        <span>{scorerText(fixture.goals, 'away')}</span>
+      </div>}
       {fixture.note && <p className="match-card-note">{fixture.note}</p>}
       {previousMeeting && previousMeeting.homeScore != null && previousMeeting.awayScore != null && <div className="match-previous-result">
         <span>Previous meeting</span>

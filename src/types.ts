@@ -50,6 +50,8 @@ export interface Fixture {
   benchPlayerIds?: string[]
   lineupConfirmed?: boolean
   chatClosed?: boolean
+  /** Goal lines saved at full time (see utils/goals). */
+  goals?: import('./utils/goals').GoalLine[]
   /** Minutes played from the club's official match sheet (player id → minutes). */
   officialMinutes?: Record<string, number>
   /** Line-up shape, e.g. '4-3-3'. */
@@ -106,6 +108,11 @@ export interface MatchEvent {
   subbedInPlayerName?: string
   subbedOutPlayerId?: string
   subbedOutPlayerName?: string
+  /** Only the half is known (goals loaded from match reports). */
+  minuteApprox?: boolean
+  /** Stoppage-time minutes, e.g. 45+2 is minute 45 with addedTime 2. */
+  addedTime?: number
+  penalty?: boolean
   /** YouTube/Facebook clip of this moment (goals). */
   videoUrl?: string
 }
