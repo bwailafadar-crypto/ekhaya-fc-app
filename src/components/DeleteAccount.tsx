@@ -2,7 +2,7 @@
 // Removes the fan's profile, fan card and alerts on this device straight away,
 // then deletes the sign-in itself. Anything left (old votes, predictions,
 // check-ins) is removed by the weekly clean-up from deletionRequests/{uid}.
-import { deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup } from 'firebase/auth'
+import { browserPopupRedirectResolver, deleteUser, EmailAuthProvider, GoogleAuthProvider, reauthenticateWithCredential, reauthenticateWithPopup } from 'firebase/auth'
 import { deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
@@ -32,7 +32,7 @@ export default function DeleteAccount() {
     try {
       // Prove it is really the fan (Firebase needs a fresh sign-in to delete).
       if (usesPassword) await reauthenticateWithCredential(current, EmailAuthProvider.credential(current.email ?? '', password))
-      else await reauthenticateWithPopup(current, new GoogleAuthProvider())
+      else await reauthenticateWithPopup(current, new GoogleAuthProvider(), browserPopupRedirectResolver)
       await setDoc(doc(db, 'deletionRequests', current.uid), { email: current.email ?? '', createdAt: serverTimestamp() })
       await disablePush().catch(() => undefined)
       await deleteDoc(doc(db, 'fanCards', current.uid)).catch(() => undefined)

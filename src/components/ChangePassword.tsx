@@ -1,7 +1,7 @@
 // Profile → "Change password". Email accounts type their current password and
 // a new one. Google-only accounts can add a password, so they can also sign in
 // with email. Forgot the current one? A reset link is emailed.
-import { EmailAuthProvider, GoogleAuthProvider, linkWithCredential, reauthenticateWithCredential, reauthenticateWithPopup, sendPasswordResetEmail, updatePassword } from 'firebase/auth'
+import { browserPopupRedirectResolver, EmailAuthProvider, GoogleAuthProvider, linkWithCredential, reauthenticateWithCredential, reauthenticateWithPopup, sendPasswordResetEmail, updatePassword } from 'firebase/auth'
 import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { auth } from '../firebase'
@@ -42,8 +42,14 @@ export default function ChangePassword() {
         await updatePassword(account, next)
         showToast('Password changed. Use the new one next time you sign in.')
       } else {
-        await reauthenticateWithPopup(account, new GoogleAuthProvider())
-        await linkWithCredential(account, EmailAuthProvider.credential(account.email, next))
+        // Add the password straight away; Firebase asks for a fresh Google
+        // sign-in only when the last one was a while ago.
+        const credential = EmailAuthProvider.credential(account.email, next)
+        try { await linkWithCredential(account, credential) } catch (first) {
+          if ((first as { code?: string }).code !== 'auth/requires-recent-login') throw first
+          await reauthenticateWithPopup(account, new GoogleAuthProvider(), browserPopupRedirectResolver)
+          await linkWithCredential(account, credential)
+        }
         showToast('Password added. You can now sign in with Google or with your email and this password.')
       }
       reset()
@@ -54,7 +60,9 @@ export default function ChangePassword() {
           : code === 'auth/too-many-requests' ? 'Too many tries. Wait a few minutes and try again.'
             : code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request' ? 'Confirm with Google to add a password.'
               : code === 'auth/requires-recent-login' ? 'Please sign out, sign in again, then change your password.'
-                : 'The password was not changed. Check your connection and try again.')
+                : code === 'auth/popup-blocked' ? 'Your browser blocked the Google window. Allow pop-ups for this site, or sign out and sign in again, then try once more.'
+                  : code === 'auth/provider-already-linked' || code === 'auth/email-already-in-use' || code === 'auth/credential-already-in-use' ? 'This account already has a password. Use "Forgot it?" to set a new one.'
+                    : `The password was not changed. Check your connection and try again.${code ? ` (${code})` : ''}`)
     } finally { setBusy(false) }
   }
 
@@ -78,7 +86,7 @@ export default function ChangePassword() {
           <Button type="submit" disabled={busy}>{busy ? 'Saving…' : hasPassword ? 'Change password' : 'Add password'}</Button>
           <Button type="button" variant="ghost" disabled={busy} onClick={reset}>Cancel</Button>
         </div>
-        {hasPassword && <button type="button" className="change-password-forgot" onClick={() => void sendReset()}>Forgot it? Email me a link to set a new password</button>}
+        {<button type="button" className="change-password-forgot" onClick={() => void sendReset()}>{hasPassword ? 'Forgot it? Email me a link to set a new password' : 'Or email me a link to set a password'}</button>}
       </form>}
   </Card>
 }
