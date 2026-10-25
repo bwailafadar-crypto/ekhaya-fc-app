@@ -34,6 +34,7 @@ const Tv = lazyPage(() => import('./pages/Tv'))
 const Club = lazyPage(() => import('./pages/Club'))
 const MatchReport = lazyPage(() => import('./pages/MatchReport'))
 const TopScorers = lazyPage(() => import('./pages/TopScorers'))
+const Shop = lazyPage(() => import('./pages/Shop'))
 
 export default function App() {
   return (
@@ -72,6 +73,8 @@ export default function App() {
                 <Route path="/club" element={<Club />} />
                 <Route path="/report/:id" element={<MatchReport />} />
                 <Route path="/scorers" element={<TopScorers />} />
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/shop/:id" element={<Shop />} />
               </Route>
               </Routes>
               <InstallBanner />

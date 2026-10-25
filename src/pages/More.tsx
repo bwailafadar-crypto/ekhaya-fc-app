@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Activity, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, Trophy, Users, Vote } from 'lucide-react'
+import { Activity, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, Vote } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { useFlag } from '../hooks/useFlag'
 import LogoutButton from '../components/LogoutButton'
@@ -12,6 +12,7 @@ const items = [
   { to: '/news', label: 'News', icon: Newspaper },
   { to: '/tv', label: 'Ekhaya TV · coming soon', icon: Clapperboard },
   { to: '/club', label: 'Club & honours · trophy cabinet', icon: Landmark },
+  { to: '/shop', label: 'Club Shop · kits & merchandise', icon: ShoppingBag },
   { to: '/fanzone', label: 'Fan Zone', icon: Vote },
   { to: '/community', label: 'Fan Family · branches & invites', icon: HeartHandshake },
   { to: '/membership', label: 'Membership', icon: ShieldCheck },
@@ -24,7 +25,8 @@ export default function More() {
   const fanFamily = useFlag('fanFamily')
   const competitions = useFlag('competitions')
   const membershipOpen = useFlag('membershipPayments')
-  const visible = items.filter((item) => (item.to !== '/community' || fanFamily) && (item.to !== '/competitions' || competitions))
+  const shopOpen = useFlag('clubShop') || canManage
+  const visible = items.filter((item) => (item.to !== '/shop' || shopOpen) && (item.to !== '/community' || fanFamily) && (item.to !== '/competitions' || competitions))
 
   return (
     <div className="menu-list">

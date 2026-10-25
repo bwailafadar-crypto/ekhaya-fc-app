@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent, type ChangeEvent } from 'react'
 import { COMPETITIONS } from '../utils/competitions'
 import { collection, deleteDoc, doc, documentId as firestoreDocumentId, getDoc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, Timestamp, writeBatch, type DocumentData, type QueryDocumentSnapshot } from 'firebase/firestore'
-import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, Trash2, UserRound, Users, Vote } from 'lucide-react'
+import { ArrowRight, CalendarDays, Download, ImagePlus, Newspaper, ShieldCheck, Table2, Trash2, UserRound, Users, Vote, ShoppingBag } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import FansManager from './admin/FansManager'
+import ShopManager from './admin/ShopManager'
 import FanZoneManager from './admin/FanZoneManager'
 import { db } from '../firebase'
 import { useToast } from '../components/ToastContext'
@@ -22,7 +23,7 @@ import { compressImage, IMAGE_SIZES } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
 import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
 
-type Section = 'fans' | 'fanzone' | 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
+type Section = 'fans' | 'shop' | 'fanzone' | 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
 const superadminSections: Section[] = ['fans', 'membershipTiers', 'members']
 const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
   { key: 'fans', label: 'Fans', icon: UserRound },
@@ -32,6 +33,7 @@ const sections: Array<{ key: Section; label: string; icon: typeof Users }> = [
   { key: 'fixtures', label: 'Fixtures', icon: CalendarDays },
   { key: 'news', label: 'News', icon: Newspaper },
   { key: 'fanzone', label: 'Fan Zone', icon: Vote },
+  { key: 'shop', label: 'Shop', icon: ShoppingBag },
   { key: 'membershipTiers', label: 'Membership Tiers', icon: ShieldCheck },
   { key: 'members', label: 'Membership requests', icon: Users },
 ]
@@ -793,8 +795,8 @@ export default function AdminPanel() {
     }
   }
 
-  const isLoading = section === 'fans' || section === 'fanzone' ? false : section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : section === 'news' ? false : membersLoading
-  const sectionError = section === 'fans' || section === 'fanzone' ? null : section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : section === 'news' ? null : membersError
+  const isLoading = section === 'fans' || section === 'fanzone' || section === 'shop' ? false : section === 'players' ? players.loading : section === 'teams' ? teams.loading : section === 'standings' ? standings.loading : section === 'fixtures' ? fixtures.loading : section === 'membershipTiers' ? membershipTiers.loading : section === 'news' ? false : membersLoading
+  const sectionError = section === 'fans' || section === 'fanzone' || section === 'shop' ? null : section === 'players' ? players.error : section === 'teams' ? teams.error : section === 'standings' ? standings.error : section === 'fixtures' ? fixtures.error : section === 'membershipTiers' ? membershipTiers.error : section === 'news' ? null : membersError
   const collectionErrors = [
     { name: 'Players', error: players.error },
     { name: 'Teams', error: teams.error },
@@ -820,6 +822,7 @@ export default function AdminPanel() {
       : sectionError ? null
       : section === 'fans' ? <FansManager onOpenRequests={() => setSection('members')} />
       : section === 'fanzone' ? <FanZoneManager />
+      : section === 'shop' ? <ShopManager />
       : section === 'members' ? <section className="admin-members">
           {isSuperadmin && <MemberCardCheck />}
           <div className="member-filters">

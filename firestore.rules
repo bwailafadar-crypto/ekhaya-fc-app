@@ -431,6 +431,34 @@ service cloud.firestore {
     }
 
     // Feature flags and the club-wide notice. Only the superadmin changes them.
+    // Club shop: products and settings readable by fans, edited by admins.
+    match /shopProducts/{productId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /shopSettings/{docId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Shop orders: a fan sends their own order and sees only their own;
+    // admins see all and change the status.
+    match /shopOrders/{orderId} {
+      allow create: if signedIn() && !isBlocked()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'new'
+        && request.resource.data.ref is string && request.resource.data.ref.size() <= 12
+        && request.resource.data.name is string && request.resource.data.name.size() <= 80
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 30
+        && request.resource.data.lines is list && request.resource.data.lines.size() > 0 && request.resource.data.lines.size() <= 20
+        && request.resource.data.total is number && request.resource.data.total > 0
+        && request.resource.data.delivery in ['pickup', 'delivery']
+        && request.resource.data.keys().hasOnly(['ref', 'uid', 'name', 'phone', 'lines', 'delivery', 'address', 'deliveryFee', 'total', 'status', 'createdAt']);
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
     match /appConfig/{docId} {
       // Switches and the club notice are not secret: the sign-in page reads them too.
       allow read: if docId == 'flags' || signedIn();

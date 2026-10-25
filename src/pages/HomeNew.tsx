@@ -1,7 +1,7 @@
 // The Home screen: next match with a live countdown, last result with its
 // scorers, Ekhaya's league place and top scorer, the trophy, then news.
 // Admin → App health → "New Home screen" switches back to the old Home.
-import { ArrowRight, CalendarDays, Clapperboard, MapPin, Medal, Newspaper, ShieldCheck, Target, Trophy, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clapperboard, MapPin, Medal, Newspaper, ShieldCheck, ShoppingBag, Target, Trophy, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -34,6 +34,7 @@ export default function NewHome() {
   const standings = useFirestoreCollection<Standing>('standings')
   const membershipOpen = useFlag('membershipPayments')
   const scorersOpen = useFlag('topScorers')
+  const shopOpen = useFlag('clubShop')
   const newsResult = usePublishedNews()
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer) }, [])
@@ -113,6 +114,7 @@ export default function NewHome() {
       <Link to="/squad"><Users size={19} /><span>Squad</span></Link>
       {scorersOpen && <Link to="/scorers"><Medal size={19} /><span>Scorers</span></Link>}
       <Link to="/table"><Trophy size={19} /><span>Table</span></Link>
+      {shopOpen && <Link to="/shop"><ShoppingBag size={19} /><span>Shop</span></Link>}
       <Link to="/tv"><Clapperboard size={19} /><span>TV</span><small className="shortcut-soon">Soon</small></Link>
       <Link to="/membership"><ShieldCheck size={19} /><span>Join</span>{!membershipOpen && <small className="shortcut-soon">Soon</small>}</Link>
     </section>
