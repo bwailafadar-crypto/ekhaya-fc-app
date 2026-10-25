@@ -45,7 +45,8 @@ async function main() {
   const finalAway = update.awayScore ?? f.awayScore
   const players = (await db.collection('players').get()).docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.team === 'senior')
   const findPlayer = (name) => players.find((p) => norm(p.name) === norm(name)) || players.find((p) => norm(p.name).endsWith(norm(String(name).split(' ').slice(-1)[0])) && norm(p.name)[0] === norm(name)[0])
-  const existing = (await ref.collection('events').get()).docs.map((d) => d.data())
+  const existingDocs = (await ref.collection('events').get()).docs
+  const existing = existingDocs.map((d) => d.data())
   const events = [...existing]
   const batch = db.batch()
   const lines = String(process.env.GOALS || '').split(';').map((l) => l.trim()).filter(Boolean)
@@ -73,6 +74,18 @@ async function main() {
       say(`  goal ${minuteRaw || '?'} ${event.playerName}${player ? ' (squad)' : ''}${assistName ? `, assist ${event.assistPlayerName}` : ''} [${ours ? club : opp}]`)
     }
     update.scorersLoaded = true
+  }
+  // FIXES: correct saved goals, e.g. "62>61|Pius Saka; 71>70" (old minute > new minute | name, optional).
+  for (const fix of String(process.env.FIXES || '').split(';').map((x) => x.trim()).filter(Boolean)) {
+    const m = fix.match(/^(\d{1,3})\s*>\s*(\d{1,3})\s*(?:\|\s*(.+))?$/)
+    if (!m) { say(`Fix not understood: ${fix}`); continue }
+    const target = existingDocs.find((d) => d.data().kind === 'goal' && d.data().minute === Number(m[1]))
+    if (!target) { say(`No goal at ${m[1]}' to fix`); continue }
+    const change = { minute: Number(m[2]), ...(m[3] ? { playerName: m[3].trim() } : {}) }
+    batch.update(target.ref, change)
+    const inList = events.find((e) => e.kind === 'goal' && e.minute === Number(m[1]))
+    if (inList) Object.assign(inList, change)
+    say(`  fix: ${target.data().playerName || 'goal'} ${m[1]}' → ${m[2]}'${m[3] ? ` (${m[3].trim()})` : ''}`)
   }
   const home = f.home
   update.goals = events.filter((e) => e.kind === 'goal').sort((a, b) => a.minute + (a.addedTime || 0) / 100 - (b.minute + (b.addedTime || 0) / 100)).map((e) => ({

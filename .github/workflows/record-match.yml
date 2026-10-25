@@ -15,6 +15,10 @@ on:
         description: "side|scorer|minute|assist|pen; ... (side = ekhaya or opp; minute like 21, 45+2, 1H, 2H)"
         required: false
         default: ""
+      fixes:
+        description: "Correct saved goals: old>new minute|name; ... e.g. 62>61|Pius Saka"
+        required: false
+        default: ""
       mode:
         type: choice
         options: [preview, apply]
@@ -41,6 +45,7 @@ jobs:
           MATCH: ${{ inputs.match }}
           SCORE: ${{ inputs.score }}
           GOALS: ${{ inputs.goals }}
+          FIXES: ${{ inputs.fixes }}
         run: |
           ARGS=""
           [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
