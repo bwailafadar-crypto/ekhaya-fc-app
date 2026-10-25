@@ -2485,3 +2485,7 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 @keyframes nh-glow { from { transform: translateX(-10%); } to { transform: translateX(10%); } }
 @keyframes nh-bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-4px) rotate(4deg); } }
 @media (prefers-reduced-motion: reduce) { .nh-hero::before, .nh-trophy-cup { animation: none; } }
+.nh-hero-crest { position: absolute !important; left: 50%; top: 50%; width: 118%; max-width: 520px; transform: translate(-50%, -46%); opacity: .11; filter: grayscale(1) brightness(2.4) sepia(1) saturate(2.2) hue-rotate(5deg); pointer-events: none; z-index: 0; }
+.nh-stats-one { grid-template-columns: 1fr; }
+.nh-stats-one .nh-stat { grid-template-columns: auto 1fr auto; align-items: center; column-gap: 14px; }
+.nh-stats-one .nh-stat small { grid-column: 1 / -1; }

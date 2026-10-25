@@ -7,15 +7,13 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { LatestGoal, MotmSpotlight, NextLineup } from '../components/HomeParts'
 import NewsCoverImage from '../components/NewsCoverImage'
-import PlayerAvatar from '../components/PlayerAvatar'
 import StoriesBar from '../components/StoriesBar'
 import TeamLogo from '../components/TeamLogo'
 import { Badge, Card, EmptyState, Skeleton } from '../components/UI'
-import { useMyDoc } from '../hooks/useCounts'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { useFlag } from '../hooks/useFlag'
 import { usePublishedNews } from '../hooks/usePublishedNews'
-import type { Fixture, Player, Standing } from '../types'
+import type { Fixture, Standing } from '../types'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
 import { ekhayaOutcome, formatMalawiDate, formatMalawiTime, isLiveNow, isPlayed, sortByDate } from '../utils/football'
 import { scorerText } from '../utils/goals'
@@ -46,18 +44,6 @@ export default function NewHome() {
   const last = sortByDate(fixtures.filter((fixture) => isPlayed(fixture) && !fixture.editing), 'desc')[0]
   const table = [...standings.items].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
   const ekhaya = table.find((row) => isClub(row.team))
-  // Ekhaya's top league scorer, from the goals saved on each match.
-  const tally = new Map<string, { name: string; playerId?: string; goals: number }>()
-  for (const fixture of fixtures.filter((item) => item.status === 'finished' && !isCupCompetition(item.competition) && (isClub(item.home) || isClub(item.away)))) {
-    const side = isClub(fixture.home) ? 'home' : 'away'
-    for (const goal of fixture.goals ?? []) {
-      if (goal.side !== side || !goal.name) continue
-      const key = goal.playerId || goal.name
-      tally.set(key, { name: goal.name, playerId: goal.playerId, goals: (tally.get(key)?.goals ?? 0) + 1 })
-    }
-  }
-  const top = [...tally.values()].sort((a, b) => b.goals - a.goals)[0]
-  const topPlayer = useMyDoc<Player>(top?.playerId ? ['players', top.playerId] : null).data
   // A cup Ekhaya won this season (the final is in the fixtures).
   const trophy = sortByDate(fixtures.filter((fixture) => fixture.status === 'finished' && isCupCompetition(fixture.competition) && /final/i.test(`${fixture.round ?? ''} ${fixture.id}`) && !/semi|quarter|qf|sf/i.test(`${fixture.round ?? ''} ${fixture.id}`) && ekhayaOutcome(fixture) === 'W'), 'desc')[0]
   const news = newsResult.items.slice(0, 3)
@@ -75,6 +61,7 @@ export default function NewHome() {
     <StoriesBar fixtures={fixturesResult.items} />
 
     {fixturesResult.loading ? <Skeleton className="nh-skeleton" /> : next && !live ? <section className="nh-hero" aria-label="Next match">
+      <img className="nh-hero-crest" src="./team-logos/ekhaya-fc.png" alt="" aria-hidden="true" />
       <div className="nh-hero-top"><span>{new Date(next.date).getTime() - now < 36 * 3600000 ? '🔥 Match day' : 'Next match'}</span><em>{competitionLabel(next.competition)}{next.round ? ` · ${next.round}` : ''}</em></div>
       <div className="nh-teams">
         <div><TeamLogo name={next.home} crest /><span>{next.home}</span></div>
@@ -106,19 +93,13 @@ export default function NewHome() {
       <MotmSpotlight fixture={last} />
     </section>}
 
-    <section className="nh-stats" aria-label="Season">
+    <section className="nh-stats nh-stats-one" aria-label="Season">
       {ekhaya ? <Link className="nh-stat" to="/table">
         <small>League position</small>
         <strong className="nh-big">{ekhaya.position}<sup>{['th', 'st', 'nd', 'rd'][ekhaya.position % 100 > 10 && ekhaya.position % 100 < 14 ? 0 : Math.min(ekhaya.position % 10, 4) % 4] ?? 'th'}</sup></strong>
         <span>{ekhaya.points} pts · {ekhaya.played} played</span>
         <div className="table-form-boxes">{[...(ekhaya.form ?? [])].slice(-5).reverse().map((result, index) => <span key={index} className={`form-box form-box-${result.toLowerCase()}`}>{result}</span>)}</div>
       </Link> : <div className="nh-stat"><Skeleton /></div>}
-      {top ? <Link className="nh-stat" to="/scorers">
-        <small>Top scorer</small>
-        <div className="nh-scorer">{topPlayer ? <PlayerAvatar player={{ ...topPlayer, id: top.playerId ?? '' }} /> : <span className="nh-ball">⚽</span>}<strong>{top.goals}</strong></div>
-        <span>{top.name}</span>
-        <em>League goals · see all</em>
-      </Link> : <Link className="nh-stat" to="/scorers"><small>Top scorers</small><strong className="nh-big">⚽</strong><span>Golden Boot race</span></Link>}
     </section>
 
     {trophy && <Link className="nh-trophy" to="/competitions?tab=cups">
