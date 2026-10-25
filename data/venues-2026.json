@@ -1,0 +1,32 @@
+{
+  "_notes": "Home grounds from the Super League of Malawi 2026/27 fixture list (sulommw.com): each club's most used stadium. Ekhaya FC plays at Mpira Stadium (confirmed by the club). Past Ekhaya matches use the stadium SULOM lists for that match, except where the club's own match report says otherwise.",
+  "homeGrounds": {
+    "Ekhaya FC": "Mpira Stadium",
+    "FCB Nyasa Big Bullets": "Mpira Stadium",
+    "Mighty Wanderers": "Mpira Stadium",
+    "Blue Eagles": "Nankhaka Stadium",
+    "Silver Strikers": "Silver Stadium",
+    "Masters FC": "Bingu National Stadium",
+    "Chitipa United": "Chitipa Stadium",
+    "Luanar Mitundu": "Dedza Stadium",
+    "Red Lions": "Zomba Stadium",
+    "Moyale Barracks": "Mzuzu Stadium",
+    "Civil Service United": "Civo Stadium",
+    "Goshen City Dedza Dynamos": "Dedza Stadium",
+    "Karonga United": "Karonga Stadium",
+    "Kamuzu Barracks": "Champion Stadium",
+    "Creck Sporting": "Aubrey Dimba Stadium",
+    "MAFCO F.C": "Chitowe Stadium"
+  },
+  "matchVenues": {
+    "2026-04-26-blue-eagles-v-ekhaya-fc": "Civo Stadium",
+    "2026-05-09-civo-united-v-ekhaya-fc": "Civo Stadium",
+    "2026-05-23-kamuzu-barracks-v-ekhaya-fc": "Champion Stadium",
+    "2026-06-20-mighty-wanderers-v-ekhaya-fc": "Mpira Stadium",
+    "2026-07-05-mitundu-baptist-v-ekhaya-fc": "Aubrey Dimba Stadium",
+    "2026-07-25-chitipa-united-v-ekhaya-fc": "Chitipa Stadium",
+    "2026-08-15-silver-strikers-v-ekhaya-fc": "Silver Stadium",
+    "2026-08-22-creck-sporting-v-ekhaya-fc": "Nankhaka Stadium",
+    "2026-10-18-red-lions-v-ekhaya-fc": "Zomba Stadium"
+  }
+}
