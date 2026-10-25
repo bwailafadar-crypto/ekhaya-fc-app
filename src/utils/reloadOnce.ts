@@ -7,8 +7,29 @@ export function reloadOnce() {
     if (Date.now() - last < 30000) return false
     sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
   } catch { /* storage blocked: still try once */ }
-  window.location.reload()
+  void freshReload()
   return true
+}
+
+/**
+ * Reload onto the newest version: the offline helper (service worker) may still
+ * hold the old app, so it is told to update, its saved copy is cleared, and
+ * then the page reloads. Used when a piece of an old version is missing.
+ */
+export async function freshReload() {
+  try {
+    const registrations = await navigator.serviceWorker?.getRegistrations?.() ?? []
+    await Promise.all(registrations.map(async (registration) => {
+      try { await registration.update() } catch { /* offline */ }
+      registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
+      await registration.unregister()
+    }))
+    if ('caches' in window) {
+      const names = await caches.keys()
+      await Promise.all(names.filter((name) => /workbox|precache|ekhaya/i.test(name)).map((name) => caches.delete(name)))
+    }
+  } catch { /* still reload */ }
+  window.location.reload()
 }
 
 export function clearReloadGuard() {

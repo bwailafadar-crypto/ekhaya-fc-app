@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { logError } from '../utils/logger'
-import { clearReloadGuard, isOldVersionError, reloadOnce } from '../utils/reloadOnce'
+import { clearReloadGuard, freshReload, isOldVersionError, reloadOnce } from '../utils/reloadOnce'
 import { Button, Card } from './UI'
 
 type ErrorBoundaryProps = { children: ReactNode }
@@ -36,7 +36,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             <h2>Something went wrong</h2>
             <p>Please reload the app and try again.</p>
             <div className="admin-actions">
-              <Button type="button" onClick={() => { clearReloadGuard(); window.location.reload() }}>Reload</Button>
+              <Button type="button" onClick={() => { clearReloadGuard(); void freshReload() }}>Reload</Button>
               <Button type="button" variant="ghost" onClick={this.goHome}>Go to Home</Button>
             </div>
             {/* Shown so a screenshot tells the club exactly what broke. */}
