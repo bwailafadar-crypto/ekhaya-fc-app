@@ -1,0 +1,16 @@
+# READ-ONLY: shows which app version the live website is serving.
+name: Check live version
+on:
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check
+        run: |
+          html=$(curl -s https://ekhaya-fc-app.web.app/)
+          js=$(echo "$html" | grep -o 'assets/index-[A-Za-z0-9_-]*\.js' | head -1)
+          sw=$(curl -s https://ekhaya-fc-app.web.app/sw.js | grep -o 'index-[A-Za-z0-9_-]*\.js' | head -1)
+          crest=$(curl -s "https://ekhaya-fc-app.web.app/$js" | grep -c "nh-hero-crest")
+          flags=$(curl -s "https://firestore.googleapis.com/v1/projects/ekhaya-fc-app/databases/(default)/documents/appConfig/flags" | tr -d '\n' | grep -o '"newHome"[^}]*}' | head -1)
+          echo "::notice::page=$js sw=$sw crest_in_bundle=$crest newHome_flag=${flags:-not-set}"
