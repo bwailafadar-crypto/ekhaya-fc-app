@@ -1,6 +1,8 @@
 // Top scorers: the league's Golden Boot race and Ekhaya's own scorers and
 // assists (worked out from the goals saved on each finished match).
 import { Footprints, Goal, Trophy } from 'lucide-react'
+import { useAuth } from '../auth/AuthContext'
+import { useFlag } from '../hooks/useFlag'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PlayerAvatar from '../components/PlayerAvatar'
@@ -19,6 +21,8 @@ const isClub = (name: string) => /ekhaya/i.test(name)
 const norm = (name: string) => name.toLowerCase().replace(/[^a-z]/g, '')
 
 export default function TopScorers() {
+  const { role } = useAuth()
+  const open = useFlag('topScorers') || role === 'admin' || role === 'superadmin'
   const boot = useMyDoc<GoldenBoot>(['publicData', 'topScorers'])
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   const players = useFirestoreCollection<Player>('players')
@@ -50,6 +54,8 @@ export default function TopScorers() {
   const known = scorers.reduce((sum, item) => sum + item.goals, 0)
   const playerOf = (item: Row) => players.items.find((player) => player.id === item.playerId) ?? players.items.find((player) => norm(player.name) === norm(item.name))
   const bootPlayers = [...(boot.data?.players ?? [])].sort((a, b) => b.goals - a.goals)
+
+  if (!open) return <><PageHeader eyebrow="2026 season" title="Top scorers" description="Coming soon" /><Card><EmptyState icon={Goal} title="Coming soon" description="The Golden Boot race and Ekhaya's scorers will be here soon." /></Card></>
 
   return <>
     <PageHeader eyebrow="2026 season" title="Top scorers" description="The league's Golden Boot race and Ekhaya's goals" />

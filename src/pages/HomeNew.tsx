@@ -33,6 +33,7 @@ export default function NewHome() {
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const standings = useFirestoreCollection<Standing>('standings')
   const membershipOpen = useFlag('membershipPayments')
+  const scorersOpen = useFlag('topScorers')
   const newsResult = usePublishedNews()
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer) }, [])
@@ -110,7 +111,7 @@ export default function NewHome() {
 
     <section className="nh-shortcuts" aria-label="Quick links">
       <Link to="/squad"><Users size={19} /><span>Squad</span></Link>
-      <Link to="/scorers"><Medal size={19} /><span>Scorers</span></Link>
+      {scorersOpen && <Link to="/scorers"><Medal size={19} /><span>Scorers</span></Link>}
       <Link to="/table"><Trophy size={19} /><span>Table</span></Link>
       <Link to="/tv"><Clapperboard size={19} /><span>TV</span><small className="shortcut-soon">Soon</small></Link>
       <Link to="/membership"><ShieldCheck size={19} /><span>Join</span>{!membershipOpen && <small className="shortcut-soon">Soon</small>}</Link>

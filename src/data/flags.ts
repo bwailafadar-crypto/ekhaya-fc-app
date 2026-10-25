@@ -9,6 +9,7 @@ export const FLAGS = {
   competitions: { label: 'Competitions & cup filters', default: true },
   celebrationConfetti: { label: 'Confetti on the champions card', default: true },
   smartBars: { label: 'Bars hide while scrolling', default: true },
+  topScorers: { label: 'Top scorers page open to fans', default: false },
   newHome: { label: 'New Home screen (off = the old one)', default: true },
   googleSignIn: { label: 'Continue with Google on sign-in and sign-up', default: false },
   ekhayaTv: { label: 'Ekhaya TV open to fans (off shows "Coming soon")', default: false },

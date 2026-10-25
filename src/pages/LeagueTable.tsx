@@ -1,5 +1,6 @@
 import { Table2 } from 'lucide-react'
 import { useState } from 'react'
+import { useFlag } from '../hooks/useFlag'
 import TeamLogo from '../components/TeamLogo'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
@@ -17,6 +18,7 @@ export default function LeagueTable() {
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   // Phones show the short table (MP, G, PTS, form); "All columns" adds W, D, L and GD.
   const [full, setFull] = useState(false)
+  const scorersOpen = useFlag('topScorers')
   // Tapping a form box shows the match behind it.
   const [detail, setDetail] = useState<MatchCardData | null>(null)
   // Last 5, latest first, with match details when the app knows them.
@@ -76,7 +78,7 @@ export default function LeagueTable() {
       <li><i className="zone-key zone-key-top8" aria-hidden="true" />1–{TOP8}: Airtel Top 8</li>
       <li><i className="zone-key zone-key-relegation" aria-hidden="true" />Last {RELEGATED}: relegated</li>
     </ul>}
-    <Link className="table-scorers-link" to="/scorers">⚽ Top scorers & Golden Boot race →</Link>
+    {scorersOpen && <Link className="table-scorers-link" to="/scorers">⚽ Top scorers & Golden Boot race →</Link>}
     <p className="table-scroll-hint">{full ? 'Swipe sideways to see all columns. ' : ''}Form: next match (?), then the last 5 results, latest first.</p>
   </>
 }
