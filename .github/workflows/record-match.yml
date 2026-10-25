@@ -1,0 +1,53 @@
+# Record an Ekhaya match from reports
+name: Record an Ekhaya match from reports
+on:
+  workflow_dispatch:
+    inputs:
+      match:
+        description: "Match id (leave empty to list recent ids)"
+        required: false
+        default: ""
+      score:
+        description: "Final score home-away, e.g. 2-1 (empty = keep)"
+        required: false
+        default: ""
+      goals:
+        description: "side|scorer|minute|assist|pen; ... (side = ekhaya or opp; minute like 21, 45+2, 1H, 2H)"
+        required: false
+        default: ""
+      mode:
+        type: choice
+        options: [preview, apply]
+        default: preview
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Run
+        env:
+          MATCH: ${{ inputs.match }}
+          SCORE: ${{ inputs.score }}
+          GOALS: ${{ inputs.goals }}
+        run: |
+          ARGS=""
+          [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
+          node scripts/record-match.cjs $ARGS
+      - name: Refresh shared fan data
+        if: inputs.mode == 'apply'
+        run: node scripts/publish-snapshot.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

@@ -1,0 +1,51 @@
+# Set Golden Boot list
+name: Set Golden Boot list
+on:
+  workflow_dispatch:
+    inputs:
+      players:
+        description: "name|club|goals; ..."
+        required: true
+      as_of:
+        description: "Date YYYY-MM-DD"
+        required: true
+      source:
+        description: "Where the numbers come from"
+        required: false
+        default: ""
+      mode:
+        type: choice
+        options: [preview, apply]
+        default: preview
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Run
+        env:
+          PLAYERS: ${{ inputs.players }}
+          AS_OF: ${{ inputs.as_of }}
+          SOURCE: ${{ inputs.source }}
+        run: |
+          ARGS=""
+          [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
+          node scripts/set-golden-boot.cjs $ARGS
+      - name: Refresh shared fan data
+        if: inputs.mode == 'apply'
+        run: node scripts/publish-snapshot.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
