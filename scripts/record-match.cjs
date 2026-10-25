@@ -20,8 +20,8 @@ const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z]/g, '')
 
 async function main() {
   const id = String(process.env.MATCH || '').trim()
-  const ref = db.collection('fixtures').doc(id)
-  const snap = id ? await ref.get() : null
+  const ref = id ? db.collection('fixtures').doc(id) : null
+  const snap = ref ? await ref.get() : null
   if (!snap || !snap.exists) {
     const list = (await db.collection('fixtures').get()).docs.map((d) => ({ id: d.id, ...d.data() })).filter((f) => !f.isTest && /ekhaya/i.test(`${f.home} ${f.away}`) && f.date >= new Date(Date.now() - 21 * 86400000).toISOString()).sort((a, b) => a.date.localeCompare(b.date))
     say(`No match "${id}". Recent/next Ekhaya match ids: ${list.slice(0, 8).map((f) => `${f.id} (${f.home} v ${f.away}, ${String(f.date).slice(0, 10)}, ${f.status})`).join(' | ')}`)
