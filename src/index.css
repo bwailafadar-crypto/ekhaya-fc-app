@@ -2690,10 +2690,10 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .shop-sub { display: block; margin: 10px 0 2px; font-size: 14px; }
 .shop-paylist { display: grid; gap: 8px; margin: 6px 0 10px; }
 .shop-paylist button { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); font-weight: 700; font-size: 15px; text-align: left; cursor: pointer; }
-.shop-paylist button i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: #fff; font-style: normal; font-weight: 800; }
-.shop-paylist .pay-airtel i { background: #E40000; }
-.shop-paylist .pay-mpamba i { background: #0B5FA5; }
-.shop-paylist .pay-cash i { background: var(--win); }
+.shop-pay-tile { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: #fff; font-style: normal; font-weight: 800; }
+.shop-pay-tile.pay-airtel { background: #E40000; }
+.shop-pay-tile.pay-mpamba { background: #0B5FA5; }
+.shop-pay-tile.pay-cash { background: var(--win); }
 .shop-paylist button.active { border-color: var(--gold); background: #fbf5e1; box-shadow: 0 0 0 3px rgb(201 162 39 / 18%); }
 .shop-paybox { display: grid; gap: 6px; margin: 0 0 8px; padding: 12px 14px; border: 1px dashed var(--gold); border-radius: 14px; background: #fffbea; font-size: 14px; }
 .shop-paybox p { margin: 0; }
@@ -2721,3 +2721,11 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .shop-order-pay { color: var(--ink-2); }
 .shop-paid-btn { padding: 8px 12px; border: 0; border-radius: 10px; background: var(--ink); color: var(--gold-light); font-weight: 700; font-size: 13px; cursor: pointer; }
 .shop-orders > li > .shop-track { display: grid; }
+
+.shop-pay-logo { flex: none; width: 44px; height: 34px; object-fit: contain; border-radius: 8px; background: #fff; }
+.shop-paylist .shop-pay-logo { width: 52px; height: 36px; }
+.shop-accept { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.shop-accept .shop-pay-tile { width: 28px; height: 28px; font-size: 12px; }
+.shop-logo-slot { display: grid; justify-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
+.shop-form-photo.logo { background: #fff; border: 1px solid var(--line); }
+.shop-form-photo.logo img { object-fit: contain; padding: 6px; }

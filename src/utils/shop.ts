@@ -49,9 +49,12 @@ export interface ShopSettings {
   airtelNumber?: string
   mpambaNumber?: string
   payName?: string
+  /** Official logos uploaded by the club (shown at checkout). */
+  airtelLogo?: string
+  mpambaLogo?: string
 }
 
-type Optional = 'bannerImage' | 'whatsapp' | 'airtelNumber' | 'mpambaNumber' | 'payName'
+type Optional = 'bannerImage' | 'whatsapp' | 'airtelNumber' | 'mpambaNumber' | 'payName' | 'airtelLogo' | 'mpambaLogo'
 export const DEFAULT_SETTINGS: Required<Omit<ShopSettings, Optional>> & Pick<ShopSettings, Optional> = {
   whatsapp: '',
   printPrice: 5000,

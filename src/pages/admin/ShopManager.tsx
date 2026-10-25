@@ -16,6 +16,7 @@ import {
 
 const PRODUCT_IMAGE = { maxDimension: 720, maxBytes: 110 * 1024 }
 const BANNER_IMAGE = { maxDimension: 1080, maxBytes: 160 * 1024 }
+const LOGO_IMAGE = { maxDimension: 256, maxBytes: 30 * 1024, keepTransparency: true }
 const blank: Omit<ShopProduct, 'id'> = { name: '', category: 'kits', price: 0, sizes: [...ADULT_SIZES], images: [], personalisable: true, active: false, badge: '', colour: 'home', order: 10, description: '' }
 
 export default function ShopManager() {
@@ -184,6 +185,13 @@ function SettingsForm() {
       <label className="admin-field"><span>Airtel Money number (fans pay here)</span><input value={v.airtelNumber ?? ''} inputMode="tel" onChange={(e) => set('airtelNumber', e.target.value)} placeholder="099…" /></label>
       <label className="admin-field"><span>TNM Mpamba number (fans pay here)</span><input value={v.mpambaNumber ?? ''} inputMode="tel" onChange={(e) => set('mpambaNumber', e.target.value)} placeholder="088…" /></label>
       <label className="admin-field"><span>Name on the money account</span><input value={v.payName ?? ''} onChange={(e) => set('payName', e.target.value)} placeholder="Ekhaya FC" /></label>
+      <div className="admin-field shop-logo-fields"><span>Payment logos (official images from Airtel and TNM, shown at checkout)</span>
+        <div className="shop-form-photos">{([['airtelLogo', 'Airtel Money'], ['mpambaLogo', 'TNM Mpamba']] as const).map(([key, label]) => <div key={key} className="shop-logo-slot">
+          {v[key] ? <div className="shop-form-photo logo"><img src={v[key]} alt={label} /><button type="button" onClick={() => set(key, '')} aria-label={`Remove ${label} logo`}>×</button></div>
+            : <label className="shop-form-add"><input type="file" accept="image/*" onChange={async (e) => { const f = e.currentTarget.files?.[0]; e.currentTarget.value = ''; if (f) { try { set(key, await compressImage(f, LOGO_IMAGE)) } catch (err) { showToast(err instanceof Error ? err.message : 'Not added.', 'error') } } }} /><ImagePlus size={20} /><span>{label}</span></label>}
+          <small>{label}</small>
+        </div>)}</div>
+      </div>
       <label className="admin-field"><span>Pick up place</span><input value={v.pickupPlace ?? ''} onChange={(e) => set('pickupPlace', e.target.value)} /></label>
       <label className="admin-field"><span>Shop window title</span><input value={v.bannerTitle ?? ''} maxLength={40} onChange={(e) => set('bannerTitle', e.target.value)} /></label>
     </div>

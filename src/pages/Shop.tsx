@@ -133,6 +133,7 @@ export default function Shop() {
       </div>)}
     </div>
     {category === 'wish' && !shown.length && <EmptyState icon={Heart} title="Nothing saved" description="Tap the heart on an item to keep it here." />}
+    <div className="shop-accept"><span>We accept</span>{(['airtel', 'mpamba', 'cash'] as PayMethod[]).map((m) => <PayIcon key={m} method={m} settings={settings} />)}</div>
     <p className="shop-pay-note">{settings.paymentNote}</p>
     {panels}
   </div>
@@ -258,6 +259,13 @@ function surname(name: string) {
 }
 
 type Step = 'cart' | 'details' | 'pay' | 'done'
+
+/** Payment method mark: the official logo the club uploaded, or a plain coloured tile. */
+function PayIcon({ method, settings }: { method: PayMethod; settings: ReturnType<typeof settingsWithDefaults> }) {
+  const logo = method === 'airtel' ? settings.airtelLogo : method === 'mpamba' ? settings.mpambaLogo : undefined
+  if (logo) return <img className="shop-pay-logo" src={logo} alt={PAY_LABEL[method]} title={PAY_LABEL[method]} />
+  return <i className={`shop-pay-tile pay-${method}`} aria-hidden="true" title={PAY_LABEL[method]}>{method === 'airtel' ? 'A' : method === 'mpamba' ? 'M' : 'K'}</i>
+}
 type PayMethod = 'airtel' | 'mpamba' | 'cash'
 const PAY_LABEL: Record<PayMethod, string> = { airtel: 'Airtel Money', mpamba: 'TNM Mpamba', cash: 'Cash when I collect' }
 
@@ -371,7 +379,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     : <div className="shop-checkout">
       <strong className="shop-sub">How will you pay {mwk(total)}?</strong>
       <div className="shop-paylist" role="radiogroup" aria-label="Payment">
-        {(['airtel', 'mpamba', 'cash'] as PayMethod[]).map((m) => <button type="button" key={m} role="radio" aria-checked={method === m} className={`pay-${m} ${method === m ? 'active' : ''}`} onClick={() => setMethod(m)}><i aria-hidden="true">{m === 'airtel' ? 'A' : m === 'mpamba' ? 'M' : 'K'}</i><span>{PAY_LABEL[m]}</span></button>)}
+        {(['airtel', 'mpamba', 'cash'] as PayMethod[]).map((m) => <button type="button" key={m} role="radio" aria-checked={method === m} className={`pay-${m} ${method === m ? 'active' : ''}`} onClick={() => setMethod(m)}><PayIcon method={m} settings={settings} /><span>{PAY_LABEL[m]}</span></button>)}
       </div>
       {method === 'cash' ? <p className="shop-paybox">Pay {mwk(total)} in cash when you {delivery === 'delivery' ? 'receive your order' : `collect at ${settings.pickupPlace}`}. The club will confirm your order first.</p>
         : <div className="shop-paybox">
