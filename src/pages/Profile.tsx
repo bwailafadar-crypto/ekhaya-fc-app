@@ -13,6 +13,7 @@ import { db } from '../firebase'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { useFlag } from '../hooks/useFlag'
 import DeleteAccount from '../components/DeleteAccount'
+import ChangePassword from '../components/ChangePassword'
 import type { LegacyFan, MembershipRecord, MembershipTier } from '../types'
 
 function dateLabel(value: unknown) {
@@ -90,6 +91,7 @@ export default function Profile() {
       {(membershipState.error || legacyState.error || tiers.error) && <p className="live-error" role="alert">{membershipState.error || legacyState.error || tiers.error}</p>}
       <PushSettings />
       <LogoutButton />
+      <ChangePassword />
       <DeleteAccount />
       <p className="legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a> · <a href="/delete-account.html" target="_blank" rel="noreferrer">How account deletion works</a></p>
     </>

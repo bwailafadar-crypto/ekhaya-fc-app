@@ -2367,3 +2367,8 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 @keyframes live-dot { 0% { box-shadow: 0 0 0 0 rgb(30 142 62 / 50%); } 100% { box-shadow: 0 0 0 8px rgb(30 142 62 / 0%); } }
 .admin-live { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; background: #1E8E3E; color: #fff; font-size: 12px; font-weight: 800; text-decoration: none; }
 .admin-live i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: live-pulse 1.3s ease-in-out infinite; }
+
+/* update-117: change password */
+.change-password-open { display: inline-flex; align-items: center; gap: 8px; width: 100%; padding: 4px 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--ink-2); cursor: pointer; }
+.change-password-show, .change-password-forgot { justify-self: start; display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--gold-dark); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.change-password-forgot { margin-top: 4px; text-decoration: underline; }
