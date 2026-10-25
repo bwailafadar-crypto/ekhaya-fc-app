@@ -3,6 +3,7 @@ import { useState } from 'react'
 import TeamLogo from '../components/TeamLogo'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import type { Fixture, FormEntry, Standing } from '../types'
 import { formatMalawiDate } from '../utils/football'
@@ -93,7 +94,7 @@ function MatchSheet({ data, fixtures, onClose }: { data: MatchCardData; fixtures
   const near = (a: string, b?: string) => !b || Math.abs(new Date(a.slice(0, 10)).getTime() - new Date(b).getTime()) <= 4 * 86400000
   const clubMatch = data.kind === 'played' ? fixtures.find((fixture) => fixture.id === data.fixtureId || (fixture.status === 'finished' && !fixture.isTest && n(fixture.home) === n(data.home) && n(fixture.away) === n(data.away) && near(fixture.date, data.date))) : undefined
   const nextClub = data.kind === 'next' ? fixtures.find((fixture) => fixture.status !== 'finished' && fixture.home === data.home && fixture.away === data.away) : undefined
-  return <div className="match-sheet-backdrop" role="presentation" onClick={onClose}>
+  return createPortal(<div className="match-sheet-backdrop" role="presentation" onClick={onClose}>
     <div className="match-sheet" role="dialog" aria-modal="true" aria-label="Match" onClick={(event) => event.stopPropagation()}>
       <button type="button" className="match-sheet-close" aria-label="Close" onClick={onClose}>×</button>
       {data.kind === 'played' || data.kind === 'next' ? <>
@@ -108,5 +109,5 @@ function MatchSheet({ data, fixtures, onClose }: { data: MatchCardData; fixtures
         {nextClub && <Link className="match-sheet-link" to={`/live?match=${encodeURIComponent(nextClub.id)}`}>Open the match page</Link>}
       </> : <p className="match-sheet-meta">{data.kind === 'nodetail' ? `${resultWord(data.result)} for ${data.team}. The match details are not saved for this one.` : `${data.team}'s next match is not known yet.`}</p>}
     </div>
-  </div>
+  </div>, document.body)
 }
