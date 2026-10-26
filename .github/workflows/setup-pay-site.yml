@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: test = only admins see PIN payments (PayChangu test key); live = fans too (live key)
+        description: keep = leave as it is; test = only admins see PIN payments (test key); live = fans too (live key)
         type: choice
-        options: [test, live]
-        default: test
+        options: [keep, test, live]
+        default: keep
 concurrency:
   group: pay-site
   cancel-in-progress: false
@@ -55,6 +55,7 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${{ steps.site.outputs.url }}/.netlify/functions/shop-pay-check" -H 'content-type: application/json' -d '{}')
           echo "::notice::Payment server answered $code (401 = alive and asking for sign-in, which is right)"
       - name: Connect the shop
+        if: inputs.mode != 'keep'
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
           SETTINGS: '{"payApi":"${{ steps.site.outputs.url }}","payMode":"${{ inputs.mode }}"}'

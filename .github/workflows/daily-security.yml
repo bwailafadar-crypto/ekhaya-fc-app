@@ -1,0 +1,87 @@
+# Every day at 05:41 Malawi time:
+#  1. installs security fixes for the app's packages (safe fixes only), checks
+#     and builds the app, and puts it live (and refreshes the payment server)
+#     only when everything passes,
+#  2. backs up all club data (kept 14 days, download from this run's page),
+#  3. checks for new admins, sign-up floods and changed shop orders.
+# A red run means something needs attention: GitHub emails the owner.
+name: Daily security check
+on:
+  schedule:
+    - cron: '41 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: daily-security
+  cancel-in-progress: false
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install security fixes
+        id: fix
+        run: |
+          before=$(npm audit --json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));const v=d.metadata.vulnerabilities;console.log(v.high+v.critical)")
+          npm audit fix --no-fund || true
+          after=$(npm audit --json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));const v=d.metadata.vulnerabilities;console.log(v.high+v.critical)")
+          shipped=$(npm audit --omit=dev --json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));const v=d.metadata.vulnerabilities;console.log(v.high+v.critical)")
+          echo "::notice::Serious security issues: $before before, $after after fixes ($shipped in the app fans use)"
+          echo "remaining=$after" >> "$GITHUB_OUTPUT"
+          echo "shipped=$shipped" >> "$GITHUB_OUTPUT"
+          if git diff --quiet package-lock.json package.json; then echo "changed=no" >> "$GITHUB_OUTPUT"; else echo "changed=yes" >> "$GITHUB_OUTPUT"; fi
+      - name: Check and build with the fixes
+        if: steps.fix.outputs.changed == 'yes'
+        env:
+          APP_ENV: ${{ secrets.APP_ENV }}
+        run: |
+          printf '%s\n' "$APP_ENV" > .env
+          npm run check
+          npm run build
+          rm -f .env
+      - name: Save the fixes and put them live
+        if: steps.fix.outputs.changed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "Ekhaya security bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "Daily security fixes for the app's packages"
+          git push
+          curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy.yml/dispatches" -d '{"ref":"master"}'
+          curl -s -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${{ github.repository }}/actions/workflows/setup-pay-site.yml/dispatches" -d '{"ref":"master","inputs":{"mode":"keep"}}'
+          echo "::notice::Security fixes saved; the app and payment server are being updated."
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Back up data and look for warning signs
+        id: watch
+        run: node scripts/security-check.cjs
+      - name: Keep the backup (14 days)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ekhaya-backup-${{ github.run_number }}
+          path: backup/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Remove key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/sa.json" backup
+      - name: Serious issues left in the app fans use?
+        if: steps.fix.outputs.shipped != '0'
+        run: |
+          echo "::error::${{ steps.fix.outputs.shipped }} serious security issue(s) in the app fans use need a manual update."
+          exit 1
