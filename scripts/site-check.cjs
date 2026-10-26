@@ -18,7 +18,7 @@ const problems = []; const notes = []
 const say = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : t)
 
 const PAGES = ['/', '/fixtures', '/results', '/table', '/live', '/squad', '/news', '/fanzone', '/community', '/competitions', '/membership', '/profile', '/more', '/tv', '/club', '/scorers', '/shop', '/shop/jersey-2026-gold', '/install']
-const IGNORE = /favicon|google-analytics|ERR_ABORTED|net::ERR_BLOCKED_BY_CLIENT|Failed to load resource: the server responded with a status of 400 \(\)|reCAPTCHA|recaptcha|AppCheck|appCheck|app-check|firebaseappcheck/i
+const IGNORE = /requestStorageAccess|favicon|google-analytics|ERR_ABORTED|net::ERR_BLOCKED_BY_CLIENT|Failed to load resource: the server responded with a status of 400 \(\)|reCAPTCHA|recaptcha|AppCheck|appCheck|app-check|firebaseappcheck/i
 
 async function main() {
   const email = `qa-robot-${Date.now()}@ekhaya-fc-app.test`
@@ -54,7 +54,13 @@ async function main() {
       const text = await page.locator('body').innerText().catch(() => '')
       if (/Something went wrong|taking longer than usual/i.test(text)) problems.push(`${p}: shows an error screen: "${text.replace(/\s+/g, ' ').slice(0, 120)}"`)
       if (text.replace(/\s+/g, '').length < 40) problems.push(`${p}: page looks empty`)
-      notes.push(`${p} ${((Date.now() - t0) / 1000).toFixed(1)}s`)
+      const counts = await page.evaluate(() => {
+        const n = (sel) => document.querySelectorAll(sel).length
+        return { matches: n('.match-card'), rows: n('table tbody tr'), cards: n('[class*="card"]'), products: n('.shop-card'), videos: n('.tv-card'), images: [...document.images].filter((i) => i.complete && i.naturalWidth > 0).length, brokenImages: [...document.images].filter((i) => i.complete && i.naturalWidth === 0 && i.src && !i.src.startsWith('data:')).map((i) => i.src.slice(0, 80)) }
+      }).catch(() => ({}))
+      if (counts.brokenImages?.length) problems.push(`${p}: broken picture(s): ${counts.brokenImages.slice(0, 3).join(', ')}`)
+      const main = (await page.locator('main').innerText().catch(() => text)).replace(/\s+/g, ' ').trim()
+      notes.push(`${p} (${((Date.now() - t0) / 1000).toFixed(1)}s) "${main.slice(0, 70)}" matches ${counts.matches ?? 0}, table rows ${counts.rows ?? 0}, products ${counts.products ?? 0}, videos ${counts.videos ?? 0}, pictures ${counts.images ?? 0}`)
       await page.screenshot({ path: path.join(OUT, `${p.replace(/\W+/g, '_') || 'home'}.png`), fullPage: true }).catch(() => undefined)
     }
     // A video on Ekhaya TV opens inside the app.
@@ -72,9 +78,9 @@ async function main() {
   }
   const unique = [...new Set(problems)]
   fs.writeFileSync(path.join(OUT, 'problems.txt'), unique.join('\n') || 'none')
-  say(`Pages: ${notes.join(' · ')}`)
+  for (let i = 0; i < notes.length; i += 3) say(notes.slice(i, i + 3).join(' ||| '))
   say(unique.length ? `${unique.length} problem(s) found` : 'No problems found on any page')
-  for (const p of unique.slice(0, 40)) console.log(process.env.GITHUB_ACTIONS ? `::warning::${p}` : `PROBLEM ${p}`)
+  for (let i = 0; i < Math.min(unique.length, 40); i += 4) console.log(process.env.GITHUB_ACTIONS ? `::warning::${unique.slice(i, i + 4).join(' ||| ')}` : unique.slice(i, i + 4).join('\n'))
   if (unique.length) process.exitCode = 3
 }
 main().catch((e) => { console.error(e); process.exit(1) })
