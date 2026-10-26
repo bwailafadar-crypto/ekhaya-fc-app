@@ -26,6 +26,7 @@ jobs:
       - name: Report
         env:
           DAYS: ${{ inputs.days }}
+          RAW: "1"
         run: node scripts/report-errors.cjs
       - name: Remove key
         if: always()

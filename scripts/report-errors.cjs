@@ -15,7 +15,7 @@ async function main() {
   const groups = new Map()
   for (const d of snap.docs) {
     const e = d.data()
-    const key = `${e.context} | ${String(e.message).replace(/[0-9a-f]{8,}|\d{3,}/gi, '#').slice(0, 140)}`
+    const key = `${e.context} | ${(process.env.RAW ? String(e.message) : String(e.message).replace(/[0-9a-f]{8,}|\d{3,}/gi, '#')).slice(0, 220)}`
     const g = groups.get(key) || { n: 0, paths: new Set(), builds: new Set(), envs: new Set(), agents: new Set(), last: 0, code: e.code, stack: e.stack }
     g.n++; g.paths.add(e.path); g.builds.add(e.build); g.envs.add(e.env); g.agents.add(/EkhayaFCApp/.test(e.agent) ? 'APK' : /Android/.test(e.agent) ? 'Android web' : /iPhone/.test(e.agent) ? 'iPhone' : 'Computer')
     g.last = Math.max(g.last, e.createdAt?.toMillis?.() ?? 0)
