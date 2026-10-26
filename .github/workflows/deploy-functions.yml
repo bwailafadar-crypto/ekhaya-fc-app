@@ -1,0 +1,43 @@
+# Puts the payment server (functions/) live on Firebase.
+# Needs the Firebase project on the Blaze plan, and the repository secrets
+# FIREBASE_SA (already there) and PAYCHANGU_SECRET_KEY (from the PayChangu dashboard).
+name: Deploy payment server
+on:
+  workflow_dispatch:
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+jobs:
+  functions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the server's packages
+        run: cd functions && npm ci --no-audit --no-fund
+      - name: Write key and settings
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          PAYCHANGU_SECRET_KEY: ${{ secrets.PAYCHANGU_SECRET_KEY }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+          if [ -n "$PAYCHANGU_SECRET_KEY" ]; then
+            printf 'PAYCHANGU_SECRET_KEY=%s\n' "$PAYCHANGU_SECRET_KEY" > functions/.env
+            echo "PayChangu key: set"
+          else
+            echo "::warning::PAYCHANGU_SECRET_KEY secret is not set yet: the server goes live but payments stay off."
+          fi
+      - name: Deploy functions
+        run: npx --yes firebase-tools@14.9.0 deploy --only functions --project ekhaya-fc-app --force --non-interactive
+      - name: Show the addresses
+        if: success()
+        run: |
+          echo "::notice::App calls https://europe-west1-ekhaya-fc-app.cloudfunctions.net/shopPayStart"
+          echo "::notice::PayChangu webhook: https://europe-west1-ekhaya-fc-app.cloudfunctions.net/shopPayWebhook"
+      - name: Remove key and settings
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json" functions/.env

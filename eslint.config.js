@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '.netlify', '.kilo', 'cordova/platforms', 'cordova/plugins', 'cordova/www', 'netlify/functions', 'scripts']),
+  globalIgnores(['dist', '.netlify', '.kilo', 'cordova/platforms', 'cordova/plugins', 'cordova/www', 'netlify/functions', 'functions', 'scripts']),
   {
     files: ['src/**/*.{ts,tsx}'],
     extends: [

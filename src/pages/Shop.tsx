@@ -268,6 +268,11 @@ const PIN_FAIL: Record<string, string> = {
   failed: 'The payment did not go through. Tap Try again, or pay another way.',
 }
 const payApiBase = (s: { payApi?: string }) => (s.payApi || import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '')
+/** The payment server: the club's Firebase functions (cloudfunctions.net), or a Netlify site. */
+const payUrl = (s: { payApi?: string }, step: 'start' | 'check') => {
+  const base = payApiBase(s)
+  return /netlify/i.test(base) ? `${base}/.netlify/functions/shop-pay-${step}` : `${base}/${step === 'start' ? 'shopPayStart' : 'shopPayCheck'}`
+}
 
 /** Payment method mark: the official logo the club uploaded, or a plain coloured tile. */
 function PayIcon({ method, settings }: { method: PayMethod; settings: ReturnType<typeof settingsWithDefaults> }) {
@@ -359,7 +364,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     setPin({ state: 'starting' })
     try {
       const token = await user.getIdToken()
-      const response = await fetch(`${payApiBase(settings)}/.netlify/functions/shop-pay-start`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ orderId: id, method, phone: payFrom }) })
+      const response = await fetch(payUrl(settings, 'start'), { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ orderId: id, method, phone: payFrom }) })
       const result = await response.json().catch(() => ({})) as { txRef?: string; error?: string }
       if (!response.ok || !result.txRef) throw new Error(result.error || 'Could not send the PIN request.')
       setPin({ state: 'waiting', txRef: result.txRef })
@@ -378,7 +383,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
       tries += 1
       try {
         const token = await user.getIdToken()
-        const response = await fetch(`${payApiBase(settings)}/.netlify/functions/shop-pay-check`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ txRef: pin.txRef }) })
+        const response = await fetch(payUrl(settings, 'check'), { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ txRef: pin.txRef }) })
         const result = await response.json().catch(() => ({})) as { status?: string; reason?: string }
         if (stopped) return
         if (result.status === 'paid') { setPlaced((p) => p && { ...p, paid: true }); setPin({ state: 'idle' }); clearCart(); setStep('done'); return }
