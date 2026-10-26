@@ -35,6 +35,7 @@ const Club = lazyPage(() => import('./pages/Club'))
 const MatchReport = lazyPage(() => import('./pages/MatchReport'))
 const TopScorers = lazyPage(() => import('./pages/TopScorers'))
 const Shop = lazyPage(() => import('./pages/Shop'))
+const SalesDashboard = lazyPage(() => import('./pages/SalesDashboard'))
 
 export default function App() {
   return (
@@ -52,6 +53,9 @@ export default function App() {
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superadmin']}><Layout /></ProtectedRoute>}>
                 <Route path="/admin" element={<Suspense fallback={<p className="page-loading">Loading admin…</p>}><AdminPanel /></Suspense>} />
                 <Route path="/health" element={<AppHealth />} />
+              </Route>
+              <Route element={<ProtectedRoute allowedRoles={['superadmin']}><Layout /></ProtectedRoute>}>
+                <Route path="/sales" element={<SalesDashboard />} />
               </Route>
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/" element={<Home />} />
