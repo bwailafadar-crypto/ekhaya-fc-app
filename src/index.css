@@ -2793,3 +2793,10 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .sd-split .p-fdh, .sd-legend .p-fdh { background: #1F3A68; }
 .shop-pay-logo[src$='pay-fdh.png'] { box-shadow: inset 0 0 0 1px var(--line); border: 1px solid var(--line); }
 .shop-pay-logo[src*='pay-fdh'] { box-shadow: inset 0 0 0 1px var(--line); border: 1px solid var(--line); }
+
+.shop-pinbox p { margin: 0; }
+.shop-pinwait { display: grid; justify-items: center; gap: 6px; padding: 8px 0; text-align: center; }
+.shop-pinwait b { font-size: 17px; }
+.shop-spinner { width: 42px; height: 42px; border: 4px solid #f1e6bf; border-top-color: var(--gold-dark); border-radius: 50%; animation: shop-spin .9s linear infinite; }
+@keyframes shop-spin { to { transform: rotate(360deg); } }
+.shop-pinfail { padding: 8px 10px; border-radius: 10px; background: #fde3e3; color: var(--loss); font-size: 13px; font-weight: 600; }

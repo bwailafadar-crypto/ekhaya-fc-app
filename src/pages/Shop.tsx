@@ -260,6 +260,15 @@ function surname(name: string) {
 
 type Step = 'cart' | 'details' | 'pay' | 'done'
 
+const PIN_FAIL: Record<string, string> = {
+  wrong_pin: 'The PIN was wrong. Tap Try again to get a new message.',
+  no_balance: 'There is not enough money in the account. Top up and tap Try again.',
+  cancelled: 'The payment was cancelled on the phone. Tap Try again.',
+  timeout: 'The PIN message timed out. Tap Try again.',
+  failed: 'The payment did not go through. Tap Try again, or pay another way.',
+}
+const payApiBase = (s: { payApi?: string }) => (s.payApi || import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '')
+
 /** Payment method mark: the official logo the club uploaded, or a plain coloured tile. */
 function PayIcon({ method, settings }: { method: PayMethod; settings: ReturnType<typeof settingsWithDefaults> }) {
   const logo = method === 'airtel' ? settings.airtelLogo : method === 'mpamba' ? settings.mpambaLogo : method === 'fdh' ? settings.fdhLogo : undefined
@@ -289,7 +298,14 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
   const [txId, setTxId] = useState('')
   const [ref] = useState(newOrderRef)
   const [busy, setBusy] = useState(false)
-  const [placed, setPlaced] = useState<{ ref: string; total: number; text: string; method: PayMethod } | null>(null)
+  const [placed, setPlaced] = useState<{ ref: string; total: number; text: string; method: PayMethod; paid?: boolean } | null>(null)
+  // PIN payments (PayChangu): on when switched on and the payment server is set.
+  const pinOn = useFlag('shopPinPay') && Boolean(payApiBase(settings))
+  const [payFrom, setPayFrom] = useState(profile?.phone ?? '')
+  const [orderId, setOrderId] = useState('')
+  const [pin, setPin] = useState<{ state: 'idle' | 'starting' | 'waiting' | 'failed'; message?: string; txRef?: string }>({ state: 'idle' })
+  const [manual, setManual] = useState(false)
+  const usePin = pinOn && !manual && (method === 'airtel' || method === 'mpamba')
   const lines = cart.filter((l) => products.some((p) => p.id === l.productId && !p.soldOut))
   const gone = cart.length - lines.length
   const subtotal = lines.reduce((n, l) => n + lineTotal(l), 0)
@@ -303,26 +319,78 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     if (name.trim().length < 2) { showToast('Write your name.', 'error'); return }
     if (phone.replace(/\D/g, '').length < 9) { showToast('Write a phone number the club can call (e.g. 0991 234 567).', 'error'); return }
     if (delivery === 'delivery' && address.trim().length < 4) { showToast('Write where to deliver.', 'error'); return }
+    if (!payFrom.trim()) setPayFrom(phone.trim())
     setStep('pay')
   }
 
-  async function placeOrder() {
-    if (!user || !lines.length) return
+  async function placeOrder(): Promise<string | null> {
+    if (!user || !lines.length) return orderId || null
     setBusy(true)
     try {
-      await addDoc(collection(db, 'shopOrders'), {
+      const created = await addDoc(collection(db, 'shopOrders'), {
         ref, uid: user.uid, name: name.trim().slice(0, 80), phone: phone.trim().slice(0, 30), lines: lines.map(orderLine), delivery,
         ...(delivery === 'delivery' ? { address: address.trim().slice(0, 200) } : {}), deliveryFee: fee, total, status: 'new',
         payment: { method, ...(txId.trim() ? { txId: txId.trim().slice(0, 40) } : {}) }, createdAt: serverTimestamp(),
       })
       const text = `${orderText({ ref, name: name.trim(), phone: phone.trim(), lines, delivery, address: address.trim(), deliveryFee: fee, total, pickupPlace: settings.pickupPlace })}\nPayment: ${PAY_LABEL[method]}${txId.trim() ? ` · transaction ${txId.trim()}` : ''}`
       setPlaced({ ref, total, text, method })
-      clearCart()
-      setStep('done')
+      setOrderId(created.id)
+      if (!usePin) { clearCart(); setStep('done') }
+      return created.id
     } catch (error) {
       showToast(error instanceof Error ? `Order not sent: ${error.message}` : 'Order not sent. Check your connection.', 'error')
+      return null
     } finally { setBusy(false) }
   }
+
+  /** The order was saved during a PIN try; the fan paid another way instead. */
+  async function finishManual() {
+    if (orderId && txId.trim()) await updateDoc(doc(db, 'shopOrders', orderId), { payment: { method, txId: txId.trim().slice(0, 40) } }).catch(() => undefined)
+    clearCart()
+    setStep('done')
+  }
+
+  /** Pay now: save the order (once), then PayChangu sends the PIN prompt to the fan's phone. */
+  async function payWithPin() {
+    if (!user) return
+    if (payFrom.replace(/\D/g, '').length < 9) { showToast('Enter the Airtel Money or TNM Mpamba number to pay from.', 'error'); return }
+    const id = orderId || await placeOrder()
+    if (!id) return
+    setPin({ state: 'starting' })
+    try {
+      const token = await user.getIdToken()
+      const response = await fetch(`${payApiBase(settings)}/.netlify/functions/shop-pay-start`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ orderId: id, method, phone: payFrom }) })
+      const result = await response.json().catch(() => ({})) as { txRef?: string; error?: string }
+      if (!response.ok || !result.txRef) throw new Error(result.error || 'Could not send the PIN request.')
+      setPin({ state: 'waiting', txRef: result.txRef })
+    } catch (error) {
+      setPin({ state: 'failed', message: error instanceof Error ? error.message : 'Could not send the PIN request.' })
+    }
+  }
+
+  // While waiting, ask every 5 seconds whether the PIN was entered (up to 3 minutes).
+  useEffect(() => {
+    if (pin.state !== 'waiting' || !pin.txRef || !user) return
+    let tries = 0
+    let stopped = false
+    const tick = async () => {
+      if (stopped) return
+      tries += 1
+      try {
+        const token = await user.getIdToken()
+        const response = await fetch(`${payApiBase(settings)}/.netlify/functions/shop-pay-check`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ txRef: pin.txRef }) })
+        const result = await response.json().catch(() => ({})) as { status?: string; reason?: string }
+        if (stopped) return
+        if (result.status === 'paid') { setPlaced((p) => p && { ...p, paid: true }); setPin({ state: 'idle' }); clearCart(); setStep('done'); return }
+        if (result.status === 'failed') { setPin({ state: 'failed', message: PIN_FAIL[result.reason ?? ''] ?? PIN_FAIL.failed }); return }
+        if (result.status === 'review') { setPin({ state: 'idle' }); clearCart(); setStep('done'); return }
+      } catch { /* try again */ }
+      if (tries >= 36) { setPin({ state: 'failed', message: 'We did not get the payment yet. If you entered your PIN, wait a minute and check My orders.' }); return }
+      window.setTimeout(() => void tick(), 5000)
+    }
+    const first = window.setTimeout(() => void tick(), 6000)
+    return () => { stopped = true; window.clearTimeout(first) }
+  }, [pin.state, pin.txRef, user, settings])
 
   const back = step === 'details' ? 'cart' : step === 'pay' ? 'details' : null
   return <Sheet label="Checkout" onClose={onClose} wide>
@@ -334,11 +402,11 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
 
     {step === 'done' && placed ? <div className="shop-done">
       <div className="shop-done-check">✓</div>
-      <h3>Order placed</h3>
+      <h3>{placed.paid ? 'Paid' : 'Order placed'}</h3>
       <p>Your order number is <b>{placed.ref}</b> · {mwk(placed.total)}</p>
       <ol className="shop-next">
         <li className="done"><b>Order sent</b><span>The club has your order.</span></li>
-        <li><b>{placed.method === 'cash' ? 'Club confirms' : 'Payment checked'}</b><span>{placed.method === 'cash' ? 'The club calls or WhatsApps you to confirm.' : `The club checks your ${PAY_LABEL[placed.method]} payment.`}</span></li>
+        {placed.paid ? <li className="done"><b>Paid with {PAY_LABEL[placed.method]}</b><span>Your payment of {mwk(placed.total)} was received.</span></li> : <li><b>{placed.method === 'cash' ? 'Club confirms' : 'Payment checked'}</b><span>{placed.method === 'cash' ? 'The club calls or WhatsApps you to confirm.' : `The club checks your ${PAY_LABEL[placed.method]} payment.`}</span></li>}
         <li><b>Ready</b><span>{delivery === 'delivery' ? 'Your jersey is on its way.' : `Collect at ${settings.pickupPlace}.`}</span></li>
       </ol>
       {settings.whatsapp && <a className="shop-wa big" href={waLink(settings.whatsapp, placed.text)} target="_blank" rel="noopener noreferrer">Send the order on WhatsApp</a>}
@@ -379,7 +447,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     : <div className="shop-checkout">
       <strong className="shop-sub">How will you pay {mwk(total)}?</strong>
       <div className="shop-paylist" role="radiogroup" aria-label="Payment">
-        {(['airtel', 'mpamba', 'fdh'] as PayMethod[]).map((m) => <button type="button" key={m} role="radio" aria-checked={method === m} className={`pay-${m} ${method === m ? 'active' : ''}`} onClick={() => setMethod(m)}><PayIcon method={m} settings={settings} /><span>{PAY_LABEL[m]}</span></button>)}
+        {(['airtel', 'mpamba', 'fdh'] as PayMethod[]).map((m) => <button type="button" key={m} role="radio" aria-checked={method === m} disabled={pin.state === 'waiting' || pin.state === 'starting'} className={`pay-${m} ${method === m ? 'active' : ''}`} onClick={() => { setMethod(m); if (pin.state === 'failed') setPin({ state: 'idle' }) }}><PayIcon method={m} settings={settings} /><span>{PAY_LABEL[m]}</span></button>)}
       </div>
       {method === 'cash' ? <p className="shop-paybox">Pay {mwk(total)} in cash when you {delivery === 'delivery' ? 'receive your order' : `collect at ${settings.pickupPlace}`}. The club will confirm your order first.</p>
         : method === 'fdh' ? <div className="shop-paybox">
@@ -392,6 +460,19 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
           <label className="admin-field"><span>Transfer reference from the bank (if you paid already)</span><input value={txId} maxLength={40} onChange={(e) => setTxId(e.target.value)} placeholder="e.g. FT26299ABC123" /></label>
           <small className="live-help">You can also add it later in My orders.</small>
         </div>
+        : usePin ? <div className="shop-paybox shop-pinbox">
+          {pin.state === 'waiting' || pin.state === 'starting' ? <div className="shop-pinwait" role="status">
+            <div className="shop-spinner" aria-hidden="true" />
+            <b>{pin.state === 'starting' ? 'Sending the request…' : 'Check your phone'}</b>
+            <p>{pin.state === 'starting' ? 'One moment.' : <>{method === 'airtel' ? 'An' : 'A'} {PAY_LABEL[method]} message is on <b>{payFrom}</b>. Enter your PIN to pay <b>{mwk(total)}</b> to Ekhaya FC.</>}</p>
+            <small className="live-help">Keep this screen open. It changes by itself when the money arrives.</small>
+          </div> : <>
+            <p>Pay <b>{mwk(total)}</b> straight from your {PAY_LABEL[method]}. You'll get a message on your phone to enter your PIN.</p>
+            <label className="admin-field"><span>{PAY_LABEL[method]} number to pay from</span><input value={payFrom} inputMode="tel" autoComplete="tel" maxLength={20} onChange={(e) => setPayFrom(e.target.value)} placeholder={method === 'airtel' ? '099… / 098…' : '088…'} /></label>
+            {pin.state === 'failed' && <p className="shop-pinfail">{pin.message}</p>}
+          </>}
+          {pin.state !== 'waiting' && pin.state !== 'starting' && <button type="button" className="shop-link" onClick={() => setManual(true)}>Pay another way (send money and enter the transaction ID)</button>}
+        </div>
         : <div className="shop-paybox">
           {payNumber ? <>
             <p>Send <b>{mwk(total)}</b> with {PAY_LABEL[method]} to:</p>
@@ -403,7 +484,9 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
           <small className="live-help">You can also add it later in My orders.</small>
         </div>}
       <div className="shop-total grand"><span>Total</span><b>{mwk(total)}</b></div>
-      <Button type="button" disabled={busy} onClick={() => void placeOrder()}>{busy ? 'Placing order…' : `Place order · ${mwk(total)}`}</Button>
+      {usePin
+        ? pin.state !== 'waiting' && <Button type="button" disabled={busy || pin.state === 'starting'} onClick={() => void payWithPin()}>{pin.state === 'failed' ? `Try again · ${mwk(total)}` : `Pay now · ${mwk(total)}`}</Button>
+        : <Button type="button" disabled={busy} onClick={() => void (orderId ? finishManual() : placeOrder())}>{busy ? 'Placing order…' : orderId ? 'Done' : `Place order · ${mwk(total)}`}</Button>}
     </div>}
   </Sheet>
 }

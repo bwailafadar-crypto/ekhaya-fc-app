@@ -184,6 +184,7 @@ function SettingsForm() {
       <label className="admin-field"><span>Free delivery from (MK)</span><input inputMode="numeric" value={v.freeDeliveryFrom ?? ''} onChange={(e) => set('freeDeliveryFrom', Number(e.target.value.replace(/\D/g, '')))} /></label>
       <label className="admin-field"><span>Airtel Money number (fans pay here)</span><input value={v.airtelNumber ?? ''} inputMode="tel" onChange={(e) => set('airtelNumber', e.target.value)} placeholder="099…" /></label>
       <label className="admin-field"><span>TNM Mpamba number (fans pay here)</span><input value={v.mpambaNumber ?? ''} inputMode="tel" onChange={(e) => set('mpambaNumber', e.target.value)} placeholder="088…" /></label>
+      <label className="admin-field"><span>PayChangu payment server address (for PIN payments)</span><input value={v.payApi ?? ''} inputMode="url" onChange={(e) => set('payApi', e.target.value.trim())} placeholder="https://ekhaya-pay.netlify.app" /></label>
       <label className="admin-field"><span>FDH Bank account number</span><input value={v.fdhAccount ?? ''} inputMode="numeric" onChange={(e) => set('fdhAccount', e.target.value)} /></label>
       <label className="admin-field"><span>FDH account name</span><input value={v.fdhAccountName ?? ''} onChange={(e) => set('fdhAccountName', e.target.value)} placeholder="Ekhaya Football Club" /></label>
       <label className="admin-field"><span>FDH branch</span><input value={v.fdhBranch ?? ''} onChange={(e) => set('fdhBranch', e.target.value)} placeholder="Blantyre" /></label>

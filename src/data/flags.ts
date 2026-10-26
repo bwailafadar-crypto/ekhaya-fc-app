@@ -9,6 +9,7 @@ export const FLAGS = {
   competitions: { label: 'Competitions & cup filters', default: true },
   celebrationConfetti: { label: 'Confetti on the champions card', default: true },
   smartBars: { label: 'Bars hide while scrolling', default: true },
+  shopPinPay: { label: 'Shop: pay with PIN prompt (PayChangu)', default: false },
   clubShop: { label: 'Club shop open to fans', default: true },
   topScorers: { label: 'Top scorers page open to fans', default: false },
   newHome: { label: 'New Home screen (off = the old one)', default: true },
