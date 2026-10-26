@@ -134,6 +134,7 @@ test('restricts club data writes to admins', async () => {
 })
 
 test('limits match reactions to the signed-in owner and supported emoji', async () => {
+  await seedDocument('fixtures/match-1', { status: 'live', home: 'Ekhaya FC', away: 'Blue Eagles' })
   const fanDb = signedIn('fan-1')
   await assertSucceeds(setDoc(doc(fanDb, 'fixtures/match-1/reactions/fan-1'), { emoji: '⚽', updatedAt: serverTimestamp() }))
   await assertFails(setDoc(doc(fanDb, 'fixtures/match-1/reactions/fan-2'), { emoji: '⚽', updatedAt: serverTimestamp() }))
