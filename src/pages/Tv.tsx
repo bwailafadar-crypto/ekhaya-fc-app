@@ -8,7 +8,6 @@ import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI
 import VideoCard from '../components/VideoCard'
 import VideoPlayer from '../components/VideoPlayer'
 import { useVideos, type ClubVideo } from '../hooks/useVideos'
-import { config } from '../config'
 import { db } from '../firebase'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture } from '../types'
@@ -116,8 +115,6 @@ export default function Tv() {
   const [kind, setKind] = useState<VideoKind | 'All'>('All')
   const [playing, setPlaying] = useState<ClubVideo | null>(null)
   const [adding, setAdding] = useState(false)
-  // The Facebook feed is heavy on data, so it loads only when the fan asks for it.
-  const [showFeed, setShowFeed] = useState(false)
   const open = useFlag('ekhayaTv')
   const shown = kind === 'All' ? items : items.filter((video) => video.kind === kind)
   const kinds = VIDEO_KINDS.filter((item) => items.some((video) => video.kind === item))
@@ -156,11 +153,6 @@ export default function Tv() {
     {loading ? <div className="tv-grid"><Skeleton /><Skeleton /></div>
       : shown.length ? <div className="tv-grid">{shown.map((video) => <VideoCard key={video.id} video={video} onPlay={() => setPlaying(video)} onDelete={isAdmin ? () => void remove(video) : undefined} />)}</div>
       : <Card><EmptyState icon={Clapperboard} title="No videos yet" description={isAdmin ? 'Tap "Add video" and paste a YouTube or Facebook link.' : 'Match highlights and interviews will appear here.'} /></Card>}
-    <section className="tv-facebook" aria-label="Latest from Ekhaya FC on Facebook">
-      <div className="matchday-section-title"><h2>Latest on Facebook</h2><a href={config.facebookPage} target="_blank" rel="noreferrer">Open page</a></div>
-      {showFeed ? <iframe title="Ekhaya FC on Facebook" src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(config.facebookPage)}&tabs=timeline&width=500&height=720&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false`} loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" />
-        : <button type="button" className="tv-facebook-load" onClick={() => setShowFeed(true)}>Show the club's latest Facebook posts and videos</button>}
-    </section>
     {playing && <VideoPlayer url={playing.url} title={playing.title} onClose={() => setPlaying(null)} />}
   </>
 }
