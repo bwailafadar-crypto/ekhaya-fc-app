@@ -1,9 +1,9 @@
 # Ekhaya TV: brings new videos from the club's YouTube channel into the app.
-# Runs every 2 hours in the day (Malawi time) and when "Sync now" is tapped in the app.
+# Runs every hour from 6:17 to 22:17 (Malawi time) and when "Sync now" is tapped in the app.
 name: Sync YouTube to Ekhaya TV
 on:
   schedule:
-    - cron: '17 4-20/2 * * *'
+    - cron: '17 4-20 * * *'
   workflow_dispatch:
     inputs:
       channel:

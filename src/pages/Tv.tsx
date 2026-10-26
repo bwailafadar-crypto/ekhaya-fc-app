@@ -78,7 +78,7 @@ function YoutubeConnect({ cfg }: { cfg: YoutubeConfig }) {
 
   async function sync(quiet = false) {
     try { await dispatchWorkflow('sync-youtube.yml'); if (!quiet) showToast('Checking YouTube… new videos appear here in about a minute.') }
-    catch (error) { showToast((error as Error).message === 'no-key' ? 'Saved. Videos come in automatically every 2 hours (add the GitHub key in Admin → Alerts for instant sync).' : 'Saved. The next automatic check brings the videos in.', 'info') }
+    catch (error) { showToast((error as Error).message === 'no-key' ? 'Saved. Videos come in automatically every hour (add the GitHub key in Admin → Alerts for instant sync).' : 'Saved. The next automatic check brings the videos in.', 'info') }
   }
 
   async function save(event: FormEvent) {
@@ -98,7 +98,7 @@ function YoutubeConnect({ cfg }: { cfg: YoutubeConfig }) {
       <Button type="submit" disabled={busy}>{busy ? 'Saving…' : cfg.channel ? 'Save' : 'Connect'}</Button>
     </form>
     {cfg.error ? <p className="te-problems-title">⚠ {cfg.error}. Check the link.</p>
-      : syncedAt ? <p className="live-help">Last checked {new Date(syncedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · {cfg.inFeed ?? 0} recent videos on the channel{cfg.lastAdded ? `, ${cfg.lastAdded} new added` : ''}. New uploads come in every 2 hours by themselves.</p>
+      : syncedAt ? <p className="live-help">Last checked {new Date(syncedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · {cfg.inFeed ?? 0} recent videos on the channel{cfg.lastAdded ? `, ${cfg.lastAdded} new added` : ''}. New uploads come in every hour by themselves.</p>
       : cfg.channel ? <p className="live-help">Waiting for the first check…</p>
       : <p className="live-help">Open the club's channel on YouTube, copy the link from the address bar (or Share → Copy link) and paste it here. Every new upload then shows on Ekhaya TV by itself, and a LIVE banner appears when the club goes live.</p>}
     {cfg.channel && <button type="button" className="shop-link" onClick={() => void sync()}><RefreshCw size={14} aria-hidden="true" /> Sync now</button>}

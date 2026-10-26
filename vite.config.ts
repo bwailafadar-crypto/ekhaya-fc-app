@@ -58,7 +58,7 @@ export default defineConfig({
         'assets/AdminPanel-*',
       ],
       navigateFallback: 'index.html',
-      navigateFallbackDenylist: [/^\/__\//, /^\/\.netlify\/functions\//, /firestore\.googleapis\.com/, /^\/(privacy|terms|delete-account)\.html/],
+      navigateFallbackDenylist: [/^\/__\//, /^\/\.netlify\/functions\//, /firestore\.googleapis\.com/, /^\/(privacy|terms|delete-account|yt)\.html/],
       cleanupOutdatedCaches: true,
       // A new deploy takes over open tabs immediately instead of waiting for
       // every tab to close; PwaUpdateNotice then reloads onto it.

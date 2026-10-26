@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="robots" content="noindex">
+<title>Ekhaya TV</title>
+<style>html,body{margin:0;height:100%;background:#000}iframe{position:fixed;inset:0;width:100%;height:100%;border:0}p{color:#fff;font:15px system-ui;text-align:center;margin-top:40vh}</style>
+</head>
+<body>
+<script>
+// Ekhaya TV player page: the Android app plays YouTube videos through this
+// page on the club's own address, because YouTube refuses to play videos for
+// apps that have no web address (error 153).
+(function () {
+  var id = new URLSearchParams(location.search).get('v') || ''
+  if (!/^[A-Za-z0-9_-]{11}$/.test(id)) { document.body.innerHTML = '<p>Video not found.</p>'; return }
+  var f = document.createElement('iframe')
+  f.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1&modestbranding=1&origin=' + encodeURIComponent(location.origin)
+  f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'
+  f.allowFullscreen = true
+  f.referrerPolicy = 'strict-origin-when-cross-origin'
+  f.title = 'Ekhaya TV'
+  document.body.appendChild(f)
+})()
+</script>
+</body>
+</html>
