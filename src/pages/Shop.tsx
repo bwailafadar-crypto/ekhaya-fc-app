@@ -133,7 +133,7 @@ export default function Shop() {
       </div>)}
     </div>
     {category === 'wish' && !shown.length && <EmptyState icon={Heart} title="Nothing saved" description="Tap the heart on an item to keep it here." />}
-    <div className="shop-accept"><span>We accept</span>{(['airtel', 'mpamba'] as PayMethod[]).map((m) => <PayIcon key={m} method={m} settings={settings} />)}</div>
+    <div className="shop-accept"><span>We accept</span>{(['airtel', 'mpamba', 'fdh'] as PayMethod[]).map((m) => <PayIcon key={m} method={m} settings={settings} />)}</div>
     <p className="shop-pay-note">{settings.paymentNote}</p>
     {panels}
   </div>
@@ -262,12 +262,12 @@ type Step = 'cart' | 'details' | 'pay' | 'done'
 
 /** Payment method mark: the official logo the club uploaded, or a plain coloured tile. */
 function PayIcon({ method, settings }: { method: PayMethod; settings: ReturnType<typeof settingsWithDefaults> }) {
-  const logo = method === 'airtel' ? settings.airtelLogo : method === 'mpamba' ? settings.mpambaLogo : undefined
+  const logo = method === 'airtel' ? settings.airtelLogo : method === 'mpamba' ? settings.mpambaLogo : method === 'fdh' ? settings.fdhLogo : undefined
   if (logo) return <img className="shop-pay-logo" src={logo} alt={PAY_LABEL[method]} title={PAY_LABEL[method]} />
-  return <i className={`shop-pay-tile pay-${method}`} aria-hidden="true" title={PAY_LABEL[method]}>{method === 'airtel' ? 'A' : method === 'mpamba' ? 'M' : 'K'}</i>
+  return <i className={`shop-pay-tile pay-${method}`} aria-hidden="true" title={PAY_LABEL[method]}>{method === 'airtel' ? 'A' : method === 'mpamba' ? 'M' : method === 'fdh' ? 'FDH' : 'K'}</i>
 }
-type PayMethod = 'airtel' | 'mpamba' | 'cash'
-const PAY_LABEL: Record<PayMethod, string> = { airtel: 'Airtel Money', mpamba: 'TNM Mpamba', cash: 'Cash when I collect' }
+type PayMethod = 'airtel' | 'mpamba' | 'fdh' | 'cash'
+const PAY_LABEL: Record<PayMethod, string> = { airtel: 'Airtel Money', mpamba: 'TNM Mpamba', fdh: 'FDH Bank transfer', cash: 'Cash when I collect' }
 
 function Steps({ step }: { step: Step }) {
   const all: Array<[Step, string]> = [['cart', 'Cart'], ['details', 'Details'], ['pay', 'Payment'], ['done', 'Done']]
@@ -379,9 +379,19 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     : <div className="shop-checkout">
       <strong className="shop-sub">How will you pay {mwk(total)}?</strong>
       <div className="shop-paylist" role="radiogroup" aria-label="Payment">
-        {(['airtel', 'mpamba'] as PayMethod[]).map((m) => <button type="button" key={m} role="radio" aria-checked={method === m} className={`pay-${m} ${method === m ? 'active' : ''}`} onClick={() => setMethod(m)}><PayIcon method={m} settings={settings} /><span>{PAY_LABEL[m]}</span></button>)}
+        {(['airtel', 'mpamba', 'fdh'] as PayMethod[]).map((m) => <button type="button" key={m} role="radio" aria-checked={method === m} className={`pay-${m} ${method === m ? 'active' : ''}`} onClick={() => setMethod(m)}><PayIcon method={m} settings={settings} /><span>{PAY_LABEL[m]}</span></button>)}
       </div>
       {method === 'cash' ? <p className="shop-paybox">Pay {mwk(total)} in cash when you {delivery === 'delivery' ? 'receive your order' : `collect at ${settings.pickupPlace}`}. The club will confirm your order first.</p>
+        : method === 'fdh' ? <div className="shop-paybox">
+          {settings.fdhAccount ? <>
+            <p>Transfer <b>{mwk(total)}</b> to the club's FDH Bank account:</p>
+            <p className="shop-paynum"><b>{settings.fdhAccount}</b><small>{[settings.fdhAccountName || settings.payName, settings.fdhBranch ? `${settings.fdhBranch} branch` : ''].filter(Boolean).join(' · ')}</small></p>
+            <button type="button" className="shop-link" onClick={() => { void navigator.clipboard?.writeText((settings.fdhAccount ?? '').replace(/\s/g, '')).then(() => showToast('Account number copied.')).catch(() => undefined) }}>Copy account number</button>
+            <p>Use <b>{ref}</b> as the payment reference. You can pay with the FDH app, internet banking, an agent or at a branch.</p>
+          </> : <p>After you place the order, the club sends you the FDH Bank account details on WhatsApp. Transfer {mwk(total)} and send the reference.</p>}
+          <label className="admin-field"><span>Transfer reference from the bank (if you paid already)</span><input value={txId} maxLength={40} onChange={(e) => setTxId(e.target.value)} placeholder="e.g. FT26299ABC123" /></label>
+          <small className="live-help">You can also add it later in My orders.</small>
+        </div>
         : <div className="shop-paybox">
           {payNumber ? <>
             <p>Send <b>{mwk(total)}</b> with {PAY_LABEL[method]} to:</p>

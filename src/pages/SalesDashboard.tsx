@@ -12,7 +12,7 @@ import { mwk, STATUS_LABEL, type OrderStatus, type ShopOrder } from '../utils/sh
 
 const PAID: OrderStatus[] = ['paid', 'ready', 'collected']
 const WAITING: OrderStatus[] = ['new', 'confirmed']
-const PAY_LABEL: Record<string, string> = { airtel: 'Airtel Money', mpamba: 'TNM Mpamba', cash: 'Cash' }
+const PAY_LABEL: Record<string, string> = { airtel: 'Airtel Money', mpamba: 'TNM Mpamba', fdh: 'FDH Bank', cash: 'Cash' }
 const JERSEY_COLOUR: Record<string, string> = { gold: '#C99A2E', white: '#E9E4D6', purple: '#5B21B6' }
 const DAY = 86_400_000
 

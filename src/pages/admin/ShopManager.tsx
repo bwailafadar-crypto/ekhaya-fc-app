@@ -83,7 +83,7 @@ export default function ShopManager() {
         <div className="shop-order-top"><strong>{o.ref}</strong><span>{o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'just now'}</span><b>{mwk(o.total)}</b></div>
         <p>{o.name} · <a href={`tel:${o.phone}`}>{o.phone}</a> · {o.delivery === 'delivery' ? `Deliver: ${o.address ?? ''}` : 'Pick up'}</p>
         <ul>{o.lines.map((l, i) => <li key={i}>{l.qty} × {l.name}{l.variant ? <b>, {l.variant}</b> : null}{l.size ? ` (${l.size})` : ''}{l.printName || l.printNumber ? <em> print {l.printName} {l.printNumber}</em> : null}</li>)}</ul>
-        <p className="shop-order-pay">{o.payment ? <>Payment: <b>{o.payment.method === 'airtel' ? 'Airtel Money' : o.payment.method === 'mpamba' ? 'TNM Mpamba' : 'Cash'}</b>{o.payment.txId ? <> · transaction <b>{o.payment.txId}</b></> : o.payment.method !== 'cash' ? ' · no transaction ID yet' : ''}</> : 'Payment: not chosen'}</p>
+        <p className="shop-order-pay">{o.payment ? <>Payment: <b>{o.payment.method === 'airtel' ? 'Airtel Money' : o.payment.method === 'mpamba' ? 'TNM Mpamba' : o.payment.method === 'fdh' ? 'FDH Bank' : 'Cash'}</b>{o.payment.txId ? <> · transaction <b>{o.payment.txId}</b></> : o.payment.method !== 'cash' ? ' · no transaction ID yet' : ''}</> : 'Payment: not chosen'}</p>
         <div className="shop-order-actions">
           {(o.status === 'new' || o.status === 'confirmed') && <button type="button" className="shop-paid-btn" onClick={() => void setStatus(o, 'paid')}>✓ Mark paid</button>}
           {o.status === 'paid' && <button type="button" className="shop-paid-btn" onClick={() => void setStatus(o, 'ready')}>✓ Ready to collect</button>}
@@ -184,9 +184,12 @@ function SettingsForm() {
       <label className="admin-field"><span>Free delivery from (MK)</span><input inputMode="numeric" value={v.freeDeliveryFrom ?? ''} onChange={(e) => set('freeDeliveryFrom', Number(e.target.value.replace(/\D/g, '')))} /></label>
       <label className="admin-field"><span>Airtel Money number (fans pay here)</span><input value={v.airtelNumber ?? ''} inputMode="tel" onChange={(e) => set('airtelNumber', e.target.value)} placeholder="099…" /></label>
       <label className="admin-field"><span>TNM Mpamba number (fans pay here)</span><input value={v.mpambaNumber ?? ''} inputMode="tel" onChange={(e) => set('mpambaNumber', e.target.value)} placeholder="088…" /></label>
+      <label className="admin-field"><span>FDH Bank account number</span><input value={v.fdhAccount ?? ''} inputMode="numeric" onChange={(e) => set('fdhAccount', e.target.value)} /></label>
+      <label className="admin-field"><span>FDH account name</span><input value={v.fdhAccountName ?? ''} onChange={(e) => set('fdhAccountName', e.target.value)} placeholder="Ekhaya Football Club" /></label>
+      <label className="admin-field"><span>FDH branch</span><input value={v.fdhBranch ?? ''} onChange={(e) => set('fdhBranch', e.target.value)} placeholder="Blantyre" /></label>
       <label className="admin-field"><span>Name on the money account</span><input value={v.payName ?? ''} onChange={(e) => set('payName', e.target.value)} placeholder="Ekhaya FC" /></label>
-      <div className="admin-field shop-logo-fields"><span>Payment logos (official images from Airtel and TNM, shown at checkout)</span>
-        <div className="shop-form-photos">{([['airtelLogo', 'Airtel Money'], ['mpambaLogo', 'TNM Mpamba']] as const).map(([key, label]) => <div key={key} className="shop-logo-slot">
+      <div className="admin-field shop-logo-fields"><span>Payment logos (official images from Airtel, TNM and FDH Bank, shown at checkout)</span>
+        <div className="shop-form-photos">{([['airtelLogo', 'Airtel Money'], ['mpambaLogo', 'TNM Mpamba'], ['fdhLogo', 'FDH Bank']] as const).map(([key, label]) => <div key={key} className="shop-logo-slot">
           {v[key] ? <div className="shop-form-photo logo"><img src={v[key]} alt={label} /><button type="button" onClick={() => set(key, '')} aria-label={`Remove ${label} logo`}>×</button></div>
             : <label className="shop-form-add"><input type="file" accept="image/*" onChange={async (e) => { const f = e.currentTarget.files?.[0]; e.currentTarget.value = ''; if (f) { try { set(key, await compressImage(f, LOGO_IMAGE)) } catch (err) { showToast(err instanceof Error ? err.message : 'Not added.', 'error') } } }} /><ImagePlus size={20} /><span>{label}</span></label>}
           <small>{label}</small>

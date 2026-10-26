@@ -455,13 +455,13 @@ service cloud.firestore {
         && request.resource.data.total is number && request.resource.data.total > 0
         && request.resource.data.delivery in ['pickup', 'delivery']
         && request.resource.data.keys().hasOnly(['ref', 'uid', 'name', 'phone', 'lines', 'delivery', 'address', 'deliveryFee', 'total', 'status', 'payment', 'createdAt'])
-        && (!('payment' in request.resource.data) || (request.resource.data.payment.method in ['airtel', 'mpamba', 'cash'] && request.resource.data.payment.keys().hasOnly(['method', 'txId'])));
+        && (!('payment' in request.resource.data) || (request.resource.data.payment.method in ['airtel', 'mpamba', 'fdh', 'cash'] && request.resource.data.payment.keys().hasOnly(['method', 'txId'])));
       allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       // The fan may add the mobile money transaction ID while the order is new.
       allow update: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid && resource.data.status == 'new'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['payment'])
         && request.resource.data.payment.keys().hasOnly(['method', 'txId'])
-        && request.resource.data.payment.method in ['airtel', 'mpamba', 'cash']
+        && request.resource.data.payment.method in ['airtel', 'mpamba', 'fdh', 'cash']
         && request.resource.data.payment.txId is string && request.resource.data.payment.txId.size() <= 40);
       allow delete: if isAdmin();
     }
