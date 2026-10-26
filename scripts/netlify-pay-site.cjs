@@ -30,7 +30,7 @@ async function main() {
   ]
   const existing = await call('GET', `/accounts/${account}/env?site_id=${site.id}`).catch(() => [])
   for (const v of vars) {
-    const body = { key: v.key, scopes: ['functions'], values: [{ value: v.value, context: 'all' }] }
+    const body = { key: v.key, values: [{ value: v.value, context: 'all' }] }
     if (existing.some((e) => e.key === v.key)) await call('PUT', `/accounts/${account}/env/${v.key}?site_id=${site.id}`, body)
     else await call('POST', `/accounts/${account}/env?site_id=${site.id}`, [body])
     console.log(`::notice::Saved ${v.key} on the payment site`)
