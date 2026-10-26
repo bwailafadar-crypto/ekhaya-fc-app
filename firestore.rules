@@ -523,6 +523,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Ekhaya TV ← YouTube: the channel link (set by admins), sync status and live video.
+    match /tvConfig/{docId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin();
+    }
+
     // Ekhaya TV: links to the club's YouTube/Facebook videos.
     match /videos/{videoId} {
       allow read: if signedIn();

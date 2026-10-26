@@ -38,3 +38,15 @@ export async function dispatchAlert(alert: { kind: 'match' | 'news' | 'test' | '
     throw new Error(`github-${response.status}`)
   }
 }
+
+/** Starts any GitHub Actions job that needs no inputs (e.g. the YouTube sync). */
+export async function dispatchWorkflow(workflow: string) {
+  const token = await githubKey()
+  if (!token) throw new Error('no-key')
+  const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${workflow}/dispatches`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ref: 'master' }),
+  })
+  if (response.status !== 204) throw new Error(`github-${response.status}`)
+}
