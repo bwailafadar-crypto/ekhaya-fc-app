@@ -1,0 +1,46 @@
+# Fixes a misspelt player name everywhere in the live data.
+name: Fix a player's name
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: Wrong name, as it appears now
+        required: true
+      to:
+        description: Correct name
+        required: true
+      mode:
+        type: choice
+        options: [preview, apply]
+        default: preview
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Fix name
+        env:
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+        run: |
+          ARGS=""
+          [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
+          node scripts/rename-player.cjs $ARGS
+      - name: Refresh shared fan data
+        if: inputs.mode == 'apply'
+        run: node scripts/publish-snapshot.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
