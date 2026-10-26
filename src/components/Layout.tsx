@@ -100,7 +100,7 @@ export default function Layout() {
             <span className="brand">EKHAYA FC</span>
             <span className="page-title">{titles[pathname] ?? ''}</span>
           </div>
-          <span className="topbar-season">{config.environment === 'production' ? 'EST. 2015' : <span className="env-badge">{config.environment.toUpperCase()}</span>}</span>
+          <span className="topbar-season">{config.environment === 'production' ? 'EST. 2022' : <span className="env-badge">{config.environment.toUpperCase()}</span>}</span>
           <AdminAlerts />
         </header>
 

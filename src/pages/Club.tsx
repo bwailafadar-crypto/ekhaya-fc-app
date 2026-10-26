@@ -55,7 +55,7 @@ function EditClub({ info, onDone }: { info: ClubInfo; onDone: () => void }) {
     <h2>Edit club page</h2>
     <form className="admin-form" onSubmit={(event) => void save(event)}>
       <div className="admin-form-grid">
-        <label className="admin-field"><span>Founded (year)</span><input name="founded" defaultValue={info.founded ?? ''} placeholder="e.g. 2015" /></label>
+        <label className="admin-field"><span>Founded (year)</span><input name="founded" defaultValue={info.founded ?? ''} placeholder="e.g. 2022" /></label>
         <label className="admin-field"><span>Nickname</span><input name="nickname" defaultValue={info.nickname ?? ''} /></label>
       </div>
       <label className="admin-field"><span>Home ground</span><input name="ground" defaultValue={info.ground ?? 'Chiwembe Stadium, Blantyre'} /></label>
