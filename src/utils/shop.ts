@@ -27,6 +27,8 @@ export interface ShopProduct {
   variants?: ShopVariant[]
   /** Products in the same group (e.g. the 2026 jerseys) show colour swatches. */
   group?: string
+  /** Only admins see it (e.g. the MK 100 payment test item). */
+  staffOnly?: boolean
   swatch?: string
 }
 
