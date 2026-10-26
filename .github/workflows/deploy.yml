@@ -58,6 +58,10 @@ jobs:
       - name: Check code (lint, types, unit tests)
         run: npm run check
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
       - name: Check the database rules (who can read and change what)
         run: npm run test:rules
 
