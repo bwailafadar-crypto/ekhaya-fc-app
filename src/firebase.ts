@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
 import { config } from './config'
 import { browserLocalPersistence, connectAuthEmulator, getAuth, indexedDBLocalPersistence, initializeAuth, type Auth } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore } from 'firebase/firestore'
@@ -25,10 +25,11 @@ export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseC
 // from the real Ekhaya FC app (website or the Android app, which opens the
 // website), so robots and copied apps can be refused. Only on the club's own
 // addresses, the ones the reCAPTCHA key is registered for.
-const APP_CHECK_SITE_KEY = '6LeG8QEuAAAAAPts1rvQ-W0ofkVjnTYUaI3pcDtt'
+// Google Cloud Fraud Defense (reCAPTCHA Enterprise) key "Ekhaya FC app".
+const APP_CHECK_SITE_KEY = '6LfJ-AEuAAAAAMl_3Yf4bXQqaJ9bSESjhC1U2nr5'
 if (typeof window !== 'undefined' && !config.useEmulators && /(^|\.)ekhaya-fc-app\.(web\.app|firebaseapp\.com)$/.test(window.location.hostname)) {
   try {
-    initializeAppCheck(firebaseApp, { provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true })
+    initializeAppCheck(firebaseApp, { provider: new ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY), isTokenAutoRefreshEnabled: true })
   } catch { /* the app still works; the database decides once App Check is enforced */ }
 }
 // Email sign-in only: getAuth() would also load the Google sign-in machinery
