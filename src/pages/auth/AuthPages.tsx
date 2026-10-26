@@ -449,6 +449,7 @@ export function LoginPage() {
         <Link className="auth-link auth-install-link" to="/install">Install the app</Link>
         <a className="auth-link" href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>
       </div>
+      <p className="auth-recaptcha">This app is protected by reCAPTCHA and the Google <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">Privacy Policy</a> and <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer">Terms of Service</a> apply.</p>
     </AuthShell>
   )
 }

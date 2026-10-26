@@ -2852,3 +2852,7 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .al-row div { display: grid; gap: 2px; min-width: 0; font-size: 14px; }
 .al-row span { overflow-wrap: anywhere; color: var(--ink-2); font-size: 13px; }
 .al-row small { color: var(--muted); font-size: 12px; }
+/* reCAPTCHA (App Check) runs invisibly; its notice is in the privacy policy and on the sign-in page. */
+.grecaptcha-badge { visibility: hidden !important; }
+.auth-recaptcha { margin: 14px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; text-align: center; }
+.auth-recaptcha a { color: inherit; text-decoration: underline; }
