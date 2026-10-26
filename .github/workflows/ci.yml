@@ -37,9 +37,12 @@ jobs:
       - name: App size budget
         run: npm run check:bundle
       - name: Database rules tests (emulator)
-        # Reported, but not blocking yet: turn this on once it has passed once.
-        continue-on-error: true
-        run: npm run test:rules
+        run: |
+          set -o pipefail
+          npm run test:rules 2>&1 | tee rules.log || {
+            grep -E "^not ok|# fail|Error:|expected|AssertionError|FirebaseError" rules.log | head -30 | while read -r line; do echo "::error::$line"; done
+            exit 1
+          }
 
   container:
     # Proves the Docker image (same setup on every machine) still builds.
