@@ -64,6 +64,8 @@ export const DEFAULT_SETTINGS: Required<Omit<ShopSettings, Optional>> & Pick<Sho
   bannerTitle: 'The new Ekhaya kit',
   bannerText: 'Wear the gold. Add your name and number.',
   bannerImage: undefined,
+  airtelLogo: './shop/pay-airtel.png',
+  mpambaLogo: './shop/pay-tnm.png',
   paymentNote: 'Pay with Airtel Money, TNM Mpamba or cash when the club confirms your order.',
 }
 

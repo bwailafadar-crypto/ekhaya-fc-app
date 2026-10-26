@@ -2722,10 +2722,11 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .shop-paid-btn { padding: 8px 12px; border: 0; border-radius: 10px; background: var(--ink); color: var(--gold-light); font-weight: 700; font-size: 13px; cursor: pointer; }
 .shop-orders > li > .shop-track { display: grid; }
 
-.shop-pay-logo { flex: none; width: 44px; height: 34px; object-fit: contain; border-radius: 8px; background: #fff; }
-.shop-paylist .shop-pay-logo { width: 52px; height: 36px; }
+.shop-pay-logo { flex: none; width: 28px; height: 28px; object-fit: cover; border-radius: 8px; }
+.shop-paylist .shop-pay-logo { width: 38px; height: 38px; border-radius: 10px; }
 .shop-accept { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .shop-accept .shop-pay-tile { width: 28px; height: 28px; font-size: 12px; }
 .shop-logo-slot { display: grid; justify-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
 .shop-form-photo.logo { background: #fff; border: 1px solid var(--line); }
 .shop-form-photo.logo img { object-fit: contain; padding: 6px; }
+.shop-paylist .shop-pay-tile { width: 38px; height: 38px; }
