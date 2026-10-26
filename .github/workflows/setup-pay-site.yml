@@ -1,0 +1,66 @@
+# Creates (once) and updates the free Netlify payment site that sends PayChangu
+# PIN prompts for the club shop, and connects the shop to it.
+# Needs repository secrets: NETLIFY_AUTH_TOKEN, PAYCHANGU_SECRET_KEY, FIREBASE_SA.
+name: Set up payment site
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: test = only admins see PIN payments (PayChangu test key); live = fans too (live key)
+        type: choice
+        options: [test, live]
+        default: test
+concurrency:
+  group: pay-site
+  cancel-in-progress: false
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Check secrets
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          PAYCHANGU_SECRET_KEY: ${{ secrets.PAYCHANGU_SECRET_KEY }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          missing=""
+          [ -n "$NETLIFY_AUTH_TOKEN" ] || missing="$missing NETLIFY_AUTH_TOKEN"
+          [ -n "$PAYCHANGU_SECRET_KEY" ] || missing="$missing PAYCHANGU_SECRET_KEY"
+          [ -n "$FIREBASE_SA" ] || missing="$missing FIREBASE_SA"
+          if [ -n "$missing" ]; then echo "::error::Missing GitHub secret(s):$missing"; exit 1; fi
+          case "$PAYCHANGU_SECRET_KEY" in *test*|*TEST*) echo "::notice::PayChangu key looks like a TEST key";; *) echo "::notice::PayChangu key looks like a LIVE key";; esac
+      - name: Create or find the site, save its settings
+        id: site
+        env:
+          TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          PAYCHANGU_SECRET_KEY: ${{ secrets.PAYCHANGU_SECRET_KEY }}
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: node scripts/netlify-pay-site.cjs
+      - name: Put the payment server live
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          mkdir -p paysite && printf '<!doctype html><title>Ekhaya FC payments</title><p>Ekhaya FC payment server.</p>' > paysite/index.html
+          npx --yes netlify-cli@17.38.1 deploy --prod --site "${{ steps.site.outputs.id }}" --dir paysite --functions netlify/functions --message "payment server ${GITHUB_SHA::7}"
+      - name: Check it answers
+        run: |
+          sleep 5
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "${{ steps.site.outputs.url }}/.netlify/functions/shop-pay-check" -H 'content-type: application/json' -d '{}')
+          echo "::notice::Payment server answered $code (401 = alive and asking for sign-in, which is right)"
+      - name: Connect the shop
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          SETTINGS: '{"payApi":"${{ steps.site.outputs.url }}","payMode":"${{ inputs.mode }}"}'
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json" node scripts/set-shop-settings.cjs --apply
+          GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json" FLAG=shopPinPay VALUE=true node scripts/set-flag.cjs
+          rm -f "$RUNNER_TEMP/sa.json"
+          echo "::notice::PayChangu webhook URL: ${{ steps.site.outputs.url }}/.netlify/functions/pay-webhook"

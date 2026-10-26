@@ -305,7 +305,9 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
   const [busy, setBusy] = useState(false)
   const [placed, setPlaced] = useState<{ ref: string; total: number; text: string; method: PayMethod; paid?: boolean } | null>(null)
   // PIN payments (PayChangu): on when switched on and the payment server is set.
-  const pinOn = useFlag('shopPinPay') && Boolean(payApiBase(settings))
+  const staff = profile?.role === 'admin' || profile?.role === 'superadmin'
+  const pinTest = settings.payMode !== 'live'
+  const pinOn = useFlag('shopPinPay') && Boolean(payApiBase(settings)) && (!pinTest || staff)
   const [payFrom, setPayFrom] = useState(profile?.phone ?? '')
   const [orderId, setOrderId] = useState('')
   const [pin, setPin] = useState<{ state: 'idle' | 'starting' | 'waiting' | 'failed'; message?: string; txRef?: string }>({ state: 'idle' })
@@ -472,6 +474,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
             <p>{pin.state === 'starting' ? 'One moment.' : <>{method === 'airtel' ? 'An' : 'A'} {PAY_LABEL[method]} message is on <b>{payFrom}</b>. Enter your PIN to pay <b>{mwk(total)}</b> to Ekhaya FC.</>}</p>
             <small className="live-help">Keep this screen open. It changes by itself when the money arrives.</small>
           </div> : <>
+            {pinTest && <p className="shop-pinfail">TEST MODE · only admins see this. No real money moves.</p>}
             <p>Pay <b>{mwk(total)}</b> straight from your {PAY_LABEL[method]}. You'll get a message on your phone to enter your PIN.</p>
             <label className="admin-field"><span>{PAY_LABEL[method]} number to pay from</span><input value={payFrom} inputMode="tel" autoComplete="tel" maxLength={20} onChange={(e) => setPayFrom(e.target.value)} placeholder={method === 'airtel' ? '099… / 098…' : '088…'} /></label>
             {pin.state === 'failed' && <p className="shop-pinfail">{pin.message}</p>}

@@ -6,7 +6,7 @@ const fs = require('node:fs')
 const { initializeApp, cert } = require('firebase-admin/app')
 const { getFirestore, FieldValue } = require('firebase-admin/firestore')
 const apply = process.argv.includes('--apply')
-const ALLOWED = ['whatsapp', 'airtelNumber', 'mpambaNumber', 'payName', 'fdhAccount', 'fdhAccountName', 'fdhBranch', 'printPrice', 'deliveryPrice', 'freeDeliveryFrom', 'pickupPlace', 'bannerTitle', 'bannerText', 'paymentNote']
+const ALLOWED = ['whatsapp', 'airtelNumber', 'mpambaNumber', 'payName', 'fdhAccount', 'fdhAccountName', 'fdhBranch', 'printPrice', 'deliveryPrice', 'freeDeliveryFrom', 'pickupPlace', 'bannerTitle', 'bannerText', 'paymentNote', 'payApi', 'payMode']
 const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(os.homedir(), 'ekhaya-keys', 'firebase-sa.json')
 initializeApp({ credential: cert(JSON.parse(fs.readFileSync(keyFile, 'utf8'))) })
 const db = getFirestore()

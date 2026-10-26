@@ -59,9 +59,11 @@ export interface ShopSettings {
   fdhLogo?: string
   /** Address of the payment server (Netlify) that sends PIN prompts through PayChangu. */
   payApi?: string
+  /** 'test' (PayChangu test key: only admins see PIN payments) or 'live' (everyone). */
+  payMode?: 'test' | 'live'
 }
 
-type Optional = 'bannerImage' | 'whatsapp' | 'airtelNumber' | 'mpambaNumber' | 'payName' | 'airtelLogo' | 'mpambaLogo' | 'fdhAccount' | 'fdhAccountName' | 'fdhBranch' | 'fdhLogo' | 'payApi'
+type Optional = 'bannerImage' | 'whatsapp' | 'airtelNumber' | 'mpambaNumber' | 'payName' | 'airtelLogo' | 'mpambaLogo' | 'fdhAccount' | 'fdhAccountName' | 'fdhBranch' | 'fdhLogo' | 'payApi' | 'payMode'
 export const DEFAULT_SETTINGS: Required<Omit<ShopSettings, Optional>> & Pick<ShopSettings, Optional> = {
   whatsapp: '',
   printPrice: 5000,
