@@ -22,6 +22,8 @@ import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { compressImage, IMAGE_SIZES } from '../utils/compressImage'
 import { matchMinute } from '../utils/matchClock'
 import type { Fixture, LegacyFan, MembershipRecord, MembershipTier, Player, PlayerStats, Standing, Team } from '../types'
+import { logAction } from '../utils/audit'
+import { confirmIdentity } from '../utils/reauth'
 
 type Section = 'fans' | 'shop' | 'fanzone' | 'players' | 'teams' | 'standings' | 'fixtures' | 'news' | 'membershipTiers' | 'members'
 const superadminSections: Section[] = ['fans', 'membershipTiers', 'members']
@@ -409,8 +411,9 @@ export default function AdminPanel() {
   async function saveMembershipTier(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!selectedTier) return
-    setSaving(true)
     const form = new FormData(event.currentTarget)
+    if (!(await confirmIdentity('Membership prices are what fans pay.'))) return
+    setSaving(true)
     const benefits = String(form.get('benefits') ?? '').split('\n').map((benefit) => benefit.trim()).filter(Boolean)
     try {
       const { id } = selectedTier
@@ -422,6 +425,7 @@ export default function AdminPanel() {
         colour: String(form.get('colour') ?? '#C9A227'),
         active: form.get('active') === 'on',
       }, { merge: true })
+      void logAction('Changed a membership tier', `${String(form.get('name') ?? '')}: MK ${String(form.get('priceMWK') ?? '')}, ${form.get('active') === 'on' ? 'on sale' : 'hidden'}`)
       showToast('Membership tier updated.')
     } catch (error) {
       showToast(messageFrom(error), 'error')
@@ -434,6 +438,8 @@ export default function AdminPanel() {
     const name = member.fullName || member.email || 'this member'
     const parts = [member.uid ? 'their membership request/record' : null, member.legacyFanId ? 'their old fan record' : null].filter(Boolean).join(' and ')
     if (!window.confirm(`Delete ${name}? This permanently removes ${parts}. Their app account stays; use Fans → Delete to remove that too.`)) return
+    if (!(await confirmIdentity('Deleting a member record cannot be undone.'))) return
+    void logAction('Deleted a member record', name)
     setMemberActionBusy(member.id)
     try {
       const batch = writeBatch(db)
@@ -682,8 +688,10 @@ export default function AdminPanel() {
     const hasRecord = Boolean(stats && (stats.appearances || stats.goals || stats.assists))
     const warning = hasRecord ? `\n\n${target.name} has ${stats.appearances} appearances, ${stats.goals} goals and ${stats.assists} assists this season. These will be lost.` : ''
     if (!window.confirm(`Remove ${target.name}${target.number != null ? ` (#${target.number})` : ''} from the squad?${warning}\n\nThis cannot be undone.`)) return
+    if (!(await confirmIdentity('Removing a player cannot be undone.'))) return
     try {
       await deleteDoc(doc(db, 'players', target.id))
+      void logAction('Removed a player', `${target.name}${target.number != null ? ` #${target.number}` : ''}`)
       if (selectedPlayerId === target.id) { setSelectedPlayerId(''); setPlayerPhotoDraft(null) }
       showToast(`${target.name} removed from the squad.`)
     } catch (error) {
@@ -788,6 +796,7 @@ export default function AdminPanel() {
     if (!selectedFixture || !window.confirm('Delete this fixture and its result?')) return
     try {
       await deleteDoc(doc(db, 'fixtures', selectedFixture.id))
+      void logAction('Deleted a fixture', `${selectedFixture.home} v ${selectedFixture.away} (${selectedFixture.date.slice(0, 10)})`)
       setSelectedFixtureId('')
       showToast('Fixture deleted.')
     } catch (error) {

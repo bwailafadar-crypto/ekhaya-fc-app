@@ -1,4 +1,5 @@
-import { collection, doc, getCountFromServer, getDoc, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore'
+import { collection, collectionGroup, doc, getCountFromServer, getDoc, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore'
+import { thisDeviceId } from '../utils/device'
 import { Bell } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -54,6 +55,23 @@ export default function AdminAlerts() {
       first = false
     }, () => undefined)
   }, [isSuperadmin, showToast])
+
+  // An admin account (including this one) used on a new phone or computer.
+  useEffect(() => {
+    if (!isSuperadmin) return
+    let first = true
+    return onSnapshot(collectionGroup(db, 'devices'), (snapshot) => {
+      if (!first) snapshot.docChanges().filter((change) => change.type === 'added' && change.doc.id !== thisDeviceId()).forEach((change) => {
+        const d = change.doc.data()
+        const mine = change.doc.ref.parent.parent?.id === user?.uid
+        const text = `${mine ? 'Your account' : `${d.name || 'An admin'} (${d.role || 'admin'})`} signed in on a new device: ${d.label || 'unknown device'}`
+        playAdminSound('join')
+        showToast(`🔐 ${text}. If this wasn't you, change your password now.`, 'error')
+        void systemNotify('New sign-in on Ekhaya FC', text)
+      })
+      first = false
+    }, () => undefined)
+  }, [isSuperadmin, showToast, user?.uid])
 
   // New shop order: chime, a note and a phone notification.
   useEffect(() => {

@@ -2823,3 +2823,32 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
   .video-player:not(.is-portrait) .video-player-top { position: absolute; top: 8px; right: 8px; z-index: 2; width: auto; }
   .video-player:not(.is-portrait) .video-player-top strong { display: none; }
 }
+
+/* "Confirm it's you" box */
+.reauth-wrap { position: fixed; inset: 0; z-index: 2147483600; display: grid; place-items: center; padding: 16px; background: rgb(0 0 0 / 55%); }
+.reauth { display: grid; gap: 10px; width: min(380px, 100%); padding: 22px 18px; border-radius: 20px; background: var(--bg); text-align: center; }
+.reauth-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto; border-radius: 50%; background: #fbf0c9; color: var(--gold-dark); }
+.reauth h2 { margin: 0; font-family: 'Oswald', sans-serif; font-size: 22px; text-transform: uppercase; }
+.reauth p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.reauth .admin-field { text-align: left; }
+.reauth-error { color: var(--loss) !important; font-weight: 600; }
+.reauth-actions { display: grid; gap: 8px; }
+.devices-list { display: grid; gap: 8px; margin: 8px 0; padding: 0; list-style: none; }
+.devices-list li { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.devices-list li div { display: grid; flex: 1; gap: 2px; }
+.devices-list em { color: var(--win); font-style: normal; font-weight: 700; }
+.devices-list small { color: var(--muted); font-size: 12px; }
+.devices-list button { border: 0; background: none; color: var(--muted); cursor: pointer; }
+
+/* Activity log (superadmin) */
+.al-filters { display: flex; gap: 8px; margin-bottom: 12px; }
+.al-filters select, .al-filters input { padding: 9px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font-size: 14px; }
+.al-filters input { flex: 1; min-width: 0; }
+.al-list { margin: 0; padding: 0; list-style: none; }
+.al-list h3 { margin: 14px 2px 6px; color: var(--gold-dark); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+.al-row { display: flex; gap: 12px; margin-bottom: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.al-row.strong { border-left: 4px solid var(--gold); }
+.al-row time { flex: none; color: var(--muted); font-size: 12px; font-weight: 700; padding-top: 2px; }
+.al-row div { display: grid; gap: 2px; min-width: 0; font-size: 14px; }
+.al-row span { overflow-wrap: anywhere; color: var(--ink-2); font-size: 13px; }
+.al-row small { color: var(--muted); font-size: 12px; }

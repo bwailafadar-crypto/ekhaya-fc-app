@@ -70,7 +70,7 @@ function FlagsCard() {
 
   async function save() {
     setSaving(true)
-    try { await saveFlags(current.flags, current.notice); setDraft(null); showToast('Saved. Every fan gets the change straight away.', 'success') } catch { showToast('Not saved. Only the superadmin can change these.', 'error') } finally { setSaving(false) }
+    try { await saveFlags(current.flags, current.notice); setDraft(null); showToast('Saved. Every fan gets the change straight away.', 'success') } catch (error) { if ((error as Error).message !== 'cancelled') showToast('Not saved. Only the superadmin can change these.', 'error') } finally { setSaving(false) }
   }
 
   return (

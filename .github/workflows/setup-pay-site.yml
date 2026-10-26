@@ -40,6 +40,7 @@ jobs:
         id: site
         env:
           TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          PAYCHANGU_WEBHOOK_SECRET: ${{ secrets.PAYCHANGU_WEBHOOK_SECRET }}
           PAYCHANGU_SECRET_KEY: ${{ secrets.PAYCHANGU_SECRET_KEY }}
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
         run: node scripts/netlify-pay-site.cjs

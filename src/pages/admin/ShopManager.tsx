@@ -13,6 +13,8 @@ import {
   ADULT_SIZES, CATEGORIES, isPublished, KIDS_SIZES, mwk, ORDER_STATUSES, STARTER_PRODUCTS, STATUS_LABEL, waLink,
   type OrderStatus, type ShopOrder, type ShopProduct, type ShopSettings,
 } from '../../utils/shop'
+import { logAction } from '../../utils/audit'
+import { confirmIdentity } from '../../utils/reauth'
 
 const PRODUCT_IMAGE = { maxDimension: 720, maxBytes: 110 * 1024 }
 const BANNER_IMAGE = { maxDimension: 1080, maxBytes: 160 * 1024 }
@@ -43,16 +45,16 @@ export default function ShopManager() {
 
   async function remove(p: ShopProduct) {
     if (!window.confirm(`Delete ${p.name} from the shop?`)) return
-    try { await deleteDoc(doc(db, 'shopProducts', p.id)); showToast('Deleted.') } catch (e) { showToast(e instanceof Error ? e.message : 'Not deleted.', 'error') }
+    try { await deleteDoc(doc(db, 'shopProducts', p.id)); void logAction('Deleted a shop product', p.name); showToast('Deleted.') } catch (e) { showToast(e instanceof Error ? e.message : 'Not deleted.', 'error') }
   }
 
   async function toggle(p: ShopProduct) {
     if (!p.active && !(p.price > 0)) { showToast('Give it a price first.', 'error'); setEditing(p); return }
-    try { await updateDoc(doc(db, 'shopProducts', p.id), { active: !p.active }) } catch (e) { showToast(e instanceof Error ? e.message : 'Not saved.', 'error') }
+    try { await updateDoc(doc(db, 'shopProducts', p.id), { active: !p.active }); void logAction(p.active ? 'Took a product off sale' : 'Put a product on sale', p.name) } catch (e) { showToast(e instanceof Error ? e.message : 'Not saved.', 'error') }
   }
 
   async function setStatus(o: ShopOrder, status: OrderStatus) {
-    try { await updateDoc(doc(db, 'shopOrders', o.id), { status, updatedAt: serverTimestamp() }) } catch (e) { showToast(e instanceof Error ? e.message : 'Not saved.', 'error') }
+    try { await updateDoc(doc(db, 'shopOrders', o.id), { status, updatedAt: serverTimestamp() }); void logAction(`Order ${STATUS_LABEL[status]}`, `${o.ref} · ${o.name} · MK ${o.total}`) } catch (e) { showToast(e instanceof Error ? e.message : 'Not saved.', 'error') }
   }
 
   return <Card className="admin-card shop-admin">
@@ -124,6 +126,7 @@ function ProductForm({ value, onDone }: { value: Omit<ShopProduct, 'id'> & { id?
     try {
       if (id) await setDoc(doc(db, 'shopProducts', id), clean)
       else await addDoc(collection(db, 'shopProducts'), { ...clean, createdAt: serverTimestamp() })
+      void logAction(id ? 'Edited a shop product' : 'Added a shop product', `${clean.name}: MK ${clean.price}${variants.length ? ` (${variants.map((x) => `${x.label} ${x.price}`).join(', ')})` : ''}`)
       showToast(p.active ? `${p.name} is on sale.` : `${p.name} saved (hidden).`)
       onDone()
     } catch (e) { showToast(e instanceof Error ? `Not saved: ${e.message}` : 'Not saved.', 'error') } finally { setBusy(false) }
@@ -171,8 +174,10 @@ function SettingsForm() {
   const [busy, setBusy] = useState(false)
 
   async function save() {
+    if (!(await confirmIdentity('Shop settings include the numbers fans pay to.'))) return
     setBusy(true)
-    try { await setDoc(doc(db, 'shopSettings', 'main'), { ...v, updatedAt: serverTimestamp() }, { merge: true }); showToast('Shop settings saved.'); setS(null) }
+    const changed = (Object.keys(v) as Array<keyof ShopSettings>).filter((k) => typeof v[k] !== 'object' && String(v[k] ?? '') !== String(current[k] ?? '') && !/Logo|bannerImage/.test(k))
+    try { await setDoc(doc(db, 'shopSettings', 'main'), { ...v, updatedAt: serverTimestamp() }, { merge: true }); void logAction('Changed shop settings', changed.map((k) => `${k}: ${String(current[k] ?? '–').slice(0, 30)} → ${String(v[k] ?? '–').slice(0, 30)}`).join(' · ') || 'saved'); showToast('Shop settings saved.'); setS(null) }
     catch (e) { showToast(e instanceof Error ? `Not saved: ${e.message}` : 'Not saved.', 'error') } finally { setBusy(false) }
   }
 

@@ -14,6 +14,7 @@ import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { useFlag } from '../hooks/useFlag'
 import DeleteAccount from '../components/DeleteAccount'
 import ChangePassword from '../components/ChangePassword'
+import SignedInDevices from '../components/SignedInDevices'
 import type { LegacyFan, MembershipRecord, MembershipTier } from '../types'
 
 function dateLabel(value: unknown) {
@@ -92,6 +93,7 @@ export default function Profile() {
       <PushSettings />
       <LogoutButton />
       <ChangePassword />
+      <SignedInDevices />
       <DeleteAccount />
       <p className="legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a> · <a href="/delete-account.html" target="_blank" rel="noreferrer">How account deletion works</a></p>
     </>

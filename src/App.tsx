@@ -36,6 +36,7 @@ const MatchReport = lazyPage(() => import('./pages/MatchReport'))
 const TopScorers = lazyPage(() => import('./pages/TopScorers'))
 const Shop = lazyPage(() => import('./pages/Shop'))
 const SalesDashboard = lazyPage(() => import('./pages/SalesDashboard'))
+const ActivityLog = lazyPage(() => import('./pages/ActivityLog'))
 
 export default function App() {
   return (
@@ -56,6 +57,7 @@ export default function App() {
               </Route>
               <Route element={<ProtectedRoute allowedRoles={['superadmin']}><Layout /></ProtectedRoute>}>
                 <Route path="/sales" element={<SalesDashboard />} />
+                <Route path="/activity-log" element={<ActivityLog />} />
               </Route>
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/" element={<Home />} />

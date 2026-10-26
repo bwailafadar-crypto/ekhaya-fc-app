@@ -9,6 +9,7 @@ import { db } from '../firebase'
 import type { Fixture } from '../types'
 import { useToast } from './ToastContext'
 import { chatOpen } from '../utils/chatOpen'
+import { logAction } from '../utils/audit'
 
 type ChatMessage = { id: string; uid: string; name: string; text: string; club?: boolean; createdAt?: { toMillis?: () => number } }
 
@@ -74,6 +75,7 @@ export default function MatchChat({ fixture }: { fixture: Fixture }) {
     try {
       await updateDoc(doc(db, 'users', message.uid), { disabled: true, updatedAt: serverTimestamp() })
       await deleteDoc(doc(db, 'fixtures', fixture.id, 'chat', message.id))
+      void logAction('Blocked a fan (chat)', `${message.name || ''}: "${String(message.text ?? '').slice(0, 80)}"`)
       showToast(`${message.name || 'The fan'} is blocked.`)
     } catch { showToast('Only the superadmin can block fans.', 'error') }
   }

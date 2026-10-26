@@ -2,7 +2,7 @@
 // product pages with sizes and a size guide, name & number printing (pick a
 // player or your own name), wishlist, a cart and an order that goes to the
 // club on WhatsApp. /shop and /shop/:id
-import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore'
+import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { ArrowLeft, Heart, Minus, Package, Plus, Ruler, ShoppingBag, Shirt, Truck, X } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
@@ -47,7 +47,9 @@ export default function Shop() {
   const { role } = useAuth()
   const isStaff = role === 'admin' || role === 'superadmin'
   const all = useFirestoreCollection<Omit<ShopProduct, 'id'>>('shopProducts')
-  const products = useMemo(() => (all.items as ShopProduct[]).filter((p) => isPublished(p) && (!p.staffOnly || isStaff)).sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.name.localeCompare(b.name)), [all.items, isStaff])
+  // Items only admins may see (e.g. the MK 100 payment test) live apart, where fans can't read them.
+  const staffItems = useFirestoreCollection<Omit<ShopProduct, 'id'>>('shopProductsStaff', isStaff)
+  const products = useMemo(() => ([...all.items, ...(isStaff ? staffItems.items : [])] as ShopProduct[]).filter((p) => isPublished(p) && (!p.staffOnly || isStaff)).sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.name.localeCompare(b.name)), [all.items, staffItems.items, isStaff])
   const settings = useShopSettings()
   const { cart, wish } = useShopStore()
   const [category, setCategory] = useState<ShopCategory | 'all' | 'wish'>('all')
@@ -334,18 +336,24 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     if (!user || !lines.length) return orderId || null
     setBusy(true)
     try {
-      const created = await addDoc(collection(db, 'shopOrders'), {
+      // The order and the fan's "last order" time are saved together: the
+      // database allows one order per fan per minute (no order spam).
+      const created = doc(collection(db, 'shopOrders'))
+      const batch = writeBatch(db)
+      batch.update(doc(db, 'users', user.uid), { lastOrderAt: serverTimestamp(), updatedAt: serverTimestamp() })
+      batch.set(created, {
         ref, uid: user.uid, name: name.trim().slice(0, 80), phone: phone.trim().slice(0, 30), lines: lines.map(orderLine), delivery,
         ...(delivery === 'delivery' ? { address: address.trim().slice(0, 200) } : {}), deliveryFee: fee, total, status: 'new',
         payment: { method, ...(txId.trim() ? { txId: txId.trim().slice(0, 40) } : {}) }, createdAt: serverTimestamp(),
       })
+      await batch.commit()
       const text = `${orderText({ ref, name: name.trim(), phone: phone.trim(), lines, delivery, address: address.trim(), deliveryFee: fee, total, pickupPlace: settings.pickupPlace })}\nPayment: ${PAY_LABEL[method]}${txId.trim() ? ` · transaction ${txId.trim()}` : ''}`
       setPlaced({ ref, total, text, method })
       setOrderId(created.id)
       if (!usePin) { clearCart(); setStep('done') }
       return created.id
     } catch (error) {
-      showToast(error instanceof Error ? `Order not sent: ${error.message}` : 'Order not sent. Check your connection.', 'error')
+      showToast(/permission/i.test(String((error as Error)?.message)) ? 'Please wait a minute before sending another order.' : error instanceof Error ? `Order not sent: ${error.message}` : 'Order not sent. Check your connection.', 'error')
       return null
     } finally { setBusy(false) }
   }

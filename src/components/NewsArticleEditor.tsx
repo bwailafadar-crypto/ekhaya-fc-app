@@ -8,6 +8,7 @@ import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { useNewsPhotos } from '../hooks/useNewsPhotos'
 import { compressImage } from '../utils/compressImage'
 import type { NewsBodyBlock, NewsCategory, NewsItem, NewsPhoto, NewsStatus } from '../types'
+import { logAction } from '../utils/audit'
 
 const MAX_GALLERY_PHOTOS = 12
 const PHOTO_MAX_BYTES = 149 * 1024
@@ -130,6 +131,7 @@ export default function NewsArticleEditor() {
       allPhotos.forEach((photo) => batch.delete(doc(db, 'news', selected.id, 'photos', photo.id)))
       batch.delete(doc(db, 'news', selected.id))
       await batch.commit()
+      void logAction('Deleted a news article', selected.title)
       setSelectedId('')
       setBlocks([])
       showToast('News article deleted.')

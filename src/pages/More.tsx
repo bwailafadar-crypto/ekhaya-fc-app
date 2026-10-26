@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Activity, BarChart3, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, Vote } from 'lucide-react'
+import { Activity, BarChart3, ScrollText, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, Vote } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { useFlag } from '../hooks/useFlag'
 import LogoutButton from '../components/LogoutButton'
@@ -42,6 +42,13 @@ export default function More() {
         <Link to="/sales" className="menu-item">
           <BarChart3 className="menu-icon" size={20} aria-hidden="true" />
           <span>Sales dashboard · jersey orders</span>
+          <ChevronRight className="arrow" size={18} aria-hidden="true" />
+        </Link>
+      )}
+      {role === 'superadmin' && (
+        <Link to="/activity-log" className="menu-item">
+          <ScrollText className="menu-icon" size={20} aria-hidden="true" />
+          <span>Activity log · who changed what</span>
           <ChevronRight className="arrow" size={18} aria-hidden="true" />
         </Link>
       )}

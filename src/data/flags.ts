@@ -2,6 +2,8 @@
 // health, instantly, without a new deploy. Stored in appConfig/flags.
 import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
+import { logAction } from '../utils/audit'
+import { confirmIdentity } from '../utils/reauth'
 
 export const FLAGS = {
   alertsPrompt: { label: 'One-tap alerts card after sign-in', default: true },
@@ -53,6 +55,10 @@ export function flagValue(current: FlagState, name: FlagName) {
 }
 
 /** Superadmin only (enforced by the database rules). */
-export function saveFlags(flags: Partial<Record<FlagName, boolean>>, notice: string) {
-  return setDoc(doc(db, 'appConfig', 'flags'), { flags, notice: notice.trim().slice(0, 200), updatedAt: serverTimestamp() })
+export async function saveFlags(flags: Partial<Record<FlagName, boolean>>, notice: string) {
+  if (!(await confirmIdentity('Changing app switches affects every fan.'))) throw new Error('cancelled')
+  const before = state.flags
+  await setDoc(doc(db, 'appConfig', 'flags'), { flags, notice: notice.trim().slice(0, 200), updatedAt: serverTimestamp() })
+  const changed = (Object.keys(flags) as FlagName[]).filter((k) => flags[k] !== before[k]).map((k) => `${k}: ${flags[k] ? 'on' : 'off'}`)
+  void logAction('Changed app switches', [changed.join(', '), notice !== state.notice ? `notice: "${notice.slice(0, 80)}"` : ''].filter(Boolean).join(' · ') || 'saved')
 }

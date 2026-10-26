@@ -26,7 +26,7 @@
       <img src="./team-logos/ekhaya-fc.png" alt="Ekhaya FC" width="96" height="96" style="object-fit:contain" />
       <strong style="font-size:18px">Ekhaya FC is taking longer than usual</strong>
       <span style="max-width:320px;color:#6F6B62;font-size:14px;line-height:1.5">Your connection may be slow. Tap Reload. If that does not help, tap Reset app.</span>
-      <button type="button" onclick="location.reload()" style="min-width:200px;min-height:46px;border:0;border-radius:12px;background:linear-gradient(120deg,#E8C95A,#C9A227);color:#2A2108;font-size:15px;font-weight:700">Reload</button>
+      <button type="button" id="boot-reload" style="min-width:200px;min-height:46px;border:0;border-radius:12px;background:linear-gradient(120deg,#E8C95A,#C9A227);color:#2A2108;font-size:15px;font-weight:700">Reload</button>
       <button type="button" id="boot-reset" style="min-width:200px;min-height:42px;border:1px solid #E8E4D8;border-radius:12px;background:#fff;color:#6F6B62;font-size:14px;font-weight:600">Reset app</button>
       <small id="boot-error" style="max-width:340px;color:#A41F1F;font-size:11px;word-break:break-word"></small>
     </div>
@@ -42,6 +42,7 @@
         window.addEventListener('error', function (e) { errors.push(String(e.message || (e.target && e.target.src) || 'error')); setTimeout(show, 2500) }, true)
         window.addEventListener('unhandledrejection', function (e) { errors.push(String((e.reason && e.reason.message) || e.reason)); setTimeout(show, 2500) })
         setTimeout(show, 10000)
+        document.getElementById('boot-reload').onclick = function () { location.reload() }
         document.getElementById('boot-reset').onclick = function () {
           // Remove the saved copy of the app and load a fresh one.
           var done = function () { location.reload() }

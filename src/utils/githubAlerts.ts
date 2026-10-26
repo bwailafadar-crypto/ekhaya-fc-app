@@ -2,6 +2,8 @@
 // The GitHub key is stored in Firestore adminConfig/github, readable only by admins.
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
+import { logAction } from './audit'
+import { confirmIdentity } from './reauth'
 
 export const GITHUB_REPO = 'bwailafadar-crypto/ekhaya-fc-app'
 const WORKFLOW = 'send-alert.yml'
@@ -21,8 +23,10 @@ export async function githubKey(force = false) {
 }
 
 export async function saveGithubKey(token: string) {
+  if (!(await confirmIdentity('The GitHub key controls alerts and app updates.'))) throw new Error('cancelled')
   await setDoc(doc(db, 'adminConfig', 'github'), { token: token.trim(), updatedAt: serverTimestamp() })
   cachedKey = token.trim() || null
+  void logAction('Changed the GitHub alerts key', token.trim() ? 'new key saved' : 'key removed')
 }
 
 export async function dispatchAlert(alert: { kind: 'match' | 'news' | 'test' | 'player'; title: string; body: string; path: string; player?: string }) {

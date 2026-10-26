@@ -111,8 +111,23 @@ function listFiles(dir, base = dir) {
   return out
 }
 
+// The Content-Security-Policy allows the app's own small inline scripts by
+// their fingerprint (hash), worked out from the built pages, and nothing else.
+function inlineScriptHashes() {
+  const hashes = new Set()
+  for (const file of fs.existsSync(DIST) ? fs.readdirSync(DIST).filter((f) => f.endsWith('.html')) : []) {
+    const html = fs.readFileSync(path.join(DIST, file), 'utf8')
+    for (const m of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+      if (m[1].trim()) hashes.add(`'sha256-${require('node:crypto').createHash('sha256').update(m[1]).digest('base64')}'`)
+    }
+  }
+  return [...hashes].join(' ')
+}
+
 function hostingConfig() {
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'firebase.json'), 'utf8')).hosting
+  const hashes = inlineScriptHashes()
+  for (const h of cfg.headers || []) for (const x of h.headers) x.value = String(x.value).replace('{{INLINE_SCRIPT_HASHES}}', hashes)
   return {
     rewrites: (cfg.rewrites || []).map((r) => ({ glob: r.source, path: r.destination })),
     headers: (cfg.headers || []).map((h) => ({
@@ -121,6 +136,8 @@ function hostingConfig() {
     })),
   }
 }
+
+module.exports = { hostingConfig, inlineScriptHashes }
 
 async function main() {
   if (!SKIP_BUILD && !DRY) {
@@ -237,4 +254,4 @@ async function main() {
   console.log(`✔ Deploy complete! https://${SITE}.web.app`)
 }
 
-main().catch((err) => fail(`${err.message}\n  Tip: run it again; files already sent are skipped. If it keeps failing, switch to your phone hotspot and retry.`))
+if (require.main === module) main().catch((err) => fail(`${err.message}\n  Tip: run it again; files already sent are skipped. If it keeps failing, switch to your phone hotspot and retry.`))

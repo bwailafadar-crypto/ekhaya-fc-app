@@ -51,7 +51,7 @@ async function priceOrder(order) {
   for (const line of order.lines || []) {
     const qty = Math.floor(Number(line.qty))
     if (!line.productId || !(qty >= 1 && qty <= 10)) throw Object.assign(new Error('An item in the order is not valid.'), { code: 400 })
-    const product = (await db.collection('shopProducts').doc(line.productId).get()).data()
+    const product = (await db.collection('shopProducts').doc(line.productId).get()).data() || (await db.collection('shopProductsStaff').doc(line.productId).get()).data()
     if (!product || product.active !== true || product.soldOut === true) throw Object.assign(new Error('An item in the order is no longer for sale.'), { code: 400 })
     const variants = Array.isArray(product.variants) ? product.variants : []
     const unit = variants.length > 1 ? Number((variants.find((v) => v.label === line.variant) || {}).price) : Number(variants[0] ? variants[0].price : product.price)

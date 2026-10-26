@@ -300,3 +300,89 @@ test('time in the app: fans write only their own, minutes cannot jump, only the 
   await seedDocument('activity/fan-a', { lastSeenAt: Timestamp.fromMillis(Date.now() - 5 * 60000), day: '2026-10-23', minutesTotal: 10, minutesToday: 10, visits: 1 })
   await assertFails(setDoc(doc(fan, 'activity/fan-a'), { lastSeenAt: serverTimestamp(), day: '2026-10-23', minutesTotal: 500, minutesToday: 10, visits: 1 }))
 })
+
+// ---------- Security additions (activity log, recent sign-in, shop, devices) ----------
+
+const now = () => Math.floor(Date.now() / 1000)
+/** Signed in `minutesAgo` minutes ago (auth_time in the token). */
+function signedInAt(uid: string, minutesAgo: number) {
+  return testEnvironment.authenticatedContext(uid, { email: `${uid}@example.com`, auth_time: now() - minutesAgo * 60 }).firestore()
+}
+
+test('dangerous superadmin changes need a sign-in from the last 30 minutes', async () => {
+  await seedDocument('users/boss', { role: 'superadmin', fullName: 'Boss' })
+  await seedDocument('users/fan-1', { role: 'fan', fullName: 'Fan One' })
+  const stale = signedInAt('boss', 90)
+  const fresh = signedInAt('boss', 2)
+  // Making an admin
+  await assertFails(updateDoc(doc(stale, 'users/fan-1'), { role: 'admin', updatedAt: serverTimestamp() }))
+  await assertSucceeds(updateDoc(doc(fresh, 'users/fan-1'), { role: 'admin', updatedAt: serverTimestamp() }))
+  // Blocking stays quick (no fresh sign-in needed)
+  await assertSucceeds(updateDoc(doc(stale, 'users/fan-1'), { disabled: true, updatedAt: serverTimestamp() }))
+  // Switches, payment settings, GitHub key, membership prices
+  const flags = { flags: { clubShop: true }, notice: '', updatedAt: serverTimestamp() }
+  await assertFails(setDoc(doc(stale, 'appConfig/flags'), flags))
+  await assertSucceeds(setDoc(doc(fresh, 'appConfig/flags'), flags))
+  await assertFails(setDoc(doc(stale, 'shopSettings/main'), { airtelNumber: '0999000000' }))
+  await assertSucceeds(setDoc(doc(fresh, 'shopSettings/main'), { airtelNumber: '0997776776' }))
+  await assertFails(setDoc(doc(stale, 'adminConfig/github'), { token: 'x' }))
+  await assertFails(setDoc(doc(stale, 'membershipTiers/basic'), { priceMWK: 1 }))
+  await assertSucceeds(setDoc(doc(fresh, 'membershipTiers/basic'), { priceMWK: 5000 }))
+})
+
+test('only the superadmin may change payment settings', async () => {
+  await seedRole('admin-1', 'admin')
+  await assertFails(setDoc(doc(signedInAt('admin-1', 1), 'shopSettings/main'), { airtelNumber: '0880000000' }))
+  await assertSucceeds(getDoc(doc(signedIn('fan-1'), 'shopSettings/main')))
+})
+
+test('shop orders: own order, real order number, one per minute', async () => {
+  await seedDocument('users/fan-1', { role: 'fan', fullName: 'Fan One', createdAt: Timestamp.now(), updatedAt: Timestamp.now() })
+  const db = signedIn('fan-1')
+  const order = (ref: string, extra: Record<string, unknown> = {}) => ({ ref, uid: 'fan-1', name: 'Fan One', phone: '0999123456', lines: [{ productId: 'p', qty: 1 }], delivery: 'pickup', deliveryFee: 0, total: 50000, status: 'new', payment: { method: 'airtel' }, createdAt: serverTimestamp(), ...extra })
+  const place = (id: string, data: Record<string, unknown>) => { const b = writeBatch(db); b.update(doc(db, 'users/fan-1'), { lastOrderAt: serverTimestamp(), updatedAt: serverTimestamp() }); b.set(doc(db, `shopOrders/${id}`), data); return b.commit() }
+  // Without updating lastOrderAt in the same save: refused
+  await assertFails(setDoc(doc(db, 'shopOrders/o0'), order('EK-AAAAA')))
+  await assertSucceeds(place('o1', order('EK-ABC12')))
+  // A second order straight away: refused (one per minute)
+  await assertFails(place('o2', order('EK-ABC13')))
+  // Bad order number, someone else's order, absurd total: refused
+  await seedDocument('users/fan-1', { role: 'fan', fullName: 'Fan One', lastOrderAt: Timestamp.fromMillis(Date.now() - 120_000), createdAt: Timestamp.now(), updatedAt: Timestamp.now() })
+  await assertFails(place('o3', order('hack')))
+  await assertFails(place('o4', order('EK-ABC14', { uid: 'fan-2' })))
+  await assertFails(place('o5', order('EK-ABC15', { total: 99_000_000 })))
+  await assertSucceeds(place('o6', order('EK-ABC16')))
+  // Fans can't read other fans' orders
+  await assertFails(getDoc(doc(signedIn('fan-2'), 'shopOrders/o6')))
+})
+
+test('admin-only shop items are hidden from fans', async () => {
+  await seedRole('admin-1', 'admin')
+  await seedDocument('shopProductsStaff/payment-test-100', { name: 'Payment test', price: 100 })
+  await assertFails(getDoc(doc(signedIn('fan-1'), 'shopProductsStaff/payment-test-100')))
+  await assertSucceeds(getDoc(doc(signedIn('admin-1'), 'shopProductsStaff/payment-test-100')))
+})
+
+test('activity log: admins add their own entries, only the superadmin reads, nobody edits or deletes', async () => {
+  await seedRole('admin-1', 'admin')
+  await seedRole('fan-1', 'fan')
+  await seedDocument('users/boss', { role: 'superadmin' })
+  const entry = (by: string) => ({ action: 'Order Paid', detail: 'EK-ABC12', by, byName: 'Admin', at: serverTimestamp() })
+  await assertSucceeds(setDoc(doc(signedIn('admin-1'), 'auditLogs/a1'), entry('admin-1')))
+  await assertFails(setDoc(doc(signedIn('admin-1'), 'auditLogs/a2'), entry('someone-else')))
+  await assertFails(setDoc(doc(signedIn('fan-1'), 'auditLogs/a3'), entry('fan-1')))
+  await assertFails(getDoc(doc(signedIn('admin-1'), 'auditLogs/a1')))
+  await assertSucceeds(getDoc(doc(signedIn('boss'), 'auditLogs/a1')))
+  await assertFails(updateDoc(doc(signedIn('boss'), 'auditLogs/a1'), { detail: 'changed' }))
+  await assertFails(deleteDoc(doc(signedIn('boss'), 'auditLogs/a1')))
+})
+
+test('signed-in devices: each account writes its own, the superadmin sees all', async () => {
+  await seedRole('admin-1', 'admin')
+  await seedDocument('users/boss', { role: 'superadmin' })
+  const device = { label: 'Chrome on Android', name: 'Admin', role: 'admin', firstSeen: serverTimestamp(), lastSeen: serverTimestamp() }
+  await assertSucceeds(setDoc(doc(signedIn('admin-1'), 'users/admin-1/devices/d1'), device))
+  await assertFails(setDoc(doc(signedIn('admin-1'), 'users/boss/devices/d1'), device))
+  await assertFails(getDoc(doc(signedIn('fan-1'), 'users/admin-1/devices/d1')))
+  await assertSucceeds(getDocs(query(collection(signedIn('boss'), 'users/admin-1/devices'))))
+})

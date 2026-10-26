@@ -13,6 +13,8 @@ import SnapshotPublisher from './SnapshotPublisher'
 import AutoShrinkImages from './AutoShrinkImages'
 import LiveAlerts from './LiveAlerts'
 import ActivityTracker from './ActivityTracker'
+import DeviceTracker from './DeviceTracker'
+import ReauthHost from './ReauthHost'
 import { useFlag, useNotice } from '../hooks/useFlag'
 import { config } from '../config'
 
@@ -106,6 +108,8 @@ export default function Layout() {
         {notice && <p className="club-notice" role="status">{notice}</p>}
         <ForegroundAlerts />
         <AdminAlertRelay />
+        <DeviceTracker />
+        <ReauthHost />
         <AlertsPrompt />
         <CommunitySync />
         <SnapshotPublisher />

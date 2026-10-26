@@ -7,6 +7,8 @@ import { getAdminSounds, playAdminSound, setAdminSounds } from '../../utils/admi
 import { useToast } from '../../components/ToastContext'
 import { Button, Card, Skeleton } from '../../components/UI'
 import { db } from '../../firebase'
+import { logAction } from '../../utils/audit'
+import { confirmIdentity } from '../../utils/reauth'
 
 const PAGE_SIZE = 25
 const DAY = 24 * 60 * 60 * 1000
@@ -185,9 +187,11 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
 
   async function changeAccount(account: FanAccount, change: { role?: 'fan' | 'admin'; disabled?: boolean }, question: string, done: string) {
     if (!window.confirm(question)) return
+    if (change.role && !(await confirmIdentity(change.role === 'admin' ? 'Making someone an admin gives them control of the app.' : 'Changing who is an admin.'))) return
     setBusyId(account.id)
     try {
       await updateDoc(doc(db, 'users', account.id), { ...change, updatedAt: serverTimestamp() })
+      void logAction(change.role ? (change.role === 'admin' ? 'Made admin' : 'Removed admin') : change.disabled ? 'Blocked a fan' : 'Unblocked a fan', `${account.fullName || ''} ${account.email || ''}`.trim())
       setAccounts((current) => current.map((item) => (item.id === account.id ? { ...item, ...change } : item)))
       showToast(done)
       void loadStats().catch(() => undefined)
@@ -202,6 +206,7 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
     const name = account.fullName || account.email || 'this fan'
     const typed = window.prompt(`Delete ${name}'s account data? This permanently removes their profile and any membership.\n\nIf they sign in again they start fresh as a new fan. To keep them out for good, use Block instead.\n\nType DELETE to confirm.`)
     if (typed?.trim().toUpperCase() !== 'DELETE') return
+    if (!(await confirmIdentity('Deleting an account cannot be undone.'))) return
     setBusyId(account.id)
     try {
       const batch = writeBatch(db)
@@ -211,6 +216,7 @@ export default function FansManager({ onOpenRequests }: { onOpenRequests: () => 
       batch.delete(doc(db, 'referrals', account.id))
       batch.delete(doc(db, 'users', account.id))
       await batch.commit()
+      void logAction('Deleted an account', `${account.fullName || ''} ${account.email || ''}`.trim())
       setAccounts((current) => current.filter((item) => item.id !== account.id))
       showToast(`${name} deleted.`)
       void loadStats().catch(() => undefined)

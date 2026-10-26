@@ -58,6 +58,9 @@ jobs:
       - name: Check code (lint, types, unit tests)
         run: npm run check
 
+      - name: Check the database rules (who can read and change what)
+        run: npm run test:rules
+
       - name: Build
         run: npm run build
 

@@ -56,7 +56,7 @@ async function admins() {
 async function orders() {
   const [ordersSnap, settingsSnap] = await Promise.all([db.collection('shopOrders').get(), db.collection('shopSettings').doc('main').get()])
   const settings = { printPrice: 5000, deliveryPrice: 3000, freeDeliveryFrom: 60000, ...(settingsSnap.data() || {}) }
-  const products = new Map((await db.collection('shopProducts').get()).docs.map((d) => [d.id, d.data()]))
+  const products = new Map([...(await db.collection('shopProducts').get()).docs, ...(await db.collection('shopProductsStaff').get()).docs].map((d) => [d.id, d.data()]))
   let checked = 0
   for (const d of ordersSnap.docs) {
     const o = d.data()

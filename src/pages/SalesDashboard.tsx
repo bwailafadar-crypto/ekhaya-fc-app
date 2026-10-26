@@ -9,6 +9,7 @@ import { useToast } from '../components/ToastContext'
 import { Card, EmptyState, PageHeader } from '../components/UI'
 import { db } from '../firebase'
 import { mwk, STATUS_LABEL, type OrderStatus, type ShopOrder } from '../utils/shop'
+import { logAction } from '../utils/audit'
 
 const PAID: OrderStatus[] = ['paid', 'ready', 'collected']
 const WAITING: OrderStatus[] = ['new', 'confirmed']
@@ -79,7 +80,7 @@ export default function SalesDashboard() {
   const payTotal = Math.max(1, byPay.reduce((n, [, v]) => n + v, 0))
 
   async function setStatus(o: ShopOrder, status: OrderStatus) {
-    try { await updateDoc(doc(db, 'shopOrders', o.id), { status, updatedAt: serverTimestamp() }); showToast(`${o.ref}: ${STATUS_LABEL[status]}`) }
+    try { await updateDoc(doc(db, 'shopOrders', o.id), { status, updatedAt: serverTimestamp() }); void logAction(`Order ${STATUS_LABEL[status]}`, `${o.ref} · ${o.name} · MK ${o.total}`); showToast(`${o.ref}: ${STATUS_LABEL[status]}`) }
     catch (e) { showToast(e instanceof Error ? e.message : 'Not saved.', 'error') }
   }
 

@@ -38,7 +38,7 @@ export async function priceOrder(order: { lines?: Line[]; delivery?: string }) {
   for (const line of order.lines ?? []) {
     const qty = Math.floor(Number(line.qty))
     if (!line.productId || !(qty >= 1 && qty <= 10)) throw new Error('An item in the order is not valid.')
-    const product = (await firestore.collection('shopProducts').doc(line.productId).get()).data()
+    const product = (await firestore.collection('shopProducts').doc(line.productId).get()).data() ?? (await firestore.collection('shopProductsStaff').doc(line.productId).get()).data()
     if (!product || product.active !== true || product.soldOut === true) throw new Error('An item in the order is no longer for sale.')
     const variants = Array.isArray(product.variants) ? product.variants as Array<{ label: string; price: number }> : []
     const unit = variants.length > 1 ? Number(variants.find((v) => v.label === line.variant)?.price) : Number(variants[0]?.price ?? product.price)

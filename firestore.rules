@@ -24,6 +24,13 @@ service cloud.firestore {
       return hasRole('superadmin');
     }
 
+    // Dangerous changes (admins, payment numbers, switches, prices, deleting)
+    // need a sign-in or "Confirm it's you" from the last 30 minutes, so a
+    // phone left unlocked or a stolen session can't be used for them.
+    function recentSignIn() {
+      return request.auth.token.auth_time > request.time.toMillis() / 1000 - 1800;
+    }
+
     // A fan who may take part (vote, predict, react): signed in, email
     // verified, and not blocked by the club. Blocking is enforced here, not
     // only in the app.
@@ -103,8 +110,12 @@ service cloud.firestore {
           && request.auth.uid == uid
           && resource.data.role == request.resource.data.role
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'fullName', 'phone', 'photoDataUrl', 'updatedAt'
+            'fullName', 'phone', 'photoDataUrl', 'lastOrderAt', 'updatedAt'
           ])
+          // Shop: one order per minute (the order is saved together with this time).
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastOrderAt'])
+            || (request.resource.data.lastOrderAt == request.time
+              && (resource.data.get('lastOrderAt', null) == null || request.time > resource.data.lastOrderAt + duration.value(1, 'm'))))
           && request.resource.data.updatedAt == request.time
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['fullName'])
             || (request.resource.data.fullName is string && request.resource.data.fullName.size() <= 120
@@ -124,11 +135,28 @@ service cloud.firestore {
           ])
           && request.resource.data.updatedAt == request.time
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['disabled']) || request.resource.data.disabled is bool)
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || recentSignIn())
         );
 
       // A fan may delete their own account (Google Play requires this);
       // the superadmin may remove other accounts.
-      allow delete: if signedIn() && (request.auth.uid == uid || isSuperadmin());
+      allow delete: if signedIn() && (request.auth.uid == uid || (isSuperadmin() && recentSignIn()));
+
+      // Phones and computers an admin account is signed in on (new sign-in alerts).
+      match /devices/{deviceId} {
+        allow create, update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['label', 'name', 'role', 'firstSeen', 'lastSeen'])
+          && request.resource.data.label is string && request.resource.data.label.size() <= 80
+          && request.resource.data.name is string && request.resource.data.name.size() <= 80
+          && request.resource.data.lastSeen == request.time;
+        allow get, list: if signedIn() && (request.auth.uid == uid || isSuperadmin());
+        allow delete: if signedIn() && (request.auth.uid == uid || isSuperadmin());
+      }
+    }
+
+    // New sign-in alerts: the superadmin watches every admin device list.
+    match /{path=**}/devices/{deviceId} {
+      allow read: if isSuperadmin();
     }
 
     // "Delete my account": the fan leaves a note so the weekly clean-up also
@@ -291,7 +319,7 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create, update: if isAdmin();
       // Removing a player from the squad is a superadmin power.
-      allow delete: if isSuperadmin();
+      allow delete: if isSuperadmin() && recentSignIn();
     }
 
     match /news/{newsId} {
@@ -347,7 +375,7 @@ service cloud.firestore {
 
     match /membershipTiers/{tierId} {
       allow read: if signedIn();
-      allow create, update, delete: if isSuperadmin();
+      allow create, update, delete: if isSuperadmin() && recentSignIn();
     }
 
     match /memberships/{membershipId} {
@@ -384,7 +412,7 @@ service cloud.firestore {
     // send an alert. Admins can use it; only the superadmin can change it.
     match /adminConfig/{configId} {
       allow read: if isAdmin();
-      allow write: if isSuperadmin();
+      allow write: if isSuperadmin() && recentSignIn();
     }
 
     // One record per alert, so it is sent once even if several admins have
@@ -437,9 +465,16 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Shop settings hold the numbers fans pay to: only the superadmin, after
+    // a recent sign-in, can change them.
     match /shopSettings/{docId} {
       allow read: if signedIn();
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isSuperadmin() && recentSignIn();
+    }
+
+    // Items only admins may see (e.g. the MK 100 payment test).
+    match /shopProductsStaff/{productId} {
+      allow read, write: if isAdmin();
     }
 
     // Shop orders: a fan sends their own order and sees only their own;
@@ -448,11 +483,16 @@ service cloud.firestore {
       allow create: if signedIn() && !isBlocked()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.status == 'new'
-        && request.resource.data.ref is string && request.resource.data.ref.size() <= 12
+        // One order per fan per minute: the fan's lastOrderAt is set in the same save.
+        && getAfter(userPath(request.auth.uid)).data.get('lastOrderAt', null) == request.time
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.ref is string && request.resource.data.ref.matches('^EK-[A-Z0-9]{5}$')
         && request.resource.data.name is string && request.resource.data.name.size() <= 80
         && request.resource.data.phone is string && request.resource.data.phone.size() <= 30
         && request.resource.data.lines is list && request.resource.data.lines.size() > 0 && request.resource.data.lines.size() <= 20
-        && request.resource.data.total is number && request.resource.data.total > 0
+        && request.resource.data.total is number && request.resource.data.total > 0 && request.resource.data.total <= 5000000
+        && request.resource.data.deliveryFee is number && request.resource.data.deliveryFee >= 0 && request.resource.data.deliveryFee <= 100000
+        && (!('address' in request.resource.data) || (request.resource.data.address is string && request.resource.data.address.size() <= 200))
         && request.resource.data.delivery in ['pickup', 'delivery']
         && request.resource.data.keys().hasOnly(['ref', 'uid', 'name', 'phone', 'lines', 'delivery', 'address', 'deliveryFee', 'total', 'status', 'payment', 'createdAt'])
         && (!('payment' in request.resource.data) || (request.resource.data.payment.method in ['airtel', 'mpamba', 'fdh', 'cash'] && request.resource.data.payment.keys().hasOnly(['method', 'txId'])));
@@ -469,7 +509,7 @@ service cloud.firestore {
     match /appConfig/{docId} {
       // Switches and the club notice are not secret: the sign-in page reads them too.
       allow read: if docId == 'flags' || signedIn();
-      allow write: if isSuperadmin()
+      allow write: if isSuperadmin() && recentSignIn()
         && request.resource.data.keys().hasOnly(['flags', 'notice', 'updatedAt'])
         && request.resource.data.flags is map
         && request.resource.data.notice is string
@@ -583,13 +623,21 @@ service cloud.firestore {
 
     match /settings/{settingId} {
       allow read: if signedIn();
-      allow create, update, delete: if isSuperadmin();
+      allow create, update, delete: if isSuperadmin() && recentSignIn();
     }
 
+    // Admin activity log: admins add entries about their own actions; only the
+    // superadmin reads them; nobody can change or delete an entry.
     match /auditLogs/{logId} {
       allow read: if isSuperadmin();
-      // Not used by the app; closed so nothing can be dumped here.
-      allow create, update, delete: if false;
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['action', 'detail', 'by', 'byName', 'at'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.action is string && request.resource.data.action.size() >= 1 && request.resource.data.action.size() <= 60
+        && request.resource.data.detail is string && request.resource.data.detail.size() <= 300
+        && request.resource.data.byName is string && request.resource.data.byName.size() <= 80
+        && request.resource.data.at == request.time;
+      allow update, delete: if false;
     }
 
     match /{document=**} {

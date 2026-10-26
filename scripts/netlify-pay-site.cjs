@@ -27,6 +27,7 @@ async function main() {
   const vars = [
     { key: 'PAYCHANGU_SECRET_KEY', value: process.env.PAYCHANGU_SECRET_KEY.trim() },
     { key: 'FIREBASE_SERVICE_ACCOUNT_JSON', value: JSON.stringify(JSON.parse(process.env.FIREBASE_SA)) },
+    ...(process.env.PAYCHANGU_WEBHOOK_SECRET ? [{ key: 'PAYCHANGU_WEBHOOK_SECRET', value: process.env.PAYCHANGU_WEBHOOK_SECRET.trim() }] : []),
   ]
   const existing = await call('GET', `/accounts/${account}/env?site_id=${site.id}`).catch(() => [])
   for (const v of vars) {
