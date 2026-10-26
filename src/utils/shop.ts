@@ -71,6 +71,7 @@ export const DEFAULT_SETTINGS: Required<Omit<ShopSettings, Optional>> & Pick<Sho
   bannerImage: undefined,
   airtelLogo: './shop/pay-airtel.png',
   mpambaLogo: './shop/pay-tnm.png',
+  fdhLogo: './shop/pay-fdh.png',
   paymentNote: 'Pay with Airtel Money, TNM Mpamba or FDH Bank.',
 }
 
