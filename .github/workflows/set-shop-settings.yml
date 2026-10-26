@@ -1,0 +1,39 @@
+# Saves shop settings (payment numbers and account details).
+name: Set shop settings
+on:
+  workflow_dispatch:
+    inputs:
+      settings:
+        description: JSON, e.g. {"airtelNumber":"0997776776"}
+        required: true
+      mode:
+        type: choice
+        options: [preview, apply]
+        default: preview
+jobs:
+  scorers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Save settings
+        env:
+          SETTINGS: ${{ inputs.settings }}
+        run: |
+          ARGS=""
+          [ "${{ inputs.mode }}" = "apply" ] && ARGS="--apply"
+          node scripts/set-shop-settings.cjs $ARGS
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
