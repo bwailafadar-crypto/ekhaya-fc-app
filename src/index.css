@@ -2792,3 +2792,4 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .shop-pay-tile.pay-fdh { background: #1F3A68; font-size: 11px; letter-spacing: -.3px; }
 .sd-split .p-fdh, .sd-legend .p-fdh { background: #1F3A68; }
 .shop-pay-logo[src$='pay-fdh.png'] { box-shadow: inset 0 0 0 1px var(--line); border: 1px solid var(--line); }
+.shop-pay-logo[src*='pay-fdh'] { box-shadow: inset 0 0 0 1px var(--line); border: 1px solid var(--line); }
