@@ -2811,3 +2811,15 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .tv-live-cta { padding: 6px 12px; border-radius: 999px; background: #fff; color: #c62828; letter-spacing: 0; }
 .tv-subscribe { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); font-weight: 700; font-size: 14px; text-decoration: none; }
 .tv-subscribe svg { color: #e53935; }
+
+/* Video full screen: button, and turning the phone sideways */
+.video-player.fs { padding: 0; gap: 0; background: #000; }
+.video-player.fs .video-frame { width: 100vw; height: 100vh; height: 100dvh; max-height: none; aspect-ratio: auto; border-radius: 0; }
+.video-player.fs .video-player-top { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: 8px; z-index: 2; width: auto; }
+.video-player.fs .video-player-top strong { display: none; }
+@media (orientation: landscape) and (max-height: 540px) {
+  .video-player:not(.is-portrait) { padding: 0; gap: 0; background: #000; }
+  .video-player:not(.is-portrait) .video-frame { width: 100vw; height: 100vh; height: 100dvh; aspect-ratio: auto; border-radius: 0; }
+  .video-player:not(.is-portrait) .video-player-top { position: absolute; top: 8px; right: 8px; z-index: 2; width: auto; }
+  .video-player:not(.is-portrait) .video-player-top strong { display: none; }
+}
