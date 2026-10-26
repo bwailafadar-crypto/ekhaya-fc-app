@@ -137,6 +137,23 @@ function hostingConfig() {
   }
 }
 
+/** Page files (assets/...) of the versions released in the last 14 days that the new build no longer has. */
+async function olderAssets(token, current) {
+  const since = Date.now() - 14 * 86400000
+  const { releases = [] } = await call(`${API}/sites/${SITE}/releases?pageSize=100`, { token })
+  const versions = [...new Set(releases.filter((r) => r.type !== 'SITE_DISABLE' && Date.parse(r.releaseTime || 0) > since && r.version?.name).map((r) => r.version.name))]
+  const keep = {}
+  for (const name of versions) {
+    let pageToken = ''
+    do {
+      const res = await call(`${API}/${name}/files?pageSize=1000${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''}`, { token })
+      for (const f of res.files || []) if (f.path?.startsWith('/assets/') && !current.has(f.path) && !keep[f.path] && f.hash) keep[f.path] = f.hash
+      pageToken = res.nextPageToken || ''
+    } while (pageToken)
+  }
+  return keep
+}
+
 module.exports = { hostingConfig, inlineScriptHashes }
 
 async function main() {
@@ -194,15 +211,35 @@ async function main() {
   }
 
   step('Creating a new version')
-  const version = await withRetry('Create version', () =>
+  let version = await withRetry('Create version', () =>
     call(`${API}/sites/${SITE}/versions`, { method: 'POST', token, json: { config: hostingConfig() } }))
 
+  // Phones still running an older version ask for that version's page files
+  // (assets/...). Keep every page file released in the last 14 days, so they
+  // keep working until they update, instead of crashing after each deploy.
+  const carried = CHANNEL ? {} : await withRetry('Find older page files', () => olderAssets(token, new Set(files.map((f) => f.rel)))).catch((err) => { console.log(`  (older page files not kept this time: ${err.message})`); return {} })
+  if (Object.keys(carried).length) console.log(`  keeping ${Object.keys(carried).length} page files from recent versions for phones that have not updated yet`)
+
   step('Checking which files need uploading')
-  const pop = await withRetry('Populate files', () =>
-    call(`${API}/${version.name}:populateFiles`, {
-      method: 'POST', token, json: { files: Object.fromEntries(files.map((f) => [f.rel, f.hash])) },
-    }))
-  const needed = new Set(pop.uploadRequiredHashes || [])
+  const all = [...files.map((f) => [f.rel, f.hash]), ...Object.entries(carried)]
+  let pop = null
+  const neededHashes = []
+  for (let i = 0; i < all.length; i += 1000) {
+    const part = Object.fromEntries(all.slice(i, i + 1000))
+    const res = await withRetry('Populate files', () =>
+      call(`${API}/${version.name}:populateFiles`, { method: 'POST', token, json: { files: part } }))
+    pop = pop || res
+    neededHashes.push(...(res.uploadRequiredHashes || []))
+  }
+  let needed = new Set(neededHashes)
+  // An older file the server no longer has can't be kept: start the version again without the older files.
+  const ownHashes = new Set(files.map((f) => f.hash))
+  if (Object.values(carried).some((h) => needed.has(h) && !ownHashes.has(h))) {
+    console.log('  some older page files are gone from the server; deploying without the older files')
+    version = await withRetry('Create version', () => call(`${API}/sites/${SITE}/versions`, { method: 'POST', token, json: { config: hostingConfig() } }))
+    pop = await withRetry('Populate files', () => call(`${API}/${version.name}:populateFiles`, { method: 'POST', token, json: { files: Object.fromEntries(files.map((f) => [f.rel, f.hash])) } }))
+    needed = new Set(pop.uploadRequiredHashes || [])
+  }
   const toUpload = files.filter((f) => needed.has(f.hash))
   console.log(`  ${toUpload.length} new or changed, ${files.length - toUpload.length} already on the server`)
 
