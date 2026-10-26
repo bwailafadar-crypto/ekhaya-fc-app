@@ -47,7 +47,7 @@ export default function Shop() {
   const { role } = useAuth()
   const isStaff = role === 'admin' || role === 'superadmin'
   const all = useFirestoreCollection<Omit<ShopProduct, 'id'>>('shopProducts')
-  const products = useMemo(() => (all.items as ShopProduct[]).filter((p) => isPublished(p) && (!p.staffOnly || isStaff)).sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.name.localeCompare(b.name)), [all.items])
+  const products = useMemo(() => (all.items as ShopProduct[]).filter((p) => isPublished(p) && (!p.staffOnly || isStaff)).sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.name.localeCompare(b.name)), [all.items, isStaff])
   const settings = useShopSettings()
   const { cart, wish } = useShopStore()
   const [category, setCategory] = useState<ShopCategory | 'all' | 'wish'>('all')
