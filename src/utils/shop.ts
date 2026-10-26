@@ -66,7 +66,7 @@ export const DEFAULT_SETTINGS: Required<Omit<ShopSettings, Optional>> & Pick<Sho
   bannerImage: undefined,
   airtelLogo: './shop/pay-airtel.png',
   mpambaLogo: './shop/pay-tnm.png',
-  paymentNote: 'Pay with Airtel Money, TNM Mpamba or cash when the club confirms your order.',
+  paymentNote: 'Pay with Airtel Money or TNM Mpamba.',
 }
 
 export const settingsWithDefaults = (s?: ShopSettings | null) => ({ ...DEFAULT_SETTINGS, ...Object.fromEntries(Object.entries(s ?? {}).filter(([, v]) => v !== '' && v != null)) }) as typeof DEFAULT_SETTINGS
