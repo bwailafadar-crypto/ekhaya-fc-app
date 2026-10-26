@@ -10,7 +10,7 @@ const items = [
   { to: '/results', label: 'Results', icon: Trophy },
   { to: '/squad', label: 'Squad', icon: Users },
   { to: '/news', label: 'News', icon: Newspaper },
-  { to: '/tv', label: 'Ekhaya TV · coming soon', icon: Clapperboard },
+  { to: '/tv', label: 'Ekhaya TV · videos & live', icon: Clapperboard },
   { to: '/club', label: 'Club & honours · trophy cabinet', icon: Landmark },
   { to: '/shop', label: 'Club Shop · kits & merchandise', icon: ShoppingBag },
   { to: '/fanzone', label: 'Fan Zone', icon: Vote },
@@ -25,6 +25,7 @@ export default function More() {
   const fanFamily = useFlag('fanFamily')
   const competitions = useFlag('competitions')
   const membershipOpen = useFlag('membershipPayments')
+  const tvOpen = useFlag('ekhayaTv')
   const shopOpen = useFlag('clubShop') || canManage
   const visible = items.filter((item) => (item.to !== '/shop' || shopOpen) && (item.to !== '/community' || fanFamily) && (item.to !== '/competitions' || competitions))
 
@@ -33,7 +34,7 @@ export default function More() {
       {visible.map((i) => (
         <Link key={i.to} to={i.to} className="menu-item">
           <i.icon className="menu-icon" size={20} aria-hidden="true" />
-          <span>{i.label}{i.to === '/membership' && !membershipOpen && <small className="menu-soon">Coming soon</small>}</span>
+          <span>{i.label}{((i.to === '/membership' && !membershipOpen) || (i.to === '/tv' && !tvOpen)) && <small className="menu-soon">Coming soon</small>}</span>
           <ChevronRight className="arrow" size={18} aria-hidden="true" />
         </Link>
       ))}

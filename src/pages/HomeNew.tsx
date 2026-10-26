@@ -35,6 +35,7 @@ export default function NewHome() {
   const membershipOpen = useFlag('membershipPayments')
   const scorersOpen = useFlag('topScorers')
   const shopOpen = useFlag('clubShop')
+  const tvOpen = useFlag('ekhayaTv')
   const newsResult = usePublishedNews()
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer) }, [])
@@ -115,7 +116,7 @@ export default function NewHome() {
       {scorersOpen && <Link to="/scorers"><Medal size={19} /><span>Scorers</span></Link>}
       <Link to="/table"><Trophy size={19} /><span>Table</span></Link>
       {shopOpen && <Link to="/shop"><ShoppingBag size={19} /><span>Shop</span></Link>}
-      <Link to="/tv"><Clapperboard size={19} /><span>TV</span><small className="shortcut-soon">Soon</small></Link>
+      <Link to="/tv"><Clapperboard size={19} /><span>TV</span>{!tvOpen && <small className="shortcut-soon">Soon</small>}</Link>
       <Link to="/membership"><ShieldCheck size={19} /><span>Join</span>{!membershipOpen && <small className="shortcut-soon">Soon</small>}</Link>
     </section>
 

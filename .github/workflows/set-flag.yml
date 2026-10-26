@@ -1,0 +1,37 @@
+# Switches an app feature on or off for everyone (same as Admin → App health).
+name: Set app switch
+on:
+  workflow_dispatch:
+    inputs:
+      flag:
+        description: Switch name, e.g. ekhayaTv
+        required: true
+      value:
+        type: choice
+        options: ['true', 'false']
+        default: 'true'
+jobs:
+  flag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Set switch
+        env:
+          FLAG: ${{ inputs.flag }}
+          VALUE: ${{ inputs.value }}
+        run: node scripts/set-flag.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
