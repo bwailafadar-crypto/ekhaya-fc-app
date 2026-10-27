@@ -24,6 +24,7 @@ import { isPlayed, sortByDate } from '../utils/football'
 import { activePeriod, currentEventMinute, elapsedMatchSeconds, matchMinute } from '../utils/matchClock'
 import TeamLogo from '../components/TeamLogo'
 import MatchChat from '../components/MatchChat'
+import MatchPreview from '../components/MatchPreview'
 import { buildGoals, minuteLabel } from '../utils/goals'
 import { useFlag } from '../hooks/useFlag'
 
@@ -34,7 +35,7 @@ const EMPTY_STATS: PlayerStats = {
 }
 const EMPTY_MATCH_STATS: MatchStats = { shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, offsides: 0 }
 type QuickAction = 'goal' | 'opponent-goal' | 'yellow' | 'red' | 'substitution' | 'commentary'
-const TAB_LABELS = { timeline: 'Commentary', lineups: 'Lineups', stats: 'Stats', chat: 'Fan chat', vote: 'MOTM vote' } as const
+const TAB_LABELS = { preview: 'Preview', timeline: 'Commentary', lineups: 'Lineups', stats: 'Stats', chat: 'Fan chat', vote: 'MOTM vote' } as const
 const QUICK_ACTIONS: Array<{ action: QuickAction; label: string; icon: typeof Goal }> = [
   { action: 'goal', label: 'Goal', icon: Goal },
   { action: 'opponent-goal', label: 'Opponent goal', icon: Goal },
@@ -148,7 +149,7 @@ export default function LiveMatch() {
   const [eventState, setEventState] = useState<{ fixtureId: string; items: MatchEvent[]; error: string | null } | null>(null)
   const [reactionState, setReactionState] = useState<{ fixtureId: string; items: Array<{ uid: string; emoji: string }> } | null>(null)
   const [quickAction, setQuickAction] = useState<QuickAction | null>(null)
-  const [activeTab, setActiveTab] = useState<'timeline' | 'lineups' | 'stats' | 'chat' | 'vote'>(() => { const tab = params.get('tab'); return tab === 'vote' || tab === 'lineups' || tab === 'stats' || tab === 'chat' ? tab : 'timeline' })
+  const [activeTab, setActiveTab] = useState<'preview' | 'timeline' | 'lineups' | 'stats' | 'chat' | 'vote' | null>(() => { const tab = params.get('tab'); return tab === 'vote' || tab === 'lineups' || tab === 'stats' || tab === 'chat' || tab === 'preview' || tab === 'timeline' ? tab : null })
   // Big-club style GOAL! moment: only for Ekhaya goals that arrive while you watch.
   const [goalMoment, setGoalMoment] = useState<MatchEvent | null>(null)
   const seenGoals = useRef<{ fixtureId: string; ids: Set<string> } | null>(null)
@@ -1081,8 +1082,9 @@ export default function LiveMatch() {
   const countdownSeconds = Math.max(0, Math.floor((new Date(selectedFixture.date).getTime() - clockNow) / 1000))
   const canVote = isPlayed(selectedFixture) && !selectedFixture.isTest && hasClubTeam
   const canChat = chatFlag && hasClubTeam && !selectedFixture.isTest && (selectedFixture.status !== 'upcoming' || selectedFixture.lineupConfirmed === true)
-  const tabs = (['timeline', 'lineups', 'stats', 'chat', 'vote'] as const).filter((tab) => (tab !== 'vote' || canVote) && (tab !== 'chat' || canChat))
-  const currentTab = tabs.includes(activeTab as typeof tabs[number]) ? activeTab : 'timeline'
+  const tabs = (['preview', 'timeline', 'lineups', 'stats', 'chat', 'vote'] as const).filter((tab) => (tab !== 'vote' || canVote) && (tab !== 'chat' || canChat))
+  // Before kick-off the match centre opens on the preview; during and after, on the commentary.
+  const currentTab = activeTab && tabs.includes(activeTab as typeof tabs[number]) ? activeTab : selectedFixture.status === 'upcoming' ? 'preview' : 'timeline'
   const countdown = `${Math.floor(countdownSeconds / 86400)}d ${String(Math.floor(countdownSeconds % 86400 / 3600)).padStart(2, '0')}:${String(Math.floor(countdownSeconds % 3600 / 60)).padStart(2, '0')}:${String(countdownSeconds % 60).padStart(2, '0')}`
 
   return <>
@@ -1092,7 +1094,7 @@ export default function LiveMatch() {
         ? <><span><FlaskConical size={15} aria-hidden="true" /> You are in a practice match</span><Button type="button" variant="ghost" disabled={busy} onClick={() => void deletePracticeMatch()} icon={<Trash2 size={15} />}>Delete practice</Button></>
         : <><span><FlaskConical size={15} aria-hidden="true" /> Rehearse match day safely</span><Button type="button" variant="secondary" disabled={busy} onClick={() => void createPracticeMatch()} icon={<FlaskConical size={15} />}>Start practice match</Button></>}
     </div>}
-    {fixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab('timeline'); setQuickAction(null) }}>{fixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.isTest ? '🧪 Practice: ' : ''}{fixture.home} v {fixture.away} · {fixture.editing ? 'FT · editing' : fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
+    {fixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab(null); setQuickAction(null) }}>{fixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.isTest ? '🧪 Practice: ' : ''}{fixture.home} v {fixture.away} · {fixture.editing ? 'FT · editing' : fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
     <section className={`matchday-scoreboard${isLive ? ' matchday-scoreboard-live' : ''}`} aria-label="Match scoreboard">
       <div className="matchday-scoreboard-top"><span>{selectedFixture.isTest ? <span className="practice-badge"><FlaskConical size={12} aria-hidden="true" /> PRACTICE · only admins see this</span> : competitionLabel(selectedFixture.competition)}</span><div>{isLive && selectedFixture.editing ? <Badge variant="gold">EDITING</Badge> : isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
       <div className="matchday-teams">
@@ -1161,6 +1163,7 @@ export default function LiveMatch() {
     </>}
     {currentTab === 'lineups' && <section className="matchday-lineups"><div className="matchday-section-title"><h2>Lineups</h2>{selectedFixture.status === 'upcoming' && <Badge variant="gold">{homeLineup.length ? 'CONFIRMED' : 'AWAITING'}</Badge>}</div>{homeLineup.length ? <LineupPitch starters={homeLineup} bench={benchLineup} formation={selectedFixture.formation} onArrange={isAdmin ? arrangeLineup : undefined} marks={lineupMarks} /> : <p className="live-timeline-empty">The confirmed Ekhaya XI will appear here before kick-off.</p>}{selectedFixture.officialMinutes && Object.keys(selectedFixture.officialMinutes).length > 0 && <div className="minutes-played"><h3>Minutes played</h3><ul>{Object.entries(selectedFixture.officialMinutes).sort((a, b) => b[1] - a[1]).map(([id, mins]) => { const player = playersResult.items.find((item) => item.id === id); const started = (selectedFixture.startingPlayerIds ?? []).includes(id); return <li key={id}><span>{player?.number != null ? <b>{player.number}</b> : null}{player?.name ?? id}</span><small>{started ? (mins < 90 ? 'Subbed off' : 'Full match') : 'Came on'}</small><strong>{mins}′</strong></li> })}</ul><p className="live-help">From the club's official match sheet.</p></div>}</section>}
     {currentTab === 'stats' && <section className="matchday-stats-view"><div className="matchday-section-title"><h2>Match stats</h2><span>Live comparison</span></div>{(['shots', 'shotsOnTarget', 'shotsOffTarget', 'corners', 'fouls', 'offsides'] as const).map((key) => { const value = (stats: MatchStats) => key === 'shotsOffTarget' ? Math.max(0, stats.shots - stats.shotsOnTarget) : stats[key]; const home = value(homeStats); const away = value(awayStats); const total = Math.max(1, home, away); return <div className="match-stat-compare" key={key}><div><strong>{home}</strong><span>{key === 'shotsOnTarget' ? 'Shots on target' : key === 'shotsOffTarget' ? 'Shots off target' : key[0].toUpperCase() + key.slice(1)}</span><strong>{away}</strong></div><div className="match-stat-bars"><i style={{ width: `${home / total * 50}%` }} /><i style={{ width: `${away / total * 50}%` }} /></div></div> })}<div className="matchday-stat-legend"><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div></section>}
+    {currentTab === 'preview' && <MatchPreview key={`preview-${selectedFixture.id}`} fixture={selectedFixture} fixtures={fixturesResult.items} standings={standingsResult.items} />}
     {currentTab === 'chat' && <MatchChat key={`chat-${selectedFixture.id}`} fixture={selectedFixture} />}
     {currentTab === 'vote' && <section className="matchday-vote"><MotmCard fixture={selectedFixture} players={clubPlayers} /></section>}
     {isFinished && <MatchSummary fixture={selectedFixture} onEdit={isAdmin ? () => void resetMatch('edit') : undefined} />}
