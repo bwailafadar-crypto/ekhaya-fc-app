@@ -63,6 +63,13 @@ async function main() {
       notes.push(`${p} (${((Date.now() - t0) / 1000).toFixed(1)}s) "${main.slice(0, 70)}" matches ${counts.matches ?? 0}, table rows ${counts.rows ?? 0}, products ${counts.products ?? 0}, videos ${counts.videos ?? 0}, pictures ${counts.images ?? 0}`)
       await page.screenshot({ path: path.join(OUT, `${p.replace(/\W+/g, '_') || 'home'}.png`), fullPage: true }).catch(() => undefined)
     }
+    // The match centre preview (form, head to head, season comparison).
+    where = '/live (preview)'
+    await page.goto(`${BASE}/#/live?tab=preview`, { waitUntil: 'load' }).catch(() => undefined); await page.waitForTimeout(4000)
+    const pv = (await page.locator('.match-preview').innerText().catch(() => '')).replace(/\s+/g, ' ')
+    if (!pv) problems.push('/live: the match preview did not show')
+    else notes.push(`match centre preview: "${pv.slice(0, 260)}"`)
+    await page.screenshot({ path: path.join(OUT, 'live_preview.png'), fullPage: true }).catch(() => undefined)
     // A video on Ekhaya TV opens inside the app.
     where = '/tv (play)'
     await page.goto(`${BASE}/#/tv`, { waitUntil: 'load' }).catch(() => undefined); await page.waitForTimeout(3000)
