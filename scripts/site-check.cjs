@@ -36,6 +36,7 @@ async function main() {
     let where = 'start'
     page.on('pageerror', (e) => problems.push(`${where}: crash: ${e.message.slice(0, 200)}`))
     page.on('console', (m) => { if (m.type() === 'error' && !IGNORE.test(m.text())) problems.push(`${where}: console: ${m.text().slice(0, 200)}`) })
+    page.on('response', async (r) => { if (r.status() === 403) { let body = ''; try { body = (await r.text()).slice(0, 160) } catch {} ; notes.push(`403 from ${r.url().split('?')[0].slice(0, 120)} ${body.replace(/\s+/g, ' ')}`) } })
     page.on('response', (r) => { const u = r.url(); if (r.status() >= 400 && !IGNORE.test(u) && (u.startsWith(BASE) || /googleapis|firebase|netlify|youtube|ytimg/.test(u))) problems.push(`${where}: HTTP ${r.status()} ${u.slice(0, 140)}`) })
 
     where = 'sign-in'
