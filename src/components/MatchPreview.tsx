@@ -5,12 +5,10 @@ import { OFFICIAL_RESULTS } from '../data/leagueResults2026'
 import type { Fixture, Standing } from '../types'
 import { competitionLabel } from '../utils/competitions'
 import { formatMalawiDate } from '../utils/football'
-import { surname } from '../utils/goals'
 import { allResults, headToHead, keyFacts, sameTeam, teamLines, teamStats, type TeamLine } from '../utils/matchPreview'
 import TeamLogo from './TeamLogo'
 
 const ordinal = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) || n % 10 > 3 ? 0 : n % 10]}`
-const isClub = (name: string) => /ekhaya/i.test(name)
 
 function FormChips({ lines, onPick, picked }: { lines: TeamLine[]; onPick: (i: number) => void; picked: number | null }) {
   const last5 = lines.slice(0, 5)
@@ -40,22 +38,9 @@ export default function MatchPreview({ fixture, fixtures, standings }: { fixture
     const awayLines = teamLines(results, away, { leagueOnly: true })
     const row = (team: string) => standings.find((s) => sameTeam(s.team, team))
     const h2h = headToHead(results, home, away)
-    // Ekhaya players to watch: goals and assists this season from the club's matches.
-    const tally = new Map<string, { goals: number; assists: number }>()
-    for (const f of fixtures) {
-      if (f.isTest || !f.goals?.length || f.id === fixture.id) continue
-      const side = isClub(f.home) ? 'home' : isClub(f.away) ? 'away' : null
-      if (!side) continue
-      for (const g of f.goals) {
-        if (g.side !== side) continue
-        if (g.name && !g.unknown) { const t = tally.get(g.name) ?? { goals: 0, assists: 0 }; t.goals++; tally.set(g.name, t) }
-        if (g.assist) { const t = tally.get(g.assist) ?? { goals: 0, assists: 0 }; t.assists++; tally.set(g.assist, t) }
-      }
-    }
-    const watch = [...tally.entries()].sort((a, b) => b[1].goals - a[1].goals || b[1].assists - a[1].assists).slice(0, 3)
-    return { homeLines, awayLines, homeRow: row(home), awayRow: row(away), h2h, homeStats: teamStats(homeLines, true), awayStats: teamStats(awayLines, false), watch }
+    return { homeLines, awayLines, homeRow: row(home), awayRow: row(away), h2h, homeStats: teamStats(homeLines, true), awayStats: teamStats(awayLines, false) }
   }, [fixture.id, fixture.date, fixture.status, home, away, fixtures, standings])
-  const { homeLines, awayLines, homeRow, awayRow, h2h, homeStats, awayStats, watch } = data
+  const { homeLines, awayLines, homeRow, awayRow, h2h, homeStats, awayStats } = data
   const hs = homeRow ? { p: homeRow.played, w: homeRow.won, d: homeRow.drawn, l: homeRow.lost, pts: homeRow.points, gf: homeRow.goalsFor, ga: homeRow.goalsAgainst } : { p: homeStats.played, w: homeStats.won, d: homeStats.drawn, l: homeStats.lost, pts: homeStats.won * 3 + homeStats.drawn, gf: homeStats.gf, ga: homeStats.ga }
   const as = awayRow ? { p: awayRow.played, w: awayRow.won, d: awayRow.drawn, l: awayRow.lost, pts: awayRow.points, gf: awayRow.goalsFor, ga: awayRow.goalsAgainst } : { p: awayStats.played, w: awayStats.won, d: awayStats.drawn, l: awayStats.lost, pts: awayStats.won * 3 + awayStats.drawn, gf: awayStats.gf, ga: awayStats.ga }
   const short = (name: string) => name.replace(/\s*(F\.?C\.?|FC)$/i, '').trim()
@@ -128,7 +113,6 @@ export default function MatchPreview({ fixture, fixtures, standings }: { fixture
 
     {facts.length > 0 && <div className="pv-card"><h3>Key facts</h3><ul className="pv-facts">{facts.map((f) => <li key={f}>{f}</li>)}</ul></div>}
 
-    {watch.length > 0 && <div className="pv-card"><h3>Ekhaya players to watch <small>this season</small></h3><ul className="pv-watch">{watch.map(([name, t]) => <li key={name}><strong>{surname(name) || name}</strong><span>{name}</span><b>{[t.goals ? `${t.goals} goal${t.goals === 1 ? '' : 's'}` : '', t.assists ? `${t.assists} assist${t.assists === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ')}</b></li>)}</ul></div>}
 
     <p className="pv-note">Based on the 2026 season ({homeStats.played} and {awayStats.played} league matches). Updated after every result.</p>
   </section>
