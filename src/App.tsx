@@ -8,6 +8,7 @@ import Layout from './components/Layout'
 import TeamProvider from './data/TeamProvider'
 import { ForgotPasswordPage, LoginPage, SignUpPage } from './pages/auth/AuthPages'
 import Home from './pages/Home'
+import NotFound from './pages/NotFound'
 import InstallPromptProvider from './components/InstallPromptProvider'
 import InstallBanner from './components/InstallBanner'
 import PwaUpdateNotice from './components/PwaUpdateNotice'
@@ -81,6 +82,7 @@ export default function App() {
                 <Route path="/scorers" element={<TopScorers />} />
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/shop/:id" element={<Shop />} />
+                <Route path="*" element={<NotFound />} />
               </Route>
               </Routes>
               <InstallBanner />

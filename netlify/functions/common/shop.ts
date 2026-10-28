@@ -15,11 +15,31 @@ export const OPERATOR: Record<'airtel' | 'mpamba', string> = {
 }
 const DEFAULTS = { printPrice: 5000, deliveryPrice: 3000, freeDeliveryFrom: 60000 }
 
-/** Calls from the app (web and Android) come from another address: allow them. */
-export function cors(response: HandlerResponse): HandlerResponse {
-  return { ...response, headers: { ...response.headers, 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, content-type', 'access-control-allow-methods': 'POST, OPTIONS' } }
+/** Only the club's own app may call these from a browser: the live site, its
+ * preview channels, the Android app and local development. Any other website is refused. */
+const ALLOWED_ORIGIN = /^(https:\/\/ekhaya-fc-app(--[a-z0-9-]+)?\.(web\.app|firebaseapp\.com)|https?:\/\/localhost(:\d+)?)$/
+export const allowedOrigin = (origin: unknown) => typeof origin === 'string' && ALLOWED_ORIGIN.test(origin)
+export function cors(event: HandlerEvent, response: HandlerResponse): HandlerResponse {
+  const origin = event.headers.origin ?? event.headers.Origin
+  const allow: Record<string, string> = allowedOrigin(origin) ? { 'access-control-allow-origin': String(origin), 'access-control-allow-headers': 'authorization, content-type', 'access-control-allow-methods': 'POST, OPTIONS' } : {}
+  return { ...response, headers: { ...response.headers, ...allow, vary: 'Origin' } }
 }
-export const preflight = (event: HandlerEvent) => event.httpMethod === 'OPTIONS' ? cors({ statusCode: 204, body: '' }) : null
+export const preflight = (event: HandlerEvent) => event.httpMethod === 'OPTIONS' ? cors(event, { statusCode: allowedOrigin(event.headers.origin ?? event.headers.Origin) ? 204 : 403, body: '' }) : null
+/** A browser call from another website is refused before anything happens. */
+export const foreignSite = (event: HandlerEvent) => { const o = event.headers.origin ?? event.headers.Origin; return o != null && !allowedOrigin(o) }
+
+/** At most 3 PIN requests per fan in 10 minutes, 30 seconds apart, so nobody can
+ * flood a phone with payment prompts. Kept on the server only (fans can't read it). */
+async function payLimit(uid: string) {
+  const ref = firestore.collection('payLimits').doc(uid)
+  await firestore.runTransaction(async (t) => {
+    const now = Date.now()
+    const recent = ((await t.get(ref)).data()?.starts as number[] | undefined ?? []).filter((at) => now - at < 10 * 60_000)
+    if (recent.length >= 3) throw new Error('Too many payment requests. Please wait 10 minutes and try again.')
+    if (recent.some((at) => now - at < 30_000)) throw new Error('Please wait 30 seconds before asking for another PIN prompt.')
+    t.set(ref, { starts: [...recent, now], updatedAt: FieldValue.serverTimestamp() })
+  })
+}
 
 export function normalizeMalawiPhone(value: string) {
   const digits = value.replace(/\D/g, '')
@@ -60,6 +80,7 @@ export async function startShopPayment(uid: string, email: string, orderId: stri
   if (order.status !== 'new') throw new Error('This order is already being handled.')
   const amount = await priceOrder(order)
   if (amount !== Number(order.total)) throw new Error('Prices changed. Please make the order again.')
+  await payLimit(uid)
 
   const txRef = `ekshop-${randomUUID()}`
   const payRef = firestore.collection('shopPayments').doc(txRef)
