@@ -1,0 +1,36 @@
+# Gives players their shirt numbers in the live squad.
+name: Set shirt numbers
+on:
+  workflow_dispatch:
+    inputs:
+      numbers:
+        description: 'Name=number, separated by ; e.g. Mchema=30; Maino=37'
+        required: true
+      mode:
+        type: choice
+        options: [preview, apply]
+        default: preview
+jobs:
+  numbers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Set numbers
+        env:
+          NUMBERS: ${{ inputs.numbers }}
+        run: node scripts/set-player-number.cjs ${{ inputs.mode == 'apply' && '--apply' || '' }}
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
