@@ -2921,3 +2921,15 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .pv-watch strong { font-family: 'Oswald', sans-serif; font-size: 17px; text-transform: uppercase; }
 .pv-watch span { grid-row: 2; color: var(--muted); font-size: 12px; }
 .pv-watch b { grid-row: 1 / 3; grid-column: 2; align-self: center; color: var(--gold-dark); font-size: 14px; }
+
+/* Free trial ended screen (AppLock) */
+.app-lock { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 24px 16px; overflow-y: auto; background: radial-gradient(circle at 50% 0%, #2a2410 0%, #0d0d0d 70%); color: #f4efe1; }
+.app-lock-card { width: 100%; max-width: 420px; text-align: center; padding: 32px 22px; border-radius: 22px; border: 1px solid rgb(232 197 90 / 35%); background: rgb(20 20 20 / 85%); box-shadow: 0 20px 50px rgb(0 0 0 / 45%); }
+.app-lock-card img { border-radius: 20px; margin: 0 auto 16px; display: block; }
+.app-lock-tag { display: inline-block; font-size: 11px; letter-spacing: .12em; font-weight: 800; padding: 5px 12px; border-radius: 999px; color: #1a1406; background: linear-gradient(120deg, #f3d77a, #c9a23a); margin-bottom: 14px; }
+.app-lock-card h1 { font-size: 22px; line-height: 1.25; margin: 0 0 14px; color: #fff; }
+.app-lock-card p { font-size: 15px; line-height: 1.55; margin: 0 0 12px; color: #d9d3c2; }
+.app-lock-strong { color: #f3d77a !important; font-weight: 700; }
+.app-lock-small { font-size: 13px !important; opacity: .7; }
+.app-lock-actions { margin-top: 18px; }
+.app-lock-link { background: none; border: 0; color: #c9a23a; font-size: 13px; text-decoration: underline; cursor: pointer; }

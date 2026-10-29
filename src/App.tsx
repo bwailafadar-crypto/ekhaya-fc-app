@@ -5,6 +5,7 @@ import { AuthProvider } from './auth/AuthProvider'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
+import AppLock from './components/AppLock'
 import TeamProvider from './data/TeamProvider'
 import { ForgotPasswordPage, LoginPage, SignUpPage } from './pages/auth/AuthPages'
 import Home from './pages/Home'
@@ -47,6 +48,7 @@ export default function App() {
           <TeamProvider>
             <ErrorBoundary>
               <>
+              <AppLock>
               <Routes>
               <Route path="/install" element={<Suspense fallback={<p className="page-loading">Loading…</p>}><InstallPage /></Suspense>} />
               <Route path="/login" element={<LoginPage />} />
@@ -87,6 +89,7 @@ export default function App() {
               </Routes>
               <InstallBanner />
               <PwaUpdateNotice />
+              </AppLock>
               </>
             </ErrorBoundary>
           </TeamProvider>

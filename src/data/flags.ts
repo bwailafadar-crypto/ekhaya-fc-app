@@ -6,6 +6,7 @@ import { logAction } from '../utils/audit'
 import { confirmIdentity } from '../utils/reauth'
 
 export const FLAGS = {
+  appLocked: { label: 'LOCK THE APP: fans see "free trial ended" (staff keep access)', default: false },
   alertsPrompt: { label: 'One-tap alerts card after sign-in', default: true },
   fanFamily: { label: 'Fan Family (branches & invites)', default: true },
   competitions: { label: 'Competitions & cup filters', default: true },
