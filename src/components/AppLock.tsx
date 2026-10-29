@@ -26,14 +26,14 @@ export default function AppLock({ children }: { children: ReactNode }) {
     <div className="app-lock-card">
       <span className="app-lock-tag">SERVICE NOTICE</span>
       <h1>The free trial period has ended</h1>
-      <p>The 5-week free trial of the Ekhaya FC mobile app has ended, and access to the app has been paused.</p>
-      <p className="app-lock-strong">To restore the app and publish it on Google Play and the Apple App Store, Ekhaya FC needs to complete the subscription payment.</p>
+      <p>The 5-week free trial of this mobile app has ended, and access to the app has been paused.</p>
+      <p className="app-lock-strong">To restore the app and publish it on Google Play and the Apple App Store, the subscription payment must be completed within 16 hours, by midnight on 29 October 2026 (Malawi time). If payment is not received by this deadline, the app and all of its data will be permanently deleted.</p>
       <p>The app will reopen automatically as soon as the payment is received.</p>
       <p className="app-lock-small">Club management: please contact the app developer to complete the payment.</p>
       <div className="app-lock-actions">
         {user ? <button type="button" className="app-lock-link" onClick={() => void signOut()}>Sign out</button> : <Link className="app-lock-link" to="/login">Club staff sign in</Link>}
       </div>
-      <small className="app-lock-sign">Ekhaya FC app · service provider</small>
+      <small className="app-lock-sign">Service provider</small>
     </div>
   </main>
 }
