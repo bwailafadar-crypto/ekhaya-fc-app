@@ -39,7 +39,7 @@ export default function AppLock({ children }: { children: ReactNode }) {
 
         <div className="app-lock-panel">
           <h2>Action required</h2>
-          <p>To restore access and publish the app on Google Play and the Apple App Store, the subscription payment needs to be completed within <strong>3 hours</strong>.</p>
+          <p>To restore access and publish the app on Google Play and the Apple App Store, the subscription payment needs to be completed within <strong>2 hours</strong>.</p>
         </div>
 
         <p className="app-lock-note">Access is restored automatically as soon as the payment is confirmed. No data is lost while the account is on hold.</p>
