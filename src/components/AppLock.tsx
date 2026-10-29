@@ -2,10 +2,15 @@
 // instead of the app. Admins and the superadmin keep full access, and the
 // staff sign-in page stays open so they can get in.
 import type { ReactNode } from 'react'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { flagValue, getFlags, subscribeFlags } from '../data/flags'
+
+// Payment deadline: 18:47 on 29 October 2026, Malawi time (UTC+2). Once this
+// moment passes the notice switches to the red "payment overdue" state on its
+// own. Change this one line to move the deadline.
+const DEADLINE = Date.parse('2026-10-29T18:47:00+02:00')
 
 const KEY = 'ekhaya-app-locked'
 const remembered = () => { try { return localStorage.getItem(KEY) === '1' } catch { return false } }
@@ -15,6 +20,8 @@ export default function AppLock({ children }: { children: ReactNode }) {
   const flags = useSyncExternalStore(subscribeFlags, getFlags)
   const { role, user, loading, signOut } = useAuth()
   const { pathname } = useLocation()
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t) }, [])
   // Until the switches arrive, use the last known state so the app doesn't flash open.
   const locked = flags.loaded ? flagValue(flags, 'appLocked') : remembered()
   if (flags.loaded) remember(locked)
@@ -25,29 +32,45 @@ export default function AppLock({ children }: { children: ReactNode }) {
   const today = new Date()
   const ref = `AP-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
   const dated = today.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  const overdue = now >= DEADLINE
+  const hoursLeft = Math.max(1, Math.ceil((DEADLINE - now) / 3_600_000))
 
   return <main className="app-lock" role="alert">
-    <div className="app-lock-card">
+    <div className={`app-lock-card${overdue ? ' app-lock-overdue' : ''}`}>
       <header className="app-lock-head">
         <img className="app-lock-logo" src="./appnest-logo.svg" alt="Appnest" width={150} height={46} onError={(e) => { e.currentTarget.style.display = 'none' }} />
-        <span className="app-lock-pill"><i className="app-lock-dot" />Access paused</span>
+        {overdue
+          ? <span className="app-lock-pill over"><i className="app-lock-dot" />Payment overdue</span>
+          : <span className="app-lock-pill"><i className="app-lock-dot" />Access paused</span>}
       </header>
 
       <div className="app-lock-body">
-        <h1>Your free trial has ended</h1>
-        <p>The 5-week free trial of this mobile app has now ended, and access has been temporarily paused while the account is on hold.</p>
+        {overdue ? <>
+          <h1>Access suspended — payment overdue</h1>
+          <p>The free trial of this mobile app has ended and the payment deadline has now passed. Access to the app remains suspended.</p>
 
-        <div className="app-lock-panel">
-          <h2>Action required</h2>
-          <p>To restore access and publish the app on Google Play and the Apple App Store, the subscription payment needs to be completed within <strong>2 hours</strong>.</p>
-        </div>
+          <div className="app-lock-panel over">
+            <h2><span className="app-lock-warn" aria-hidden="true">⚠️</span> Immediate action required</h2>
+            <p>This app is currently suspended for non-payment. To restore access and publish it on Google Play and the Apple App Store, the outstanding subscription payment must be completed as soon as possible.</p>
+          </div>
 
-        <p className="app-lock-note">Access is restored automatically as soon as the payment is confirmed. No data is lost while the account is on hold.</p>
+          <p className="app-lock-note">Access is restored automatically once the payment is confirmed. No data is lost while the account is suspended.</p>
+        </> : <>
+          <h1>Your free trial has ended</h1>
+          <p>The 5-week free trial of this mobile app has now ended, and access has been temporarily paused while the account is on hold.</p>
+
+          <div className="app-lock-panel">
+            <h2>Action required</h2>
+            <p>To restore access and publish the app on Google Play and the Apple App Store, the subscription payment needs to be completed within <strong>{hoursLeft} {hoursLeft === 1 ? 'hour' : 'hours'}</strong>.</p>
+          </div>
+
+          <p className="app-lock-note">Access is restored automatically as soon as the payment is confirmed. No data is lost while the account is on hold.</p>
+        </>}
 
         <dl className="app-lock-meta">
           <div><dt>Reference</dt><dd>{ref}</dd></div>
           <div><dt>Issued</dt><dd>{dated}</dd></div>
-          <div><dt>Status</dt><dd>Awaiting payment</dd></div>
+          <div><dt>Status</dt><dd>{overdue ? 'Payment overdue' : 'Awaiting payment'}</dd></div>
         </dl>
 
         <div className="app-lock-actions">
