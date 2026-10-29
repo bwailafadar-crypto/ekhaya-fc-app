@@ -2946,12 +2946,3 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .app-lock-link:hover { text-decoration: underline; }
 .app-lock-foot { display: flex; align-items: center; gap: 8px; padding: 14px 22px; border-top: 1px solid #eef1f4; background: #fafbfc; font-size: 12.5px; color: #6b7684; }
 .app-lock-foot img { border-radius: 5px; }
-
-/* Countdown inside the action panel */
-.app-lock-count { display: flex; align-items: flex-start; justify-content: center; gap: 6px; margin: 14px 0 4px; }
-.app-lock-count > div { display: flex; flex-direction: column; align-items: center; min-width: 58px; padding: 10px 6px; background: #fff; border: 1px solid #e6ebf1; border-radius: 10px; }
-.app-lock-count b { font-size: 28px; font-weight: 700; line-height: 1; color: #111826; font-variant-numeric: tabular-nums; }
-.app-lock-count span { margin-top: 5px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #8a94a2; }
-.app-lock-count i { font-size: 24px; font-weight: 700; color: #c2cad4; font-style: normal; line-height: 1.6; }
-.app-lock-count.over b { color: #c0392b; }
-.app-lock-count-label { font-size: 12px !important; text-align: center; color: #6b7684 !important; margin: 8px 0 0 !important; }
