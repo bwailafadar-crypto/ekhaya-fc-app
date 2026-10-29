@@ -24,16 +24,16 @@ export default function AppLock({ children }: { children: ReactNode }) {
 
   return <main className="app-lock" role="alert">
     <div className="app-lock-card">
-      <img src="./pwa-icon-192.png" alt="Ekhaya FC" width={84} height={84} onError={(e) => { e.currentTarget.style.display = 'none' }} />
-      <span className="app-lock-tag">FREE TRIAL ENDED</span>
-      <h1>Your 5-week free trial has ended</h1>
-      <p>Thank you for using the Ekhaya FC app during the free trial period.</p>
-      <p>The trial has now come to an end. To continue enjoying live match updates, news, the squad, Ekhaya TV and the club shop on your phone, a subscription payment is required.</p>
-      <p className="app-lock-strong">Please pay for your app subscription to unlock the Ekhaya FC mobile app.</p>
-      <p className="app-lock-small">The app will reopen automatically as soon as payment is confirmed.</p>
+      <span className="app-lock-tag">SERVICE NOTICE</span>
+      <h1>The free trial period has ended</h1>
+      <p>The 5-week free trial of the Ekhaya FC mobile app has ended, and access to the app has been paused.</p>
+      <p className="app-lock-strong">To restore the app and publish it on Google Play and the Apple App Store, Ekhaya FC needs to complete the subscription payment.</p>
+      <p>The app will reopen automatically as soon as the payment is received.</p>
+      <p className="app-lock-small">Club management: please contact the app developer to complete the payment.</p>
       <div className="app-lock-actions">
         {user ? <button type="button" className="app-lock-link" onClick={() => void signOut()}>Sign out</button> : <Link className="app-lock-link" to="/login">Club staff sign in</Link>}
       </div>
+      <small className="app-lock-sign">Ekhaya FC app · service provider</small>
     </div>
   </main>
 }
