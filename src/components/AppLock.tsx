@@ -46,25 +46,25 @@ export default function AppLock({ children }: { children: ReactNode }) {
 
       <div className="app-lock-body">
         {overdue ? <>
-          <h1>Access suspended — payment overdue</h1>
-          <p>The free trial of this mobile app has ended and the payment deadline has now passed. Access to the app remains suspended.</p>
+          <h1>Access suspended</h1>
+          <p>The free trial has ended and the payment deadline has passed. Access remains suspended.</p>
 
           <div className="app-lock-panel over">
-            <h2><span className="app-lock-warn" aria-hidden="true">⚠️</span> Immediate action required</h2>
-            <p>This app is currently suspended for non-payment. To restore access and publish it on Google Play and the Apple App Store, the outstanding subscription payment must be completed as soon as possible.</p>
+            <h2><span className="app-lock-warn" aria-hidden="true">⚠️</span> Payment overdue</h2>
+            <p>Please complete the subscription payment to restore the app and publish it on Google Play and the Apple App Store.</p>
           </div>
 
-          <p className="app-lock-note">Access is restored automatically once the payment is confirmed. No data is lost while the account is suspended.</p>
+          <p className="app-lock-note">Access is restored automatically once payment is confirmed. No data is lost.</p>
         </> : <>
           <h1>Your free trial has ended</h1>
-          <p>The 5-week free trial of this mobile app has now ended, and access has been temporarily paused while the account is on hold.</p>
+          <p>Access has been paused while the account is on hold.</p>
 
           <div className="app-lock-panel">
             <h2>Action required</h2>
-            <p>To restore access and publish the app on Google Play and the Apple App Store, the subscription payment needs to be completed within <strong>{hoursLeft} {hoursLeft === 1 ? 'hour' : 'hours'}</strong>.</p>
+            <p>Complete the subscription payment within <strong>{hoursLeft} {hoursLeft === 1 ? 'hour' : 'hours'}</strong> to restore the app and publish it on Google Play and the Apple App Store.</p>
           </div>
 
-          <p className="app-lock-note">Access is restored automatically as soon as the payment is confirmed. No data is lost while the account is on hold.</p>
+          <p className="app-lock-note">Access is restored automatically once payment is confirmed. No data is lost.</p>
         </>}
 
         <dl className="app-lock-meta">
