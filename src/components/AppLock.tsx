@@ -24,6 +24,7 @@ export default function AppLock({ children }: { children: ReactNode }) {
 
   return <main className="app-lock" role="alert">
     <div className="app-lock-card">
+      <img className="app-lock-logo" src="./appnest-logo.svg" alt="Appnest" width={170} height={52} onError={(e) => { e.currentTarget.style.display = 'none' }} />
       <span className="app-lock-tag">SERVICE NOTICE</span>
       <h1>The free trial period has ended</h1>
       <p>The 5-week free trial of this mobile app has ended, and access to the app has been paused.</p>
@@ -32,7 +33,7 @@ export default function AppLock({ children }: { children: ReactNode }) {
       <div className="app-lock-actions">
         {user ? <button type="button" className="app-lock-link" onClick={() => void signOut()}>Sign out</button> : <Link className="app-lock-link" to="/login">Club staff sign in</Link>}
       </div>
-      <small className="app-lock-sign">Service provider</small>
+      <small className="app-lock-sign">Appnest · app service provider</small>
     </div>
   </main>
 }
