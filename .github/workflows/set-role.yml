@@ -1,0 +1,38 @@
+# Shows or changes a user's role (fan / admin / superadmin) by their sign-in email.
+name: Set a user role
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: The email the person signs in with
+        required: true
+      role:
+        description: New role (leave on 'show' to just check it)
+        type: choice
+        options: [show, superadmin, admin, fan]
+        default: show
+jobs:
+  role:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Set role
+        env:
+          EMAIL: ${{ inputs.email }}
+          ROLE: ${{ inputs.role }}
+        run: node scripts/set-role.cjs ${{ inputs.role != 'show' && '--apply' || '' }}
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
