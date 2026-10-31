@@ -3,7 +3,7 @@
 // staff sign-in page stays open so they can get in.
 import type { ReactNode } from 'react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { flagValue, getFlags, subscribeFlags } from '../data/flags'
 
@@ -20,6 +20,7 @@ export default function AppLock({ children }: { children: ReactNode }) {
   const flags = useSyncExternalStore(subscribeFlags, getFlags)
   const { role, user, loading, signOut } = useAuth()
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t) }, [])
   // Until the switches arrive, use the last known state so the app doesn't flash open.
@@ -78,7 +79,8 @@ export default function AppLock({ children }: { children: ReactNode }) {
         </dl>
 
         <div className="app-lock-actions">
-          {user ? <button type="button" className="app-lock-link" onClick={() => void signOut()}>Sign out</button> : <Link className="app-lock-link" to="/login">Account holder sign in</Link>}
+          <Link className="app-lock-signin" to="/login">Account holder sign in</Link>
+          {user && <button type="button" className="app-lock-link" onClick={() => { void signOut().finally(() => navigate('/login')) }}>Sign out</button>}
         </div>
       </div>
 
