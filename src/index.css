@@ -2957,3 +2957,8 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .app-lock-panel.over p { color: #7a1a13; }
 .app-lock-panel.over strong { color: #5c140f; }
 .app-lock-warn { font-size: 14px; }
+
+/* App lock card (Admin → App health) */
+.lock-state { margin: 4px 0 14px; font-size: 14px; color: #44505f; }
+.lock-state strong.is-locked { color: #b3261e; }
+.lock-state strong.is-open { color: #1a7f37; }

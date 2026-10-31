@@ -1,5 +1,5 @@
 import { collection, deleteDoc, doc, getDocsFromServer, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc, type DocumentData } from 'firebase/firestore'
-import { Activity, AlertTriangle, Database, Flag, Megaphone, RefreshCw, Trash2 } from 'lucide-react'
+import { Activity, AlertTriangle, Database, Flag, Lock, Megaphone, RefreshCw, Trash2, Unlock } from 'lucide-react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { useToast } from '../components/ToastContext'
@@ -55,6 +55,37 @@ function SnapshotCard() {
           </ul>}
       <p className="fz-note">Each fan reads this once per visit instead of 70+ separate records. It updates by itself when an admin changes fixtures, the table or teams.</p>
       <Button type="button" variant="secondary" disabled={busy} onClick={() => void rebuild()}><RefreshCw size={15} /> {busy ? 'Rebuilding…' : 'Rebuild now'}</Button>
+    </Card>
+  )
+}
+
+function LockCard() {
+  const { role } = useAuth()
+  const { showToast } = useToast()
+  const state = useSyncExternalStore(subscribeFlags, getFlags)
+  const canEdit = role === 'superadmin'
+  const locked = flagValue(state, 'appLocked')
+  const [busy, setBusy] = useState(false)
+
+  async function toggle() {
+    const next = !locked
+    if (next && !window.confirm('Lock the app? Every fan and admin will see the service notice. Only you (superadmin) will keep access.')) return
+    setBusy(true)
+    try {
+      await saveFlags({ ...Object.fromEntries((Object.keys(FLAGS) as FlagName[]).map((n) => [n, flagValue(state, n)])), appLocked: next }, state.notice)
+      showToast(next ? 'App locked. Only you have access now.' : 'App unlocked. Everyone can use it again.', 'success')
+    } catch (error) {
+      if ((error as Error).message !== 'cancelled') showToast('Not changed. Only the superadmin can do this.', 'error')
+    } finally { setBusy(false) }
+  }
+
+  return (
+    <Card className="fz-card">
+      <div className="fz-card-heading">{locked ? <Lock size={18} aria-hidden="true" /> : <Unlock size={18} aria-hidden="true" />}<div><h2>App lock</h2><span>Show every fan the service notice and keep access to yourself</span></div></div>
+      <p className="lock-state">Status: <strong className={locked ? 'is-locked' : 'is-open'}>{locked ? 'Locked — only you have access' : 'Open — everyone can use the app'}</strong></p>
+      {canEdit ? <Button type="button" variant={locked ? 'secondary' : 'primary'} disabled={busy} onClick={() => void toggle()}>
+        {locked ? <><Unlock size={15} /> {busy ? 'Unlocking…' : 'Unlock the app'}</> : <><Lock size={15} /> {busy ? 'Locking…' : 'Lock the app'}</>}
+      </Button> : <p className="fz-note">Only the superadmin can lock or unlock the app.</p>}
     </Card>
   )
 }
@@ -138,6 +169,7 @@ export default function AppHealth() {
         <li><span>Connection</span><strong>{navigator.onLine ? 'Online' : 'Offline'}</strong></li>
       </ul>
     </Card>
+    <LockCard />
     <SnapshotCard />
     <FlagsCard />
     <ErrorsCard />

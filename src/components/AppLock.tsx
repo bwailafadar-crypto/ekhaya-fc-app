@@ -25,8 +25,9 @@ export default function AppLock({ children }: { children: ReactNode }) {
   // Until the switches arrive, use the last known state so the app doesn't flash open.
   const locked = flags.loaded ? flagValue(flags, 'appLocked') : remembered()
   if (flags.loaded) remember(locked)
-  const staff = role === 'admin' || role === 'superadmin'
-  if (!locked || staff || pathname === '/login' || pathname === '/forgot-password') return <>{children}</>
+  // When the app is locked, only the superadmin keeps access. Everyone else
+  // (fans and ordinary admins) sees the notice. The sign-in pages stay open.
+  if (!locked || role === 'superadmin' || pathname === '/login' || pathname === '/forgot-password') return <>{children}</>
   if (user && loading) return null
 
   const today = new Date()
