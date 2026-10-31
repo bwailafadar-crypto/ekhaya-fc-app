@@ -28,7 +28,10 @@ export default function AppLock({ children }: { children: ReactNode }) {
   // When the app is locked, only the superadmin keeps access. Everyone else
   // (fans and ordinary admins) sees the notice. The sign-in pages stay open.
   if (!locked || role === 'superadmin' || pathname === '/login' || pathname === '/forgot-password') return <>{children}</>
-  if (user && loading) return null
+  // Don't show the notice until we actually know who this is: while auth is
+  // loading, or a signed-in user's role hasn't arrived yet, wait instead of
+  // flashing the notice at the superadmin.
+  if (loading || (user && !role)) return null
 
   const today = new Date()
   const ref = `AP-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
