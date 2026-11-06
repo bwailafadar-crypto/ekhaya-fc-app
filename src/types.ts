@@ -123,6 +123,7 @@ export type NewsCategory = 'Match' | 'Club' | 'Transfer' | 'Community'
 export type NewsStatus = 'draft' | 'published'
 export type NewsBodyBlock =
   | { id: string; type: 'paragraph'; text: string }
+  | { id: string; type: 'heading'; text: string }
   | { id: string; type: 'photo'; photoId: string; caption?: string }
 
 export interface NewsPhoto {

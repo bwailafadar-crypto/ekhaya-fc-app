@@ -1,12 +1,13 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { arrayRemove, arrayUnion, collection, doc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
-import { ArrowDown, ArrowUp, ImagePlus, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Heading, ImagePlus, Plus, Trash2, Wand2 } from 'lucide-react'
 import { db } from '../firebase'
 import { useToast } from './ToastContext'
 import { Button, Card, Skeleton } from './UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { useNewsPhotos } from '../hooks/useNewsPhotos'
 import { compressImage } from '../utils/compressImage'
+import { parseArticleText } from '../utils/articleText'
 import type { NewsBodyBlock, NewsCategory, NewsItem, NewsPhoto, NewsStatus } from '../types'
 import { logAction } from '../utils/audit'
 
@@ -39,6 +40,8 @@ export default function NewsArticleEditor() {
   const coverPreview = coverPhoto?.dataUrl || selected?.coverImage || ''
   const [blocks, setBlocks] = useState<NewsBodyBlock[]>([])
   const [captionDrafts, setCaptionDrafts] = useState<Record<string, string>>({})
+  const [pasteText, setPasteText] = useState('')
+  const [pasteOpen, setPasteOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [progress, setProgress] = useState<{ complete: number; total: number; detail: string } | null>(null)
 
@@ -212,11 +215,27 @@ export default function NewsArticleEditor() {
           </div>
           <label className="admin-field"><span>Summary</span><textarea className="news-editor-textarea" name="summary" rows={3} maxLength={280} required defaultValue={selected?.summary ?? ''} /></label>
           <section className="news-block-editor" aria-label="Article body blocks">
-            <div className="news-editor-section-heading"><h3>Article body</h3><div className="admin-actions"><Button type="button" variant="secondary" icon={<Plus size={15} />} onClick={() => setBlocks((current) => [...current, { id: blockId(), type: 'paragraph', text: '' }])}>Paragraph</Button><Button type="button" variant="secondary" icon={<ImagePlus size={15} />} disabled={!galleryPhotos.length} onClick={() => setBlocks((current) => [...current, { id: blockId(), type: 'photo', photoId: galleryPhotos[0].id, caption: '' }])}>Photo</Button></div></div>
-            {!blocks.length && <p className="news-editor-help">Add paragraphs and photos to build the article.</p>}
+            <div className="news-editor-section-heading"><h3>Article body</h3><div className="admin-actions"><Button type="button" variant="secondary" icon={<Wand2 size={15} />} onClick={() => setPasteOpen((open) => !open)}>Paste full article</Button><Button type="button" variant="secondary" icon={<Plus size={15} />} onClick={() => setBlocks((current) => [...current, { id: blockId(), type: 'paragraph', text: '' }])}>Paragraph</Button><Button type="button" variant="secondary" icon={<Heading size={15} />} onClick={() => setBlocks((current) => [...current, { id: blockId(), type: 'heading', text: '' }])}>Heading</Button><Button type="button" variant="secondary" icon={<ImagePlus size={15} />} disabled={!galleryPhotos.length} onClick={() => setBlocks((current) => [...current, { id: blockId(), type: 'photo', photoId: galleryPhotos[0].id, caption: '' }])}>Photo</Button></div></div>
+            {pasteOpen && <div className="news-paste-box">
+              <p className="news-editor-help">Paste the whole article below and tap <strong>Format into article</strong>. It splits the text into paragraphs, turns ALL-CAPS section titles into headings, and tidies up symbols. Photos you already added stay in place.</p>
+              <textarea className="news-editor-textarea" rows={6} value={pasteText} placeholder="Paste the article text here…" onChange={(event) => setPasteText(event.target.value)} aria-label="Paste full article" />
+              <div className="admin-actions">
+                <Button type="button" variant="primary" icon={<Wand2 size={15} />} disabled={!pasteText.trim()} onClick={() => {
+                  const parsed = parseArticleText(pasteText)
+                  if (!parsed.length) { showToast('No text found to format.', 'error'); return }
+                  setBlocks((current) => [...parsed, ...current.filter((block) => block.type === 'photo')])
+                  setPasteText(''); setPasteOpen(false)
+                  showToast(`Formatted into ${parsed.length} block${parsed.length === 1 ? '' : 's'}. Check it over, then save.`, 'success')
+                }}>Format into article</Button>
+                <Button type="button" variant="secondary" onClick={() => { setPasteText(''); setPasteOpen(false) }}>Cancel</Button>
+              </div>
+            </div>}
+            {!blocks.length && <p className="news-editor-help">Add paragraphs and photos to build the article, or use <strong>Paste full article</strong> to format a whole story at once.</p>}
             {blocks.map((block, index) => <div className="news-body-block" key={block.id}>
-              <div className="news-body-block-heading"><strong>{block.type === 'paragraph' ? 'Paragraph' : 'Photo'}</strong><div><button type="button" aria-label="Move block up" disabled={index === 0} onClick={() => moveBlock(index, -1)}><ArrowUp size={15} /></button><button type="button" aria-label="Move block down" disabled={index === blocks.length - 1} onClick={() => moveBlock(index, 1)}><ArrowDown size={15} /></button><button type="button" aria-label="Delete block" onClick={() => setBlocks((current) => current.filter((item) => item.id !== block.id))}><Trash2 size={15} /></button></div></div>
-              {block.type === 'paragraph'
+              <div className="news-body-block-heading"><strong>{block.type === 'paragraph' ? 'Paragraph' : block.type === 'heading' ? 'Heading' : 'Photo'}</strong><div><button type="button" aria-label="Move block up" disabled={index === 0} onClick={() => moveBlock(index, -1)}><ArrowUp size={15} /></button><button type="button" aria-label="Move block down" disabled={index === blocks.length - 1} onClick={() => moveBlock(index, 1)}><ArrowDown size={15} /></button><button type="button" aria-label="Delete block" onClick={() => setBlocks((current) => current.filter((item) => item.id !== block.id))}><Trash2 size={15} /></button></div></div>
+              {block.type === 'heading'
+                ? <input className="news-block-heading-input" value={block.text} placeholder="Section heading" onChange={(event) => updateBlock(block.id, { text: event.target.value })} aria-label={`Heading ${index + 1}`} />
+                : block.type === 'paragraph'
                 ? <textarea className="news-editor-textarea" rows={4} value={block.text} onChange={(event) => updateBlock(block.id, { text: event.target.value })} aria-label={`Paragraph ${index + 1}`} />
                 : <><select className="news-block-photo-select" value={block.photoId} onChange={(event) => updateBlock(block.id, { photoId: event.target.value })} aria-label="Choose article photo">{galleryPhotos.map((photo) => <option key={photo.id} value={photo.id}>{photo.caption || `Photo ${photo.order + 1}`}</option>)}</select><input className="news-block-caption" aria-label="Optional photo caption" placeholder="Optional caption" value={block.caption ?? ''} onChange={(event) => updateBlock(block.id, { caption: event.target.value })} />{galleryPhotos.find((photo) => photo.id === block.photoId) && <img className="news-admin-cover-preview" src={galleryPhotos.find((photo) => photo.id === block.photoId)?.dataUrl} alt="Selected article photo" />}</>}
             </div>)}

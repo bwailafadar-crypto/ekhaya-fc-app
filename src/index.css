@@ -2967,3 +2967,12 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .app-lock-signin { display: inline-block; padding: 10px 18px; border-radius: 8px; background: #2f80ed; color: #fff !important; font-size: 14px; font-weight: 600; text-decoration: none; }
 .app-lock-signin:hover { background: #1f6fd6; }
 .app-lock-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+/* News article headings in the reader */
+.news-article-heading { font-size: 18px; font-weight: 800; line-height: 1.3; margin: 22px 0 8px; color: var(--ink, #14110a); letter-spacing: -0.01em; }
+.news-article-body > p + .news-article-heading { margin-top: 24px; }
+
+/* Paste-full-article box and heading input in the editor */
+.news-paste-box { margin: 10px 0 14px; padding: 14px; border: 1px dashed var(--line, #d9d2c2); border-radius: 12px; background: var(--surface-2, #faf8f2); }
+.news-paste-box .admin-actions { margin-top: 10px; }
+.news-block-heading-input { width: 100%; padding: 10px 12px; border: 1px solid var(--line, #d9d2c2); border-radius: 10px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }

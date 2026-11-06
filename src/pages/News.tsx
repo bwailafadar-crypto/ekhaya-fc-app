@@ -103,8 +103,10 @@ export default function News() {
               <h1>{article.title}</h1>
               <p className="news-article-summary">{article.summary}</p>
               {photoState.error && <p className="live-error" role="alert">{photoState.error}</p>}
-              <div className="news-article-body">{(article.bodyBlocks?.length ? article.bodyBlocks : article.body ? [{ id: 'legacy-body', type: 'paragraph', text: article.body } as NewsBodyBlock] : []).map((block) => block.type === 'paragraph'
-                ? <p key={block.id}>{block.text}</p>
+              <div className="news-article-body">{(article.bodyBlocks?.length ? article.bodyBlocks : article.body ? [{ id: 'legacy-body', type: 'paragraph', text: article.body } as NewsBodyBlock] : []).map((block) => block.type === 'heading'
+                ? <h2 key={block.id} className="news-article-heading">{block.text}</h2>
+                : block.type === 'paragraph'
+                ? block.text.split(/\n{2,}|\n/).map((line) => line.trim()).filter(Boolean).map((line, i) => <p key={`${block.id}-${i}`}>{line}</p>)
                 : (() => {
                     const photo = photos.find((item) => item.id === block.photoId)
                     if (!photo) return null
