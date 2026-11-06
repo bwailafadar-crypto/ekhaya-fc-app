@@ -204,9 +204,14 @@ test('official results rebuild the week 17 table and form exactly', async () => 
   const { computeTable, norm, parseResults } = await import('../../src/utils/leagueTable')
   const { readFileSync } = await import('node:fs')
   const data = JSON.parse(readFileSync(new URL('../../ekhaya-data.json', import.meta.url), 'utf8'))
+  // OFFICIAL_RESULTS is the recorded match log up to week 17. The live table in
+  // ekhaya-data.json.standings is maintained directly from matchday onwards (the
+  // sync-table workflow) and advances past this, so the rebuild is checked
+  // against a frozen week-17 snapshot, not the current standings.
+  const week17 = JSON.parse(readFileSync(new URL('./week17-standings.json', import.meta.url), 'utf8')) as Array<{ team: string; played: number; won: number; drawn: number; lost: number; goalsFor: number; goalsAgainst: number; points: number; form: string[] }>
   const table = computeTable(OFFICIAL_RESULTS)
   assert.equal(OFFICIAL_RESULTS.length, 136)
-  for (const row of data.standings) {
+  for (const row of week17) {
     const c = table.get(norm(row.team))
     assert.ok(c, row.team)
     assert.deepEqual([c.played, c.won, c.drawn, c.lost, c.goalsFor, c.goalsAgainst, c.points], [row.played, row.won, row.drawn, row.lost, row.goalsFor, row.goalsAgainst, row.points], row.team)
