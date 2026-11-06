@@ -1,0 +1,33 @@
+# Publishes a prepared news article (from scripts/news/*.json) into the live app.
+name: Publish a news article
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: Article JSON path under scripts/news/
+        required: true
+        default: scripts/news/ekhaya-youth-unbeaten.json
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Publish article
+        env:
+          NEWS_FILE: ${{ inputs.file }}
+        run: node scripts/import-news.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
