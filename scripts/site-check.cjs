@@ -16,7 +16,7 @@ const BASE = (process.env.SITE || 'https://ekhaya-fc-app.web.app').replace(/\/$/
 
 // App Check is enforced, so the robot mints a short-lived debug token, uses it,
 // and deletes it at the end. Nothing is stored. (APP_ID from firebase config.)
-const PROJECT = 'ekhaya-fc-app'
+const PROJECT = '655956402643' // project NUMBER (the App Check API wants the number, not the id)
 const APP_ID = process.env.APPCHECK_APP_ID || '1:655956402643:web:509935744d655696964f26'
 async function gcpToken() {
   const sa = JSON.parse(fs.readFileSync(keyFile, 'utf8'))
@@ -30,10 +30,12 @@ async function gcpToken() {
 }
 async function makeDebugToken() {
   const auth = `Bearer ${await gcpToken()}`
-  const r = await fetch(`https://firebaseappcheck.googleapis.com/v1/projects/${PROJECT}/apps/${APP_ID}/debugTokens`, { method: 'POST', headers: { authorization: auth, 'content-type': 'application/json' }, body: JSON.stringify({ displayName: `qa-robot ${new Date().toISOString().slice(0, 16)}` }) })
-  if (!r.ok) throw new Error(`debug token create failed (${r.status}): ${(await r.text()).slice(0, 160)}`)
+  const token = crypto.randomUUID()
+  const url = `https://firebaseappcheck.googleapis.com/v1/projects/${PROJECT}/apps/${encodeURIComponent(APP_ID)}/debugTokens`
+  const r = await fetch(url, { method: 'POST', headers: { authorization: auth, 'content-type': 'application/json' }, body: JSON.stringify({ displayName: `qa-robot ${new Date().toISOString().slice(0, 16)}`, token }) })
+  if (!r.ok) throw new Error(`debug token create failed (${r.status})`)
   const body = await r.json()
-  return { token: body.token, name: body.name, auth }
+  return { token: body.token || token, name: body.name, auth }
 }
 async function deleteDebugToken(name, auth) {
   if (!name) return
