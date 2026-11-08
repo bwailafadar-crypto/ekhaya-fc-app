@@ -37,7 +37,8 @@ function AddVideo({ fixtures, onDone }: { fixtures: Fixture[]; onDone: () => voi
     try {
       const batch = writeBatch(db)
       const now = Date.now()
-      rows.slice(0, 50).forEach((row, index) => batch.set(doc(collection(db, 'videos')), { title: row.title.slice(0, 120), url: row.url.slice(0, 300), kind: String(form.get('kind')), ...(fixtureId ? { fixtureId } : {}), createdAt: index === 0 ? serverTimestamp() : Timestamp.fromMillis(now - index * 1000), by: user.uid }))
+      const team = String(form.get('team')) === 'women' ? 'women' : 'men'
+      rows.slice(0, 50).forEach((row, index) => batch.set(doc(collection(db, 'videos')), { title: row.title.slice(0, 120), url: row.url.slice(0, 300), kind: String(form.get('kind')), team, ...(fixtureId ? { fixtureId } : {}), createdAt: index === 0 ? serverTimestamp() : Timestamp.fromMillis(now - index * 1000), by: user.uid }))
       await batch.commit()
       showToast(rows.length === 1 ? 'Video added to Ekhaya TV.' : `${Math.min(rows.length, 50)} videos added to Ekhaya TV.`)
       onDone()
@@ -53,6 +54,7 @@ function AddVideo({ fixtures, onDone }: { fixtures: Fixture[]; onDone: () => voi
       <label className="admin-field"><span>Video links (one per line)</span><textarea name="urls" rows={4} inputMode="url" placeholder={'https://www.facebook.com/…/videos/… | Goal: Allen Chihana v Kamuzu Barracks\nhttps://fb.watch/…'} required /></label>
       <label className="admin-field"><span>Title (for links without their own)</span><input name="title" maxLength={120} placeholder="Highlights: Ekhaya FC 2–0 Kamuzu Barracks" /></label>
       <div className="admin-form-grid">
+        <label className="admin-field"><span>Team</span><select name="team" defaultValue="men"><option value="men">Men's</option><option value="women">Women's</option></select></label>
         <label className="admin-field"><span>Type</span><select name="kind" defaultValue="Highlights">{VIDEO_KINDS.map((kind) => <option key={kind}>{kind}</option>)}</select></label>
         <label className="admin-field"><span>Match (optional)</span><select name="fixtureId" defaultValue=""><option value="">Not about one match</option>{recent.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.home} v {fixture.away} · {formatMalawiDate(fixture.date)}</option>)}</select></label>
       </div>
@@ -113,11 +115,21 @@ export default function Tv() {
   const yt = useYoutubeConfig()
   const fixtures = useFirestoreCollection<Fixture>('fixtures', isAdmin)
   const [kind, setKind] = useState<VideoKind | 'All'>('All')
+  const [team, setTeam] = useState<'men' | 'women'>('men')
   const [playing, setPlaying] = useState<ClubVideo | null>(null)
   const [adding, setAdding] = useState(false)
   const open = useFlag('ekhayaTv')
-  const shown = kind === 'All' ? items : items.filter((video) => video.kind === kind)
-  const kinds = VIDEO_KINDS.filter((item) => items.some((video) => video.kind === item))
+  // Videos belong to the Men's or Women's team (older videos count as Men's).
+  const teamItems = items.filter((video) => (video.team ?? 'men') === team)
+  const shown = kind === 'All' ? teamItems : teamItems.filter((video) => video.kind === kind)
+  const kinds = VIDEO_KINDS.filter((item) => teamItems.some((video) => video.kind === item))
+  const pickTeam = (next: 'men' | 'women') => { setTeam(next); setKind('All') }
+
+  async function move(video: ClubVideo) {
+    const next = (video.team ?? 'men') === 'men' ? 'women' : 'men'
+    try { await setDoc(doc(db, 'videos', video.id), { team: next }, { merge: true }); showToast(`Moved to ${next === 'men' ? "Men's" : "Women's"}.`) }
+    catch { showToast('Could not move the video.', 'error') }
+  }
 
   async function remove(video: ClubVideo) {
     if (!window.confirm(`Remove "${video.title}" from Ekhaya TV?`)) return
@@ -149,10 +161,14 @@ export default function Tv() {
       <span className="tv-live-dot" aria-hidden="true" />LIVE NOW<b>{yt.live.title}</b><span className="tv-live-cta">Watch</span>
     </button>}
     {yt.channelId && <a className="tv-subscribe" href={`https://www.youtube.com/channel/${yt.channelId}?sub_confirmation=1`} target="_blank" rel="noopener noreferrer"><MonitorPlay size={18} aria-hidden="true" /> Subscribe to {yt.channelTitle || 'Ekhaya FC'} on YouTube</a>}
+    <div className="tv-teams" role="tablist" aria-label="Team">
+      <button type="button" role="tab" aria-selected={team === 'men'} className={team === 'men' ? 'active' : ''} onClick={() => pickTeam('men')}>Men's</button>
+      <button type="button" role="tab" aria-selected={team === 'women'} className={team === 'women' ? 'active' : ''} onClick={() => pickTeam('women')}>Women's</button>
+    </div>
     {kinds.length > 1 && <div className="tv-filter" role="group" aria-label="Video type">{(['All', ...kinds] as const).map((item) => <button key={item} type="button" className={kind === item ? 'active' : ''} onClick={() => setKind(item)}>{item}</button>)}</div>}
     {loading ? <div className="tv-grid"><Skeleton /><Skeleton /></div>
-      : shown.length ? <div className="tv-grid">{shown.map((video) => <VideoCard key={video.id} video={video} onPlay={() => setPlaying(video)} onDelete={isAdmin ? () => void remove(video) : undefined} />)}</div>
-      : <Card><EmptyState icon={Clapperboard} title="No videos yet" description={isAdmin ? 'Tap "Add video" and paste a YouTube or Facebook link.' : 'Match highlights and interviews will appear here.'} /></Card>}
+      : shown.length ? <div className="tv-grid">{shown.map((video) => <VideoCard key={video.id} video={video} onPlay={() => setPlaying(video)} onDelete={isAdmin ? () => void remove(video) : undefined} onMove={isAdmin ? () => void move(video) : undefined} />)}</div>
+      : <Card><EmptyState icon={Clapperboard} title={`No ${team === 'men' ? "Men's" : "Women's"} videos yet`} description={isAdmin ? `Tap "Add video", paste a link, and choose ${team === 'men' ? "Men's" : "Women's"}.` : 'Match highlights and interviews will appear here.'} /></Card>}
     {playing && <VideoPlayer url={playing.url} title={playing.title} onClose={() => setPlaying(null)} />}
   </>
 }

@@ -15,6 +15,10 @@ const say = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : t
 const UA = { 'user-agent': 'Mozilla/5.0 (EkhayaFC sync)', 'accept-language': 'en' }
 
 const decode = (s) => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+// Women's team videos usually say so in the title; everything else is Men's.
+function guessTeam(title) {
+  return /\b(women|woman|women'?s|ladies|ladys|girls|female|wfc)\b/i.test(title) ? 'women' : 'men'
+}
 function guessKind(title) {
   if (/\bgoals?\b|golo/i.test(title)) return 'Goals'
   if (/interview|press|speaks|coach|reaction|post.?match/i.test(title)) return 'Interview'
@@ -57,7 +61,7 @@ async function main() {
   let added = 0
   for (const e of entries) {
     if (have.has(e.id) || hidden.has(e.id)) continue
-    batch.set(db.collection('videos').doc(`yt-${e.id}`), { title: e.title.slice(0, 120), url: e.shorts ? `https://www.youtube.com/shorts/${e.id}` : `https://www.youtube.com/watch?v=${e.id}`, kind: guessKind(e.title), createdAt: e.published ? Timestamp.fromDate(new Date(e.published)) : FieldValue.serverTimestamp(), by: 'youtube', source: 'youtube' })
+    batch.set(db.collection('videos').doc(`yt-${e.id}`), { title: e.title.slice(0, 120), url: e.shorts ? `https://www.youtube.com/shorts/${e.id}` : `https://www.youtube.com/watch?v=${e.id}`, kind: guessKind(e.title), team: guessTeam(e.title), createdAt: e.published ? Timestamp.fromDate(new Date(e.published)) : FieldValue.serverTimestamp(), by: 'youtube', source: 'youtube' })
     added++
     say(`New: ${e.title}`)
   }

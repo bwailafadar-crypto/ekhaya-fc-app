@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { db } from '../firebase'
 import type { VideoKind } from '../utils/video'
 
-export type ClubVideo = { id: string; title: string; url: string; kind: VideoKind; fixtureId?: string; createdAt?: { toMillis?: () => number } }
+export type VideoTeam = 'men' | 'women'
+export type ClubVideo = { id: string; title: string; url: string; kind: VideoKind; team?: VideoTeam; fixtureId?: string; createdAt?: { toMillis?: () => number } }
 
 /** Club videos, newest first (small documents: a title and a link each). */
 export function useVideos() {

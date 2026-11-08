@@ -2976,3 +2976,8 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .news-paste-box { margin: 10px 0 14px; padding: 14px; border: 1px dashed var(--line, #d9d2c2); border-radius: 12px; background: var(--surface-2, #faf8f2); }
 .news-paste-box .admin-actions { margin-top: 10px; }
 .news-block-heading-input { width: 100%; padding: 10px 12px; border: 1px solid var(--line, #d9d2c2); border-radius: 10px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+
+/* Ekhaya TV: Men's / Women's team tabs */
+.tv-teams { display: flex; gap: 8px; margin: 4px 0 12px; }
+.tv-teams button { flex: 1; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line, #d9d2c2); background: var(--surface, #fff); font-size: 15px; font-weight: 700; color: var(--ink, #14110a); cursor: pointer; }
+.tv-teams button.active { background: var(--gold, #e8c55a); border-color: var(--gold, #e8c55a); color: #14110a; }
