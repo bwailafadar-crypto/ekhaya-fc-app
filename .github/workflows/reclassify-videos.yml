@@ -1,0 +1,27 @@
+name: Re-sort TV videos (men/women)
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [preview, apply]
+        default: preview
+jobs:
+  reclassify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env: { FIREBASE_SA: "${{ secrets.FIREBASE_SA }}" }
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Re-sort
+        run: node scripts/reclassify-videos.cjs ${{ inputs.mode == 'apply' && '--apply' || '' }}
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

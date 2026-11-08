@@ -15,9 +15,11 @@ const say = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : t
 const UA = { 'user-agent': 'Mozilla/5.0 (EkhayaFC sync)', 'accept-language': 'en' }
 
 const decode = (s) => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-// Women's team videos usually say so in the title; everything else is Men's.
+// Women's team videos say so in the title; everything else is Men's. The check
+// is deliberately loose (matches "wome", so WOMEN / WOMEN'S / the common typo
+// "WOME'S" all count), plus ladies / girls / queens / female / WFC.
 function guessTeam(title) {
-  return /\b(women|woman|women'?s|ladies|ladys|girls|female|wfc)\b/i.test(title) ? 'women' : 'men'
+  return /wome|lad(?:y|ies)|girls?|female|queens?|\bw\.?f\.?c\b/i.test(String(title)) ? 'women' : 'men'
 }
 function guessKind(title) {
   if (/\bgoals?\b|golo/i.test(title)) return 'Goals'
