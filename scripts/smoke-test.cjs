@@ -11,13 +11,27 @@ const get = (url) => new Promise((resolve, reject) => {
   (url.startsWith('http:') ? http : https).get(url, { family: 4, timeout: 20000, headers: { 'Cache-Control': 'no-cache' } }, (res) => {
     let body = ''
     res.on('data', (c) => { if (body.length < 400000) body += c })
-    res.on('end', () => resolve({ status: res.statusCode, body, type: res.headers['content-type'] || '' }))
+    res.on('end', () => resolve({ status: res.statusCode, body, type: res.headers['content-type'] || '', headers: res.headers }))
   }).on('error', reject).on('timeout', function () { this.destroy(new Error('timeout')) })
 })
+
+// The security headers the live site must send (configured in firebase.json).
+function checkHeaders(headers) {
+  const want = ['content-security-policy', 'strict-transport-security', 'x-frame-options', 'x-content-type-options', 'referrer-policy', 'permissions-policy']
+  const missing = want.filter((h) => !headers[h])
+  const note = want.map((h) => `${h.split('-')[0]}=${headers[h] ? 'yes' : 'NO'}`).join(' ')
+  if (process.env.GITHUB_ACTIONS) {
+    const critical = ['content-security-policy', 'strict-transport-security'].filter((h) => !headers[h])
+    console.log(`${critical.length ? '::warning::' : '::notice::'}Security headers — ${note}`)
+  }
+  console.log(`  security headers: ${note}`)
+  return missing
+}
 
 async function check() {
   const page = await get(BASE)
   if (page.status !== 200 || !page.body.includes('id="root"')) throw new Error(`page returned ${page.status}`)
+  checkHeaders(page.headers)
   const script = /src="\.?\/?(assets\/index-[^"]+\.js)"/.exec(page.body)?.[1]
   if (!script) throw new Error('main script missing from page')
   const js = await get(BASE + script)

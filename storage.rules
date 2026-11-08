@@ -1,0 +1,10 @@
+rules_version = '2';
+// The app does not use Firebase Storage. This rule keeps the bucket fully
+// locked so that, even if Storage is ever enabled, nobody can read or write it.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

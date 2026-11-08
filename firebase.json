@@ -131,5 +131,8 @@
         "*.log"
       ]
     }
-  ]
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  }
 }
