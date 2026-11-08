@@ -13,6 +13,32 @@ const keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(os.homed
 initializeApp({ credential: cert(JSON.parse(fs.readFileSync(keyFile, 'utf8'))) })
 const db = getFirestore(); const auth = getAuth()
 const BASE = (process.env.SITE || 'https://ekhaya-fc-app.web.app').replace(/\/$/, '')
+
+// App Check is enforced, so the robot mints a short-lived debug token, uses it,
+// and deletes it at the end. Nothing is stored. (APP_ID from firebase config.)
+const PROJECT = 'ekhaya-fc-app'
+const APP_ID = process.env.APPCHECK_APP_ID || '1:655956402643:web:509935744d655696964f26'
+async function gcpToken() {
+  const sa = JSON.parse(fs.readFileSync(keyFile, 'utf8'))
+  const now = Math.floor(Date.now() / 1000)
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
+  const unsigned = `${b64({ alg: 'RS256', typ: 'JWT' })}.${b64({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/cloud-platform', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 600 })}`
+  const sig = crypto.createSign('RSA-SHA256').update(unsigned).sign(sa.private_key, 'base64url')
+  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${unsigned}.${sig}` }) })
+  if (!r.ok) throw new Error(`gcp sign-in failed (${r.status})`)
+  return (await r.json()).access_token
+}
+async function makeDebugToken() {
+  const auth = `Bearer ${await gcpToken()}`
+  const r = await fetch(`https://firebaseappcheck.googleapis.com/v1/projects/${PROJECT}/apps/${APP_ID}/debugTokens`, { method: 'POST', headers: { authorization: auth, 'content-type': 'application/json' }, body: JSON.stringify({ displayName: `qa-robot ${new Date().toISOString().slice(0, 16)}` }) })
+  if (!r.ok) throw new Error(`debug token create failed (${r.status}): ${(await r.text()).slice(0, 160)}`)
+  const body = await r.json()
+  return { token: body.token, name: body.name, auth }
+}
+async function deleteDebugToken(name, auth) {
+  if (!name) return
+  await fetch(`https://firebaseappcheck.googleapis.com/v1/${name}`, { method: 'DELETE', headers: { authorization: auth } }).catch(() => undefined)
+}
 const OUT = path.resolve('site-check'); fs.mkdirSync(OUT, { recursive: true })
 const problems = []; const notes = []
 const say = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : t)
@@ -28,9 +54,12 @@ async function main() {
   // Profile dated in the past, so the superadmin does not get a "new fan joined" alert.
   const long = Timestamp.fromMillis(Date.parse('2020-01-01'))
   await db.collection('users').doc(uid).set({ role: 'fan', email, fullName: 'Ekhaya QA check (automatic)', phone: null, legacyFanDocId: null, legacyFanId: null, createdAt: long, updatedAt: long })
+  let debug = { token: null, name: null, auth: null }
+  try { debug = await makeDebugToken(); say('App Check debug token minted for this run') } catch (e) { notes.push(`App Check debug token unavailable: ${e.message.slice(0, 120)}`) }
   const browser = await chromium.launch()
   try {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36 EkhayaQA' })
+    if (debug.token) await ctx.addInitScript((t) => { self.FIREBASE_APPCHECK_DEBUG_TOKEN = t }, debug.token)
     await ctx.addInitScript(() => { try { localStorage.setItem('ekhaya-install-dismissed', '1') } catch {} ; document.addEventListener('securitypolicyviolation', (e) => console.error(`CSP blocked ${e.violatedDirective}: ${e.blockedURI}`)) })
     const page = await ctx.newPage()
     let where = 'start'
@@ -79,6 +108,7 @@ async function main() {
     else problems.push('/tv: no videos listed')
   } finally {
     await browser.close()
+    await deleteDebugToken(debug.name, debug.auth)
     // Remove the test fan and anything it created.
     for (const col of ['users', 'activity', 'fanCards', 'deletionRequests', 'referrals']) await db.collection(col).doc(uid).delete().catch(() => undefined)
     for (const col of ['clientErrors', 'pushTokens', 'shopOrders']) { const s = await db.collection(col).where('uid', '==', uid).get(); for (const d of s.docs) await d.ref.delete() }
