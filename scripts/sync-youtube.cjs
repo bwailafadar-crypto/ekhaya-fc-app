@@ -19,6 +19,32 @@ const grab = async (url) => { const r = await fetch(url, { headers: UA }); retur
 const feedUrl = (id) => `https://www.youtube.com/feeds/videos.xml?channel_id=${id}`
 const validFeed = (t) => typeof t === 'string' && t.includes('<feed') && /<yt:channelId>|<entry>/.test(t)
 
+// Fallback when the RSS feed is unavailable: read recent uploads from the
+// channel's own /videos page (ytInitialData), newest first.
+function parseChannelVideos(html) {
+  const title = decode((html.match(/<title>([^<]*)<\/title>/)?.[1] || '').replace(/\s*-\s*YouTube\s*$/, '').trim()) || ''
+  const videos = []
+  const seen = new Set()
+  const push = (id, text) => { if (id && text && !seen.has(id)) { seen.add(id); videos.push({ id, title: decode(String(text)).trim() }) } }
+  const json = html.match(/ytInitialData\s*=\s*(\{.+?\})\s*;\s*<\/script>/s)?.[1]
+  if (json) {
+    try {
+      const walk = (n) => {
+        if (!n || typeof n !== 'object') return
+        if (n.videoId && n.title) push(n.videoId, n.title.runs?.[0]?.text || n.title.simpleText)
+        for (const k in n) walk(n[k])
+      }
+      walk(JSON.parse(json))
+    } catch { /* fall through to regex */ }
+  }
+  if (!videos.length) {
+    const re = /"videoId":"([\w-]{11})"[\s\S]{0,400}?"(?:text|simpleText)":"([^"]{3,120})"/g
+    let m
+    while ((m = re.exec(html)) && videos.length < 30) push(m[1], m[2])
+  }
+  return { title, videos: videos.slice(0, 30) }
+}
+
 const decode = (s) => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
 // Women's team videos say so in the title; everything else is Men's. The check
 // is deliberately loose (matches "wome", so WOMEN / WOMEN'S / the common typo
@@ -59,20 +85,32 @@ async function main() {
     say(`Feed not valid for ${channelId} (http ${fr.status}); re-resolving ${cfg.channel}…`)
     try { const fresh = await resolveChannelId(cfg.channel); if (fresh) { channelId = fresh; fr = await grab(feedUrl(channelId)) } } catch (e) { say(`Re-resolve failed: ${e.message}`) }
   }
-  if (!validFeed(fr.text)) {
-    // Still bad: record the problem but keep the last good channel name and count.
-    await cfgRef.set({ error: `YouTube did not return the channel feed (http ${fr.status}). It will try again next hour.`, lastSync: FieldValue.serverTimestamp() }, { merge: true })
-    say(`Feed still unavailable (http ${fr.status}); kept previous videos and name.`)
-    return
+  let channelTitle
+  let entries
+  if (validFeed(fr.text)) {
+    const feed = fr.text
+    channelTitle = decode(feed.match(/<title>([^<]*)<\/title>/)?.[1] ?? '') || cfg.channelTitle || 'Ekhaya FC'
+    entries = [...feed.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map((m) => ({
+      id: m[1].match(/<yt:videoId>([\w-]{11})<\/yt:videoId>/)?.[1],
+      title: decode(m[1].match(/<title>([^<]*)<\/title>/)?.[1] ?? '').trim(),
+      published: m[1].match(/<published>([^<]+)<\/published>/)?.[1],
+      shorts: /\/shorts\//.test(m[1]),
+    })).filter((e) => e.id && e.title)
+  } else {
+    // RSS is 404 for this channel — read the channel page instead.
+    const page = await grab(`https://www.youtube.com/channel/${channelId}/videos`)
+    const scraped = parseChannelVideos(page.text)
+    if (!scraped.videos.length) {
+      await cfgRef.set({ error: `Could not read the channel right now (feed ${fr.status}, page ${page.status}). It will try again next hour.`, lastSync: FieldValue.serverTimestamp() }, { merge: true })
+      say(`Could not read the channel (feed ${fr.status}, page ${page.status}); kept previous videos and name.`)
+      return
+    }
+    channelTitle = scraped.title || cfg.channelTitle || 'Ekhaya FC'
+    // No upload dates on the page: keep the page order (newest first).
+    const t0 = Date.now()
+    entries = scraped.videos.map((v, i) => ({ id: v.id, title: v.title, published: new Date(t0 - i * 60000).toISOString(), shorts: false }))
+    say(`RSS unavailable — read ${entries.length} videos from the channel page.`)
   }
-  const feed = fr.text
-  const channelTitle = decode(feed.match(/<title>([^<]*)<\/title>/)?.[1] ?? '') || cfg.channelTitle || 'Ekhaya FC'
-  const entries = [...feed.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map((m) => ({
-    id: m[1].match(/<yt:videoId>([\w-]{11})<\/yt:videoId>/)?.[1],
-    title: decode(m[1].match(/<title>([^<]*)<\/title>/)?.[1] ?? '').trim(),
-    published: m[1].match(/<published>([^<]+)<\/published>/)?.[1],
-    shorts: /\/shorts\//.test(m[1]),
-  })).filter((e) => e.id && e.title)
 
   const hidden = new Set(Array.isArray(cfg.hidden) ? cfg.hidden : [])
   const existing = await db.collection('videos').get()
