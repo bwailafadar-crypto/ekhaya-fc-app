@@ -76,30 +76,6 @@
    "badge": "New",
    "featured": true,
    "order": 4
-  },
-  {
-   "id": "polo-shirt-2026",
-   "name": "Ekhaya Polo Shirt",
-   "category": "fanwear",
-   "group": null,
-   "personalisable": false,
-   "variants": null,
-   "price": 50000,
-   "sizes": [
-    "S",
-    "M",
-    "L",
-    "XL",
-    "XXL"
-   ],
-   "images": [
-    "./shop/polo-black.jpg",
-    "./shop/polo-white.jpg",
-    "./shop/polo-pair.jpg"
-   ],
-   "description": "Ekhaya FC branded polo shirt in black and white, with the club crest on the chest. Smart, casual club wear.",
-   "badge": "New",
-   "order": 5
   }
  ],
  "common": {
@@ -111,7 +87,7 @@
    "XL",
    "XXL"
   ],
-  "personalisable": true,
+  "personalisable": false,
   "active": true,
   "variants": [
    {

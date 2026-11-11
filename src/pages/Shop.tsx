@@ -3,7 +3,7 @@
 // player or your own name), wishlist, a cart and an order that goes to the
 // club on WhatsApp. /shop and /shop/:id
 import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore'
-import { ArrowLeft, Heart, Minus, Package, Plus, Ruler, ShoppingBag, Shirt, Truck, X } from 'lucide-react'
+import { ArrowLeft, Heart, Minus, Package, Plus, Ruler, Shirt, ShoppingBag, Truck, X } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -107,8 +107,6 @@ export default function Shop() {
       </Link>)}
 
     <div className="shop-perks">
-      <span><Shirt size={15} aria-hidden="true" /> Name & number printing</span>
-      <span><Truck size={15} aria-hidden="true" /> Free delivery from {mwk(settings.freeDeliveryFrom)}</span>
       <span><Package size={15} aria-hidden="true" /> Pick up at {settings.pickupPlace}</span>
     </div>
 
@@ -243,7 +241,7 @@ function ProductPage({ product, siblings, settings, onAdded }: { product: ShopPr
       </div>, document.body)}
       <ul className="shop-facts">
         <li><Package size={15} aria-hidden="true" /> Free pick up at {settings.pickupPlace}</li>
-        <li><Truck size={15} aria-hidden="true" /> Delivery {mwk(settings.deliveryPrice)}, free from {mwk(settings.freeDeliveryFrom)}</li>
+        <li><Truck size={15} aria-hidden="true" /> Delivery {mwk(settings.deliveryPrice)}</li>
       </ul>
     </div>
 
@@ -318,9 +316,8 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
   const lines = cart.filter((l) => products.some((p) => p.id === l.productId && !p.soldOut))
   const gone = cart.length - lines.length
   const subtotal = lines.reduce((n, l) => n + lineTotal(l), 0)
-  const fee = delivery === 'delivery' && subtotal < settings.freeDeliveryFrom ? settings.deliveryPrice : 0
+  const fee = delivery === 'delivery' ? settings.deliveryPrice : 0
   const total = subtotal + fee
-  const toFree = Math.max(0, settings.freeDeliveryFrom - subtotal)
   const pic = (productId: string) => products.find((p) => p.id === productId)
   const payNumber = method === 'airtel' ? settings.airtelNumber : method === 'mpamba' ? settings.mpambaNumber : ''
 
@@ -432,7 +429,6 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     : !lines.length ? <EmptyState icon={ShoppingBag} title="Your cart is empty" description={gone ? 'Items in your cart were sold out.' : 'Find a jersey, a scarf or a cap.'} action={<Button type="button" onClick={() => { onClose(); navigate('/shop') }}>Go shopping</Button>} />
 
     : step === 'cart' ? <>
-      {toFree > 0 ? <div className="shop-free"><span>Add {mwk(toFree)} more for free delivery</span><i style={{ width: `${Math.min(100, (subtotal / settings.freeDeliveryFrom) * 100)}%` }} /></div> : <div className="shop-free done"><span>✓ Free delivery</span><i style={{ width: '100%' }} /></div>}
       <ul className="shop-lines">{lines.map((l) => { const p = pic(l.productId); return <li key={l.key}>
         <div className="shop-line-pic">{p ? <ProductPicture product={p} /> : <ShirtArt colour={l.colour} />}</div>
         <div className="shop-line-info"><strong>{l.name}</strong><small>{[l.variant, l.size, l.printName || l.printNumber ? `Print: ${l.printName ?? ''} ${l.printNumber ?? ''}`.trim() : ''].filter(Boolean).join(' · ')}</small>
