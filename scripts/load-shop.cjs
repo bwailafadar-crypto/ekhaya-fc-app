@@ -32,7 +32,8 @@ async function main() {
     const before = existing.find((d) => d.id === id)
     if (!before) doc.createdAt = FieldValue.serverTimestamp()
     batch.set(db.collection('shopProducts').doc(id), doc, { merge: true })
-    say(`${before ? 'Update' : 'Add'} ${p.name}: ${data.common.variants.map((v) => `${v.label} MK ${v.price}`).join(' / ')}, sizes ${data.common.sizes.join(' ')}, ${p.images.length} photos`)
+    const priceLabel = Array.isArray(doc.variants) && doc.variants.length ? doc.variants.map((v) => `${v.label} MK ${v.price}`).join(' / ') : `MK ${doc.price}`
+    say(`${before ? 'Update' : 'Add'} ${p.name}: ${priceLabel}, sizes ${(doc.sizes || []).join(' ')}, ${p.images.length} photos`)
   }
   for (const d of existing) {
     const p = d.data()
