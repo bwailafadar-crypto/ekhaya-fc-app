@@ -34,7 +34,9 @@ export default function NewHome() {
   const standings = useFirestoreCollection<Standing>('standings')
   const membershipOpen = useFlag('membershipPayments')
   const scorersOpen = useFlag('topScorers')
-  const shopOpen = useFlag('clubShop')
+  // Staff see the Shop link even while it's "coming soon" to fans, so they can
+  // keep setting it up.
+  const shopOpen = useFlag('clubShop') || profile?.role === 'admin' || profile?.role === 'superadmin'
   const tvOpen = useFlag('ekhayaTv')
   const newsResult = usePublishedNews()
   const [now, setNow] = useState(() => Date.now())
