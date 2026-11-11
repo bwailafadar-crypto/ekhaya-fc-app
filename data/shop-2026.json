@@ -1,38 +1,129 @@
 {
-  "settings": {
-    "whatsapp": "0892308718",
-    "bannerTitle": "Ekhaya Jerseys 2026",
-    "bannerText": "All colours. All sizes. All yours. Player version MK 75,000 · Fan version MK 50,000.",
-    "bannerImage": "./shop/jerseys-2026-banner.jpg"
+ "settings": {
+  "whatsapp": "0892308718",
+  "bannerTitle": "Ekhaya Jerseys 2026",
+  "bannerText": "All colours. All sizes. All yours. Player version MK 75,000 · Fan version MK 50,000.",
+  "bannerImage": "./shop/jerseys-2026-banner.jpg"
+ },
+ "products": [
+  {
+   "id": "jersey-2026-gold",
+   "name": "Gold Jersey 2026",
+   "category": "kits",
+   "colour": "home",
+   "swatch": "#C99A2E",
+   "images": [
+    "./shop/jersey-gold-flat.jpg",
+    "./shop/jersey-gold-model.jpg",
+    "./shop/jersey-gold-lifestyle.jpg"
+   ],
+   "description": "The official Ekhaya FC 2026 jersey in gold, with the club crest and Stevensons Paints on the front.",
+   "badge": "New",
+   "featured": true,
+   "order": 1
   },
-  "products": [
-    {
-      "id": "jersey-2026-gold", "name": "Gold Jersey 2026", "category": "kits", "colour": "home", "swatch": "#C99A2E",
-      "images": ["./shop/jersey-gold-flat.jpg", "./shop/jersey-gold-model.jpg"],
-      "description": "The official Ekhaya FC 2026 jersey in gold, with the club crest and Stevensons Paints on the front.",
-      "badge": "New", "featured": true, "order": 1
-    },
-    {
-      "id": "jersey-2026-white", "name": "White Jersey 2026", "category": "kits", "colour": "third", "swatch": "#F4F2EC",
-      "images": ["./shop/jersey-white-flat.jpg", "./shop/jersey-white-model.jpg", "./shop/jersey-white-goal.jpg"],
-      "description": "The official Ekhaya FC 2026 jersey in white with gold collar and cuffs, the club crest and Stevensons Paints on the front.",
-      "badge": "New", "featured": false, "order": 2
-    },
-    {
-      "id": "jersey-2026-purple", "name": "Purple Jersey 2026", "category": "kits", "colour": "purple", "swatch": "#5B21B6",
-      "images": ["./shop/jersey-purple-flat.jpg", "./shop/jersey-purple-stadium.jpg"],
-      "description": "The official Ekhaya FC 2026 jersey in purple, with the club crest and Stevensons Paints on the front.",
-      "badge": "New", "featured": false, "order": 3
-    }
-  ],
-  "common": {
-    "group": "jersey-2026",
-    "sizes": ["S", "M", "L", "XL", "XXL"],
-    "personalisable": true,
-    "active": true,
-    "variants": [
-      { "label": "Fan version", "price": 50000, "note": "Supporters' jersey, same design" },
-      { "label": "Player version", "price": 75000, "note": "The version the players wear" }
-    ]
+  {
+   "id": "jersey-2026-white",
+   "name": "White Jersey 2026",
+   "category": "kits",
+   "colour": "third",
+   "swatch": "#F4F2EC",
+   "images": [
+    "./shop/jersey-white-flat.jpg",
+    "./shop/jersey-white-model.jpg",
+    "./shop/jersey-white-goal.jpg",
+    "./shop/jersey-white-lifestyle.jpg"
+   ],
+   "description": "The official Ekhaya FC 2026 jersey in white with gold collar and cuffs, the club crest and Stevensons Paints on the front.",
+   "badge": "New",
+   "featured": false,
+   "order": 2
+  },
+  {
+   "id": "jersey-2026-purple",
+   "name": "Purple Jersey 2026",
+   "category": "kits",
+   "colour": "purple",
+   "swatch": "#5B21B6",
+   "images": [
+    "./shop/jersey-purple-flat.jpg",
+    "./shop/jersey-purple-stadium.jpg"
+   ],
+   "description": "The official Ekhaya FC 2026 jersey in purple, with the club crest and Stevensons Paints on the front.",
+   "badge": "New",
+   "featured": false,
+   "order": 3
+  },
+  {
+   "id": "tracksuit-2026",
+   "name": "Ekhaya Tracksuit",
+   "category": "training",
+   "group": null,
+   "personalisable": false,
+   "variants": null,
+   "price": 300000,
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "images": [
+    "./shop/tracksuit-model.jpg"
+   ],
+   "description": "The official Ekhaya FC tracksuit — jacket and bottoms in black with gold trim and the club crest. Warm up in style.",
+   "badge": "New",
+   "featured": true,
+   "order": 4
+  },
+  {
+   "id": "polo-shirt-2026",
+   "name": "Ekhaya Polo Shirt",
+   "category": "fanwear",
+   "group": null,
+   "personalisable": false,
+   "variants": null,
+   "price": 50000,
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "images": [
+    "./shop/polo-black.jpg",
+    "./shop/polo-white.jpg",
+    "./shop/polo-pair.jpg"
+   ],
+   "description": "Ekhaya FC branded polo shirt in black and white, with the club crest on the chest. Smart, casual club wear.",
+   "badge": "New",
+   "order": 5
   }
+ ],
+ "common": {
+  "group": "jersey-2026",
+  "sizes": [
+   "S",
+   "M",
+   "L",
+   "XL",
+   "XXL"
+  ],
+  "personalisable": true,
+  "active": true,
+  "variants": [
+   {
+    "label": "Fan version",
+    "price": 50000,
+    "note": "Supporters' jersey, same design"
+   },
+   {
+    "label": "Player version",
+    "price": 75000,
+    "note": "The version the players wear"
+   }
+  ]
+ }
 }

@@ -24,7 +24,11 @@ async function main() {
   const batch = db.batch()
   for (const p of data.products) {
     const { id, ...rest } = p
-    const doc = { ...data.common, ...rest, price: Math.min(...data.common.variants.map((v) => v.price)), soldOut: false, updatedAt: FieldValue.serverTimestamp() }
+    const doc = { ...data.common, ...rest, soldOut: false, updatedAt: FieldValue.serverTimestamp() }
+    // Price: the product's own price, else the cheapest of its versions.
+    doc.price = rest.price != null
+      ? rest.price
+      : (Array.isArray(doc.variants) && doc.variants.length ? Math.min(...doc.variants.map((v) => v.price)) : 0)
     const before = existing.find((d) => d.id === id)
     if (!before) doc.createdAt = FieldValue.serverTimestamp()
     batch.set(db.collection('shopProducts').doc(id), doc, { merge: true })
