@@ -6,9 +6,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - name: Inspect the Netlify pay site
-        env: { TOKEN: "${{ secrets.NETLIFY_AUTH_TOKEN }}" }
-        run: node scripts/diag-netlify.cjs
+      - name: Read the 401 page + headers
+        run: |
+          echo "== function path =="
+          hdr=$(curl -sS -D - -o /tmp/b "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" --max-time 25 | grep -iE "^HTTP|^server:|^www-authenticate:|^x-nf|^content-type:" | tr '\n' ' ~ ')
+          echo "::notice::FN HEADERS: $hdr"
+          echo "::notice::FN BODY: $(tr -d '\n' < /tmp/b | sed 's/  */ /g' | head -c 400)"
+          echo "== root path =="
+          curl -sS -o /tmp/r -w 'root status %{http_code}\n' "https://ekhaya-pay.netlify.app/" --max-time 25
+          echo "::notice::ROOT BODY: $(tr -d '\n' < /tmp/r | sed 's/  */ /g' | head -c 400)"
