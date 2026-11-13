@@ -445,7 +445,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
       <strong className="shop-sub">How do you want to get it?</strong>
       <div className="shop-print-tabs" role="radiogroup" aria-label="Delivery">
         <button type="button" role="radio" aria-checked={delivery === 'pickup'} className={delivery === 'pickup' ? 'active' : ''} onClick={() => setDelivery('pickup')}>Pick up · free</button>
-        <button type="button" role="radio" aria-checked={delivery === 'delivery'} className={delivery === 'delivery' ? 'active' : ''} onClick={() => setDelivery('delivery')}>Delivery · {subtotal >= settings.freeDeliveryFrom ? 'free' : mwk(settings.deliveryPrice)}</button>
+        <button type="button" role="radio" aria-checked={delivery === 'delivery'} className={delivery === 'delivery' ? 'active' : ''} onClick={() => setDelivery('delivery')}>Delivery · {mwk(settings.deliveryPrice)}</button>
       </div>
       {delivery === 'pickup' ? <p className="live-help">Pick up at {settings.pickupPlace}. The club tells you when it's ready.</p>
         : <label className="admin-field"><span>Deliver to (town, area, landmark)</span><textarea rows={2} value={address} maxLength={200} onChange={(e) => setAddress(e.target.value)} placeholder="Blantyre, Chilomoni, near the market" /></label>}
