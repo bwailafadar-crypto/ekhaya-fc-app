@@ -1,0 +1,31 @@
+name: Set player injuries
+on:
+  workflow_dispatch:
+    inputs:
+      names:
+        description: 'Name=in/out, separated by ; e.g. Kumwembe=in; Chizinga=out'
+        required: true
+      mode:
+        type: choice
+        options: [preview, apply]
+        default: preview
+jobs:
+  injury:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env: { FIREBASE_SA: "${{ secrets.FIREBASE_SA }}" }
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Set injuries
+        env: { NAMES: "${{ inputs.names }}" }
+        run: node scripts/set-injury.cjs ${{ inputs.mode == 'apply' && '--apply' || '' }}
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

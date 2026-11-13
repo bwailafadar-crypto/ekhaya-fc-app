@@ -194,6 +194,7 @@ export interface Player {
   preferredFoot: 'Left' | 'Right' | 'Both' | null
   heightCm: number | null
   photoDataUrl: string | null
+  injured?: boolean
   stats: PlayerStats
 }
 

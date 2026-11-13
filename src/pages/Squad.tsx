@@ -32,7 +32,7 @@ export default function Squad() {
           {group.map((player) => <Link className="player-row" key={player.id} to={`/squad/${player.id}`}>
             <span className="player-number">{player.number ?? '—'}</span>
             <PlayerAvatar player={player} />
-            <span className="player-row-copy"><strong>{player.name}</strong><small>{player.nationality || 'Malawian'}</small></span>
+            <span className="player-row-copy"><strong>{player.name}{player.injured && <em className="player-injured">Injured</em>}</strong><small>{player.nationality || 'Malawian'}</small></span>
             <ChevronRight size={17} aria-hidden="true" />
           </Link>)}
         </div>

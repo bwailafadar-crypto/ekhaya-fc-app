@@ -115,7 +115,7 @@ export default function PlayerDetailPage() {
         <PlayerAvatar player={player} large />
         <div className="player-profile-heading">
           <span className="page-eyebrow">{position ?? 'Squad'}{player.number == null ? '' : ` · #${player.number}`}</span>
-          <h1>{player.name}</h1>
+          <h1>{player.name}{player.injured && <span className="player-injured-badge">Injured</span>}</h1>
           <p>Ekhaya FC{age != null ? ` · ${age} years` : ''}{player.nationality ? ` · ${player.nationality}` : ''}</p>
           <FollowButton key={player.id} player={player} />
         </div>
