@@ -95,7 +95,8 @@ export async function startShopPayment(uid: string, email: string, orderId: stri
   const result = await response.json().catch(() => ({})) as { status?: unknown; message?: unknown; data?: { charge_id?: unknown } | null }
   const chargeId = result.data?.charge_id != null ? String(result.data.charge_id) : ''
   if (!response.ok || String(result.status ?? '').toLowerCase() !== 'success' || !chargeId) {
-    await payRef.update({ status: 'failed', failureReason: String(result.message ?? 'not started').slice(0, 200), updatedAt: FieldValue.serverTimestamp() })
+    const reason = typeof result.message === 'string' ? result.message : JSON.stringify(result.message ?? 'not started')
+    await payRef.update({ status: 'failed', failureReason: reason.slice(0, 300), updatedAt: FieldValue.serverTimestamp() })
     throw new Error('Could not send the PIN request. Check the number and try again.')
   }
   await payRef.update({ chargeId, updatedAt: FieldValue.serverTimestamp() })
