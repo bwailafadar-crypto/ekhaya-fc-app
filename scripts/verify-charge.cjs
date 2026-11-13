@@ -11,10 +11,8 @@ const API = 'https://api.paychangu.com'
 const h = { authorization: `Bearer ${process.env.PAYCHANGU_SECRET_KEY}`, accept: 'application/json' }
 
 ;(async () => {
-  const email = (process.env.EMAIL || '').trim().toLowerCase()
-  const uid = (await getAuth().getUserByEmail(email)).uid
   const db = getFirestore()
-  const snap = await db.collection('shopPayments').where('uid', '==', uid).orderBy('createdAt', 'desc').limit(1).get()
+  const snap = await db.collection('shopPayments').orderBy('createdAt', 'desc').limit(1).get()
   if (snap.empty) { note('no payments'); return }
   const d = snap.docs[0]; const p = d.data()
   note(`latest payment ${d.id.slice(0, 14)} status=${p.status} chargeId=${p.chargeId}`)
