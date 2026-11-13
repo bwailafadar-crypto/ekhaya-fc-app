@@ -26,4 +26,12 @@ async function tryGet(path) {
     }
   }
   note(`HARDCODED in app: airtel=${HARDCODED.airtel} mpamba=${HARDCODED.mpamba}`)
-})().catch((e) => { console.log('::error::' + e.message); process.exit(1) })
+
+  // Controlled charge test to PayChangu's own documented example number, to see
+  // the real response the app would get (reveals account-level problems like
+  // "collections not enabled" that don't depend on a specific subscriber).
+  const chargeId = 'ekhaya-diag-' + Date.now().toString(36)
+  const payload = { mobile_money_operator_ref_id: HARDCODED.airtel, mobile: '0990000000', amount: '100', charge_id: chargeId, email: 'diag@ekhayafc.app', first_name: 'Diag', last_name: 'Test' }
+  const r = await fetch(API + '/mobile-money/payments/initialize', { method: 'POST', headers: h, body: JSON.stringify(payload) })
+  const body = await r.text()
+  note(`INITIALIZE(amount=100, airtel) -> ${r.status} ${body.slice(0, 400)}`)
