@@ -370,7 +370,9 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     if (!id) return
     setPin({ state: 'starting' })
     try {
-      const token = await user.getIdToken()
+      // Force-refresh so the token reflects the latest email-verified status
+      // (a cached token from before verification would wrongly block payment).
+      const token = await user.getIdToken(true)
       const response = await fetch(payUrl(settings, 'start'), { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ orderId: id, method, phone: payFrom }) })
       const result = await response.json().catch(() => ({})) as { txRef?: string; error?: string }
       if (!response.ok || !result.txRef) throw new Error(result.error || 'Could not send the PIN request.')
