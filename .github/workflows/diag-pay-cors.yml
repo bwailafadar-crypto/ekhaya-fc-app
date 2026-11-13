@@ -6,9 +6,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - name: Inspect access protection fields
-        env: { TOKEN: "${{ secrets.NETLIFY_AUTH_TOKEN }}" }
-        run: node scripts/diag-netlify.cjs
+      - name: Confirm CORS headers present
+        run: |
+          echo "== OPTIONS =="
+          curl -sS -D - -o /dev/null -X OPTIONS "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
+            -H "Origin: https://ekhaya-fc-app.web.app" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: authorization, content-type" --max-time 25 > /tmp/o
+          acao=$(grep -i "access-control-allow-origin" /tmp/o | tr -d '\r')
+          acam=$(grep -i "access-control-allow-methods" /tmp/o | tr -d '\r')
+          code=$(grep -iE "^HTTP" /tmp/o | tr -d '\r')
+          echo "::notice::OPTIONS $code | ${acao:-NO-ACAO} | ${acam:-NO-METHODS}"
+          echo "== POST no-auth =="
+          curl -sS -D - -o /tmp/p2 -X POST "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
+            -H "Origin: https://ekhaya-fc-app.web.app" -H "content-type: application/json" -d '{}' --max-time 25 > /tmp/ph
+          pacao=$(grep -i "access-control-allow-origin" /tmp/ph | tr -d '\r')
+          pcode=$(grep -iE "^HTTP" /tmp/ph | tr -d '\r')
+          echo "::notice::POST $pcode | ${pacao:-NO-ACAO} | body=$(head -c 120 /tmp/p2 | tr -d '\n')"
