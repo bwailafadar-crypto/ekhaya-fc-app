@@ -89,7 +89,8 @@ export async function startShopPayment(uid: string, email: string, orderId: stri
   const response = await fetch(`${PAYCHANGU_API}/mobile-money/payments/initialize`, {
     method: 'POST',
     headers: providerHeaders(),
-    body: JSON.stringify({ mobile: phone, mobile_money_operator_ref_id: OPERATOR[method], amount: String(amount), charge_id: txRef, email, first_name: names[0], last_name: names.slice(1).join(' ') || names[0] }),
+    // PayChangu requires the local 0-format (0XXXXXXXXX), not the +265 E.164 form.
+    body: JSON.stringify({ mobile: phone.replace('+265', '0'), mobile_money_operator_ref_id: OPERATOR[method], amount: String(amount), charge_id: txRef, email, first_name: names[0], last_name: names.slice(1).join(' ') || names[0] }),
   })
   const result = await response.json().catch(() => ({})) as { status?: unknown; message?: unknown; data?: { charge_id?: unknown } | null }
   const chargeId = result.data?.charge_id != null ? String(result.data.charge_id) : ''
