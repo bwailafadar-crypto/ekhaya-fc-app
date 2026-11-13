@@ -16,6 +16,11 @@ async function call(method, path, body) {
   const site = sites.find((s) => ['ekhaya-pay', 'ekhaya-fc-pay', 'ekhayafc-pay'].includes(s.name))
   if (!site) throw new Error('Pay site not found')
   note(`Before: sso_login=${site.sso_login} context=${site.sso_login_context}`)
-  const updated = await call('PATCH', `/sites/${site.id}`, { sso_login: false, sso_login_context: 'none' })
-  note(`After:  sso_login=${updated.sso_login} context=${updated.sso_login_context}`)
+  let updated
+  for (const body of [{ sso_login: false }, { sso_login_context: 'deploy_previews' }, { sso_login_context: 'branch_deploys' }]) {
+    try { updated = await call('PATCH', `/sites/${site.id}`, body); note(`PATCH ${JSON.stringify(body)} OK -> sso_login=${updated.sso_login} context=${updated.sso_login_context}`); break }
+    catch (e) { note(`PATCH ${JSON.stringify(body)} failed: ${e.message.slice(0, 120)}`) }
+  }
+  const after = (await call('GET', `/sites/${site.id}`))
+  note(`After: sso_login=${after.sso_login} context=${after.sso_login_context}`)
 })().catch((e) => { console.log('::error::' + e.message); process.exit(1) })
