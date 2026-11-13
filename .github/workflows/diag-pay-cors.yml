@@ -1,0 +1,21 @@
+name: Diagnose payment CORS
+on:
+  workflow_dispatch:
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Preflight (OPTIONS) from the app origin
+        run: |
+          echo "---- OPTIONS preflight ----"
+          curl -sS -i -X OPTIONS "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
+            -H "Origin: https://ekhaya-fc-app.web.app" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: authorization, content-type" \
+            --max-time 25 | grep -iE "^HTTP|access-control|vary" || true
+          echo "---- POST without auth (expect 401 + CORS) ----"
+          curl -sS -i -X POST "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
+            -H "Origin: https://ekhaya-fc-app.web.app" \
+            -H "content-type: application/json" \
+            -d '{}' --max-time 25 | grep -iE "^HTTP|access-control|error" || true
