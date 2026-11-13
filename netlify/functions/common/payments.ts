@@ -36,7 +36,7 @@ export async function verifyUser(event: HandlerEvent) {
   const decoded = await getAuth(firebaseApp()).verifyIdToken(authorization.slice(7)).catch(() => {
     throw new Error('Authentication required.')
   })
-  if (!decoded.email || !decoded.email_verified) throw new Error('A verified account email is required.')
+  if (!decoded.email || !decoded.email_verified) throw new Error(`A verified account email is required. [diag verified=${decoded.email_verified} email=${decoded.email ? 'set' : 'none'} provider=${(decoded.firebase && decoded.firebase.sign_in_provider) || '?'} aud=${decoded.aud} iat=${decoded.iat}]`)
   return { uid: decoded.uid, email: decoded.email }
 }
 

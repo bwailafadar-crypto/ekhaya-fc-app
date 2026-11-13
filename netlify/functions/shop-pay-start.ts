@@ -18,7 +18,7 @@ export const handler: Handler = async (event) => {
     return cors(event, jsonResponse(200, { txRef }))
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not start the payment.'
-    const code = message === 'Authentication required.' ? 401 : message === 'A verified account email is required.' ? 403 : message.includes('configured') ? 503 : 400
-    return cors(event, jsonResponse(code, { error: code === 503 ? 'Mobile money payments are not switched on yet.' : code === 403 ? 'Confirm your email first (open the link we sent you), then try again.' : message }))
+    const code = message === 'Authentication required.' ? 401 : message.startsWith('A verified account email is required.') ? 403 : message.includes('configured') ? 503 : 400
+    return cors(event, jsonResponse(code, { error: code === 503 ? 'Mobile money payments are not switched on yet.' : message }))
   }
 }
