@@ -1,0 +1,14 @@
+name: Diagnose PayChangu
+on:
+  workflow_dispatch:
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Check PayChangu key and operators
+        env: { PAYCHANGU_SECRET_KEY: "${{ secrets.PAYCHANGU_SECRET_KEY }}" }
+        run: node scripts/diag-paychangu.cjs
