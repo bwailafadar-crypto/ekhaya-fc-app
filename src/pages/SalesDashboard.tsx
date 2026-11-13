@@ -45,6 +45,8 @@ export default function SalesDashboard() {
   const paid = live.filter((o) => PAID.includes(o.status))
   const waiting = live.filter((o) => WAITING.includes(o.status))
   const money = paid.reduce((n, o) => n + o.total, 0)
+  const fees = paid.reduce((n, o) => n + (Number((o.payment as { fee?: number } | undefined)?.fee) || 0), 0)
+  const charged = money + fees
   const owed = waiting.reduce((n, o) => n + o.total, 0)
   const sold = live.reduce((n, o) => n + units(o), 0)
   const today = (orders ?? []).filter((o) => o.status !== 'cancelled' && dayKey(when(o)) === dayKey(now))
@@ -100,7 +102,8 @@ export default function SalesDashboard() {
 
     {orders === null ? <p className="page-loading">Loading sales…</p> : !orders.length ? <Card><EmptyState icon={ShoppingBag} title="No orders yet" description="When a fan buys a jersey it shows here straight away, with a sound." /></Card> : <>
       <div className="sd-kpis">
-        <div className="sd-kpi hero"><small>Money received</small><b>{mwk(money)}</b><span>{paid.length} paid order{paid.length === 1 ? '' : 's'}</span></div>
+        <div className="sd-kpi hero"><small>Money received</small><b>{mwk(money)}</b><span title={`Customers paid ${mwk(charged)} on PayChangu, including ${mwk(fees)} in fees`}>{paid.length} paid · {mwk(charged)} on PayChangu</span></div>
+        <div className="sd-kpi"><small>PayChangu fees</small><b>{mwk(fees)}</b><span>charged {mwk(charged)}</span></div>
         <div className="sd-kpi"><small>Waiting for payment</small><b>{mwk(owed)}</b><span>{waiting.length} order{waiting.length === 1 ? '' : 's'}</span></div>
         <div className="sd-kpi"><small>Items sold</small><b>{sold}</b><span>{live.length} order{live.length === 1 ? '' : 's'}</span></div>
         <div className="sd-kpi"><small>Today</small><b>{today.length}</b><span>{mwk(today.reduce((n, o) => n + o.total, 0))}</span></div>

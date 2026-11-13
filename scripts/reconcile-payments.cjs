@@ -18,7 +18,10 @@ const h = { authorization: `Bearer ${process.env.PAYCHANGU_SECRET_KEY}`, accept:
   let checked = 0; let paid = 0
   for (const d of snap.docs) {
     const p = d.data()
-    if (p.status === 'paid' || !p.chargeId) continue
+    // Process payments that aren't paid yet, plus already-paid ones that are
+    // missing the fee breakdown (one-time backfill, then skipped forever).
+    const needsBackfill = p.status === 'paid' && p.charged == null
+    if ((p.status === 'paid' && !needsBackfill) || p.status === 'failed' || !p.chargeId) continue
     checked++
     const r = await fetch(`${API}/mobile-money/payments/${encodeURIComponent(String(p.chargeId))}/verify`, { headers: h })
     const j = await r.json().catch(() => ({}))
@@ -30,14 +33,15 @@ const h = { authorization: `Bearer ${process.env.PAYCHANGU_SECRET_KEY}`, accept:
     // PayChangu adds its fee on top, so the verified amount is owed + fee.
     if (!(amount >= owed && amount <= owed * 1.1 + 5)) { note(`${d.id.slice(0, 12)} amount off (${amount} vs owed ${owed}) -> review`); await d.ref.update({ status: 'review', updatedAt: FieldValue.serverTimestamp() }); continue }
     const tx = String(details.trans_id ?? details.ref_id ?? details.reference ?? p.chargeId).slice(0, 40)
-    await d.ref.update({ status: 'paid', updatedAt: FieldValue.serverTimestamp() })
+    const fee = Math.max(0, Math.round((amount - owed) * 100) / 100)
+    await d.ref.update({ status: 'paid', charged: amount, fee, updatedAt: FieldValue.serverTimestamp() })
     if (p.orderId) {
       const orderRef = db.collection('shopOrders').doc(String(p.orderId))
       const o = await orderRef.get()
-      if (o.exists) await orderRef.update({ status: 'paid', payment: { ...(o.data()?.payment ?? {}), method: p.method, provider: 'paychangu', txRef: p.chargeId, status: 'paid', txId: tx }, paidAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
+      if (o.exists) await orderRef.update({ status: 'paid', payment: { ...(o.data()?.payment ?? {}), method: p.method, provider: 'paychangu', txRef: p.chargeId, status: 'paid', txId: tx, charged: amount, fee }, paidAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
     }
     paid++
-    note(`${d.id.slice(0, 12)} -> PAID (MK ${amount})`)
+    note(`${d.id.slice(0, 12)} -> ${needsBackfill ? 'BACKFILLED' : 'PAID'} (MK ${amount}, fee ${fee})`)
   }
   note(`Reconcile done: ${checked} checked, ${paid} marked paid.`)
 })().catch((e) => { console.log('::error::' + e.message); process.exit(1) })

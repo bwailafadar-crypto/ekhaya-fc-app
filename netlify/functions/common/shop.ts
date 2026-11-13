@@ -146,12 +146,13 @@ export async function checkShopPayment(txRef: string, expectedUid?: string) {
     return { status: 'review' }
   }
   const tx = String(data.trans_id ?? data.ref_id ?? data.reference ?? pay.chargeId).slice(0, 40)
+  const fee = Math.max(0, Math.round((amount - owed) * 100) / 100) // PayChangu's fee: what the customer paid minus the order total
   await firestore.runTransaction(async (t) => {
     const orderRef = firestore.collection('shopOrders').doc(String(pay.orderId))
     const order = await t.get(orderRef)
-    t.update(payRef, { status: 'paid', transId: tx, paidAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
+    t.update(payRef, { status: 'paid', transId: tx, charged: amount, fee, paidAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
     if (order.exists && ['new', 'confirmed'].includes(String(order.data()?.status))) {
-      t.update(orderRef, { status: 'paid', payment: { ...(order.data()?.payment ?? {}), method: pay.method, provider: 'paychangu', txRef, status: 'paid', txId: tx }, paidAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
+      t.update(orderRef, { status: 'paid', payment: { ...(order.data()?.payment ?? {}), method: pay.method, provider: 'paychangu', txRef, status: 'paid', txId: tx, charged: amount, fee }, paidAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() })
     }
   })
   return { status: 'paid' }
