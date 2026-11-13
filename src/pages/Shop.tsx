@@ -478,7 +478,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
             <p>{pin.state === 'starting' ? 'One moment.' : <>{method === 'airtel' ? 'An' : 'A'} {PAY_LABEL[method]} message is on <b>{payFrom}</b>. Enter your PIN to pay <b>{mwk(total)}</b> to Ekhaya FC.</>}</p>
             <small className="live-help">Keep this screen open. It changes by itself when the money arrives.</small>
           </div> : <>
-            {pinTest && <p className="shop-pinfail">TEST MODE · only admins see this. No real money moves.</p>}
+            {pinTest && <p className="shop-pinfail">STAFF PREVIEW · only admins see this. Live key — real money moves.</p>}
             <p>Pay <b>{mwk(total)}</b> straight from your {PAY_LABEL[method]}. You'll get a message on your phone to enter your PIN.</p>
             <label className="admin-field"><span>{PAY_LABEL[method]} number to pay from</span><input value={payFrom} inputMode="tel" autoComplete="tel" maxLength={20} onChange={(e) => setPayFrom(e.target.value)} placeholder={method === 'airtel' ? '099… / 098…' : '088…'} /></label>
             {pin.state === 'failed' && <p className="shop-pinfail">{pin.message}</p>}
