@@ -41,16 +41,24 @@ async function writeDoc(store, name, payload, label) {
   console.log(`${label}: ${Math.round(bytes / 1024)} KB (${Math.round((bytes / 1048576) * 100)}% of the limit).`)
 }
 
+// Read the live collections and build the two fan payloads. Shared by the
+// Firestore publisher below and by scripts/bake-snapshot.cjs (static files).
+async function collect(store) {
+  const [fixtures, standings, teams] = await Promise.all(['fixtures', 'standings', 'teams'].map((name) => store.collection(name).get()))
+  return {
+    snapshot: { fixtures: clean(fixtures.docs, PRIVATE_FIXTURE_FIELDS), standings: clean(standings.docs) },
+    teams: { teams: clean(teams.docs) },
+  }
+}
+
 async function publishSnapshot() {
   const store = db()
-  const [fixtures, standings, teams] = await Promise.all(['fixtures', 'standings', 'teams'].map((name) => store.collection(name).get()))
-  const match = { fixtures: clean(fixtures.docs, PRIVATE_FIXTURE_FIELDS), standings: clean(standings.docs) }
+  const { snapshot: match, teams: clubs } = await collect(store)
   await writeDoc(store, 'snapshot', match, `Shared fan data (${match.fixtures.length} fixtures, ${match.standings.length} table rows)`)
-  const clubs = { teams: clean(teams.docs) }
   await writeDoc(store, 'teams', clubs, `Shared teams (${clubs.teams.length})`)
 }
 
-module.exports = { publishSnapshot }
+module.exports = { publishSnapshot, collect, db, size }
 
 if (require.main === module) {
   publishSnapshot().catch((error) => { console.error('Snapshot failed:', error.message); process.exit(1) })

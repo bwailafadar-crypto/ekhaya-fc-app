@@ -68,6 +68,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Bake fan data into the site (zero-read first paint)
+        run: node scripts/bake-snapshot.cjs
+
       - name: Check app size budget
         run: npm run check:bundle
 
