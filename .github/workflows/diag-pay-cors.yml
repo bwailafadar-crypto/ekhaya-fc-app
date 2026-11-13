@@ -6,16 +6,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - name: Preflight (OPTIONS) from the app origin
+      - name: Full OPTIONS response headers
         run: |
-          pre=$(curl -sS -i -X OPTIONS "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
+          hdrs=$(curl -sS -i -X OPTIONS "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
             -H "Origin: https://ekhaya-fc-app.web.app" \
             -H "Access-Control-Request-Method: POST" \
             -H "Access-Control-Request-Headers: authorization, content-type" \
-            --max-time 25 2>&1 | grep -iE "^HTTP|access-control|vary" | tr '\n' ' | ')
-          echo "::notice::PREFLIGHT: ${pre:-NO RESPONSE}"
-          post=$(curl -sS -i -X POST "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
-            -H "Origin: https://ekhaya-fc-app.web.app" \
-            -H "content-type: application/json" \
-            -d '{}' --max-time 25 2>&1 | grep -iE "^HTTP|access-control|error" | tr '\n' ' | ')
-          echo "::notice::POST-NOAUTH: ${post:-NO RESPONSE}"
+            --max-time 25 2>&1 | grep -iE "^HTTP|^[a-z-]+:" | tr '\n' ' ~ ')
+          echo "::notice::OPTIONS HEADERS: ${hdrs:-NONE}"
+          body=$(curl -sS -X OPTIONS "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" -H "Origin: https://ekhaya-fc-app.web.app" --max-time 25 2>&1 | head -c 200)
+          echo "::notice::OPTIONS BODY: ${body:-EMPTY}"
+          exist=$(curl -sS -o /dev/null -w '%{http_code}' "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" --max-time 25)
+          echo "::notice::PLAIN GET STATUS: $exist"
