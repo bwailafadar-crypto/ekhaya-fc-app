@@ -11,14 +11,16 @@ async function main() {
   const r0 = await fetch(API + '/mobile-money', { headers: h })
   note(`GET /mobile-money -> ${r0.status} (key ${r0.ok ? 'OK' : 'REJECTED'})`)
 
-  for (const amount of ['100', '1000']) {
+  // Same control number in two formats: does PayChangu accept +265… (what the
+  // server sends) the same as 0… (what the docs show)?
+  for (const mobile of ['0990000000', '+265990000000', '265990000000']) {
     try {
       const chargeId = 'ekhaya-diag-' + Date.now().toString(36)
-      const payload = { mobile_money_operator_ref_id: HARDCODED.airtel, mobile: '0990000000', amount, charge_id: chargeId, email: 'diag@ekhayafc.app', first_name: 'Diag', last_name: 'Test' }
+      const payload = { mobile_money_operator_ref_id: HARDCODED.airtel, mobile, amount: '100', charge_id: chargeId, email: 'diag@ekhayafc.app', first_name: 'Diag', last_name: 'Test' }
       const r = await fetch(API + '/mobile-money/payments/initialize', { method: 'POST', headers: h, body: JSON.stringify(payload) })
       const body = await r.text()
-      note(`INITIALIZE(amount=${amount}) -> ${r.status} ${body.slice(0, 350)}`)
-    } catch (e) { note(`INITIALIZE(amount=${amount}) threw: ${String(e.message).slice(0, 200)}`) }
+      note(`INIT mobile="${mobile}" -> ${r.status} ${body.slice(0, 250)}`)
+    } catch (e) { note(`INIT mobile="${mobile}" threw: ${String(e.message).slice(0, 150)}`) }
   }
 }
 
