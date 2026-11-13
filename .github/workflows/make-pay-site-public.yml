@@ -1,0 +1,27 @@
+name: Make pay site public
+on:
+  workflow_dispatch:
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Turn off SSO gate on the pay site
+        env: { TOKEN: "${{ secrets.NETLIFY_AUTH_TOKEN }}" }
+        run: node scripts/netlify-public.cjs
+      - name: Verify the app can now reach it (CORS preflight)
+        run: |
+          sleep 6
+          pre=$(curl -sS -i -X OPTIONS "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
+            -H "Origin: https://ekhaya-fc-app.web.app" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: authorization, content-type" \
+            --max-time 25 | grep -iE "^HTTP|access-control" | tr '\n' ' ~ ')
+          echo "::notice::PREFLIGHT NOW: ${pre:-NONE}"
+          post=$(curl -sS -i -X POST "https://ekhaya-pay.netlify.app/.netlify/functions/shop-pay-start" \
+            -H "Origin: https://ekhaya-fc-app.web.app" -H "content-type: application/json" -d '{}' \
+            --max-time 25 | grep -iE "^HTTP|access-control|error" | tr '\n' ' ~ ')
+          echo "::notice::POST NOW: ${post:-NONE}"
