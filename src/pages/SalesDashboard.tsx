@@ -19,7 +19,7 @@ const DAY = 86_400_000
 
 const when = (o: ShopOrder) => (o.createdAt?.seconds ? o.createdAt.seconds * 1000 : Date.now())
 const dayKey = (ms: number) => new Date(ms).toLocaleDateString('en-CA', { timeZone: 'Africa/Blantyre' })
-const units = (o: ShopOrder) => o.lines.reduce((n, l) => n + l.qty, 0)
+const units = (o: ShopOrder) => (o.lines ?? []).reduce((n, l) => n + l.qty, 0)
 
 function Bars({ rows, colourOf }: { rows: Array<{ label: string; value: number; sub?: string }>; colourOf?: (label: string) => string | undefined }) {
   const max = Math.max(1, ...rows.map((r) => r.value))
@@ -61,12 +61,12 @@ export default function SalesDashboard() {
 
   const count = (pick: (l: ShopOrder['lines'][number], o: ShopOrder) => string | undefined) => {
     const map = new Map<string, number>()
-    for (const o of live) for (const l of o.lines) { const k = pick(l, o); if (k) map.set(k, (map.get(k) ?? 0) + l.qty) }
+    for (const o of live) for (const l of (o.lines ?? [])) { const k = pick(l, o); if (k) map.set(k, (map.get(k) ?? 0) + l.qty) }
     return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value }))
   }
   const byProduct = (() => {
     const map = new Map<string, { qty: number; money: number }>()
-    for (const o of live) for (const l of o.lines) { const m = map.get(l.name) ?? { qty: 0, money: 0 }; m.qty += l.qty; m.money += (l.price + (l.printPrice ?? 0)) * l.qty; map.set(l.name, m) }
+    for (const o of live) for (const l of (o.lines ?? [])) { const name = l.name ?? 'Item'; const m = map.get(name) ?? { qty: 0, money: 0 }; const qty = Number(l.qty) || 0; m.qty += qty; m.money += ((Number(l.price) || 0) + (l.printPrice ?? 0)) * qty; map.set(name, m) }
     return [...map.entries()].sort((a, b) => b[1].qty - a[1].qty).map(([label, v]) => ({ label, value: v.qty, sub: mwk(v.money) }))
   })()
   const byVersion = count((l) => l.variant)
@@ -86,13 +86,13 @@ export default function SalesDashboard() {
 
   function exportCsv() {
     const rows = [['Order', 'Date', 'Fan', 'Phone', 'Items', 'Delivery', 'Payment', 'Transaction', 'Total (MK)', 'Status']]
-    for (const o of inRange) rows.push([o.ref, new Date(when(o)).toLocaleString('en-GB'), o.name, o.phone, o.lines.map((l) => `${l.qty}x ${l.name}${l.variant ? ` ${l.variant}` : ''}${l.size ? ` ${l.size}` : ''}${l.printName || l.printNumber ? ` print ${l.printName ?? ''} ${l.printNumber ?? ''}` : ''}`).join('; '), o.delivery === 'delivery' ? `Delivery: ${o.address ?? ''}` : 'Pick up', PAY_LABEL[o.payment?.method ?? ''] ?? '', o.payment?.txId ?? '', String(o.total), STATUS_LABEL[o.status] ?? o.status])
+    for (const o of inRange) rows.push([o.ref, new Date(when(o)).toLocaleString('en-GB'), o.name, o.phone, (o.lines ?? []).map((l) => `${l.qty}x ${l.name}${l.variant ? ` ${l.variant}` : ''}${l.size ? ` ${l.size}` : ''}${l.printName || l.printNumber ? ` print ${l.printName ?? ''} ${l.printNumber ?? ''}` : ''}`).join('; '), o.delivery === 'delivery' ? `Delivery: ${o.address ?? ''}` : 'Pick up', PAY_LABEL[o.payment?.method ?? ''] ?? '', o.payment?.txId ?? '', String(o.total), STATUS_LABEL[o.status] ?? o.status])
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `ekhaya-shop-orders-${dayKey(now)}.csv`; a.click()
     window.setTimeout(() => URL.revokeObjectURL(a.href), 4000)
   }
 
-  const colourOf = (label: string) => { const k = Object.keys(JERSEY_COLOUR).find((c) => label.toLowerCase().includes(c)); return k ? JERSEY_COLOUR[k] : undefined }
+  const colourOf = (label: string) => { const k = Object.keys(JERSEY_COLOUR).find((c) => (label ?? '').toLowerCase().includes(c)); return k ? JERSEY_COLOUR[k] : undefined }
 
   return <div className="sales-dash">
     <PageHeader eyebrow="Superadmin" title="Sales dashboard" description="Every shop order, live." action={<button type="button" className="sd-export" onClick={exportCsv} disabled={!inRange.length}><Download size={15} aria-hidden="true" /> Excel (CSV)</button>} />
@@ -131,7 +131,7 @@ export default function SalesDashboard() {
         <h2>Latest orders <small>live</small></h2>
         <ul className="sd-feed">{inRange.slice(0, showAll ? 300 : 12).map((o) => <li key={o.id} className={`s-${o.status}`}>
           <div className="sd-feed-top"><strong>{o.name}</strong><b>{mwk(o.total)}</b></div>
-          <p>{o.lines.map((l) => `${l.qty} × ${l.name}${l.variant ? `, ${l.variant}` : ''}${l.size ? ` (${l.size})` : ''}${l.printName || l.printNumber ? ` · ${l.printName ?? ''} ${l.printNumber ?? ''}` : ''}`).join(' · ')}</p>
+          <p>{(o.lines ?? []).map((l) => `${l.qty} × ${l.name}${l.variant ? `, ${l.variant}` : ''}${l.size ? ` (${l.size})` : ''}${l.printName || l.printNumber ? ` · ${l.printName ?? ''} ${l.printNumber ?? ''}` : ''}`).join(' · ')}</p>
           <div className="sd-feed-meta">
             <span>{o.ref}</span><span>{new Date(when(o)).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
             <span>{PAY_LABEL[o.payment?.method ?? ''] ?? 'No payment chosen'}{o.payment?.txId ? ` · ${o.payment.txId}` : ''}</span>
