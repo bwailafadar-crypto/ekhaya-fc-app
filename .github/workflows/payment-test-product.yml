@@ -1,0 +1,29 @@
+name: Payment test product
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: add = create the MK 100 staff-only test item; remove = delete it
+        type: choice
+        options: [add, remove]
+        default: add
+jobs:
+  test-product:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env: { FIREBASE_SA: "${{ secrets.FIREBASE_SA }}" }
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Add or remove the test product
+        env: { ACTION: "${{ inputs.action }}" }
+        run: node scripts/payment-test-product.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
