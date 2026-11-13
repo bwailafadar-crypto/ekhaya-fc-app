@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import AppLock from './components/AppLock'
 import SplashIntro from './components/SplashIntro'
+import Onboarding from './components/Onboarding'
 import TeamProvider from './data/TeamProvider'
 import { ForgotPasswordPage, LoginPage, SignUpPage } from './pages/auth/AuthPages'
 import Home from './pages/Home'
@@ -50,6 +51,7 @@ export default function App() {
             <ErrorBoundary>
               <>
               <SplashIntro />
+              <Onboarding />
               <AppLock>
               <Routes>
               <Route path="/install" element={<Suspense fallback={<p className="page-loading">Loading…</p>}><InstallPage /></Suspense>} />

@@ -3006,6 +3006,30 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
   .splash-glow { animation: none; opacity: 1; }
 }
 
+/* First-run welcome carousel (onboarding) */
+.onb { position: fixed; inset: 0; z-index: 9000; display: flex; flex-direction: column; justify-content: flex-end; background: radial-gradient(circle at 50% 32%, #2a2410 0%, #14110a 58%, #0b0a06 100%); color: #fff; overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; animation: onbIn .45s ease-out both; }
+.onb-skip { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 16px; z-index: 2; border: 0; background: rgba(255,255,255,0.12); color: #f3d77a; font-weight: 800; font-size: 13px; letter-spacing: .04em; padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+.onb-stage { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.onb-glow { position: absolute; width: 64vmin; height: 64vmin; border-radius: 50%; background: radial-gradient(circle, rgba(232,197,90,0.26) 0%, rgba(232,197,90,0) 70%); filter: blur(8px); }
+.onb-crest { position: relative; width: min(42vw, 170px); height: auto; filter: drop-shadow(0 16px 36px rgba(0,0,0,0.55)); animation: onbCrest .55s cubic-bezier(.18,.72,.2,1) both; }
+.onb-copy { position: relative; padding: 22px 26px calc(30px + env(safe-area-inset-bottom)); background: linear-gradient(to top, rgba(8,7,4,0.96) 60%, rgba(8,7,4,0)); }
+.onb-dots { display: flex; gap: 8px; margin-bottom: 18px; }
+.onb-dot { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,0.28); cursor: pointer; transition: all .25s ease; }
+.onb-dot.on { width: 26px; border-radius: 999px; background: #f3d77a; }
+.onb-title { margin: 0 0 12px; font-size: clamp(27px, 8.5vw, 40px); line-height: 1.04; font-weight: 900; letter-spacing: .005em; text-transform: uppercase; color: #fff; animation: onbText .45s ease-out .05s both; }
+.onb-title em { font-style: normal; display: block; color: #f3d77a; }
+.onb-body { margin: 0 0 24px; max-width: 34ch; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.5; color: #d9d3c2; animation: onbText .45s ease-out .12s both; }
+.onb-actions { display: flex; flex-direction: column; gap: 10px; }
+.onb-btn { width: 100%; padding: 15px 20px; border-radius: 14px; border: 0; font-size: 16px; font-weight: 800; letter-spacing: .02em; cursor: pointer; }
+.onb-btn-primary { background: #f3d77a; color: #14110a; }
+.onb-btn-ghost { background: rgba(255,255,255,0.1); color: #fff; }
+@keyframes onbIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes onbCrest { 0% { transform: scale(.72); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes onbText { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .onb, .onb-crest, .onb-title, .onb-body { animation: none; }
+}
+
 /* Injured player indicator */
 .player-injured { font-style: normal; display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #fff; background: #d0342c; padding: 2px 7px; border-radius: 999px; vertical-align: middle; }
 .player-injured-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #fff; background: #d0342c; padding: 3px 10px; border-radius: 999px; vertical-align: middle; }
