@@ -13,14 +13,14 @@ const note = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : 
   const db = getFirestore()
   let uid = null
   if (email) { try { uid = (await getAuth().getUserByEmail(email)).uid } catch { /* ignore */ } }
-  let q = db.collection('shopPayments').orderBy('createdAt', 'desc').limit(8)
-  const snap = await q.get()
+  const snap = await db.collection('shopPayments').orderBy('createdAt', 'desc').limit(15).get()
   let shown = 0
   snap.forEach((d) => {
     const p = d.data()
-    if (uid && p.uid !== uid) return
+    const t = p.createdAt && p.createdAt.toDate ? p.createdAt.toDate().toISOString().slice(11, 19) : '?'
+    const mine = uid && p.uid === uid ? '*' : ' '
     shown++
-    note(`pay ${d.id.slice(0, 14)}… status=${p.status} phone=${p.phone} method=${p.method} amount=${p.amount} reason=${JSON.stringify(p.failureReason || '').slice(0, 220)}`)
+    note(`${mine}${t} ${d.id.slice(0, 12)} status=${p.status} phone=${p.phone} reason=${JSON.stringify(p.failureReason || '').slice(0, 180)}`)
   })
-  if (!shown) note('No payment attempts found for this account.')
+  if (!shown) note('No payment attempts at all.')
 })().catch((e) => { console.log('::error::' + e.message); process.exit(1) })
