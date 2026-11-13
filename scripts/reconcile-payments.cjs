@@ -25,8 +25,10 @@ const h = { authorization: `Bearer ${process.env.PAYCHANGU_SECRET_KEY}`, accept:
     const status = String(j?.status ?? '').toLowerCase()
     const details = j?.data ?? {}
     const amount = Number(details.amount ?? details.charge ?? details.total_amount)
-    if (status !== 'success') { note(`${d.id.slice(0, 12)} still ${status || 'unknown'}`); continue }
-    if (amount !== Number(p.amount)) { note(`${d.id.slice(0, 12)} amount mismatch (${amount} vs ${p.amount}) -> review`); await d.ref.update({ status: 'review', updatedAt: FieldValue.serverTimestamp() }); continue }
+    if (!['success', 'successful', 'paid', 'completed'].includes(status)) { note(`${d.id.slice(0, 12)} still ${status || 'unknown'}`); continue }
+    const owed = Number(p.amount)
+    // PayChangu adds its fee on top, so the verified amount is owed + fee.
+    if (!(amount >= owed && amount <= owed * 1.1 + 5)) { note(`${d.id.slice(0, 12)} amount off (${amount} vs owed ${owed}) -> review`); await d.ref.update({ status: 'review', updatedAt: FieldValue.serverTimestamp() }); continue }
     const tx = String(details.trans_id ?? details.ref_id ?? details.reference ?? p.chargeId).slice(0, 40)
     await d.ref.update({ status: 'paid', updatedAt: FieldValue.serverTimestamp() })
     if (p.orderId) {

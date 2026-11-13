@@ -159,7 +159,10 @@ export async function verifyAndActivate(txRef: string, expectedUid?: string) {
     }
     return provider
   }
-  if (!['MWK', 'MK'].includes(provider.currency) || provider.amount !== Number(initialData.amount)) {
+  // PayChangu adds its fee on top, so the verified amount is the price plus the
+  // fee. Accept from the price up to the price plus a generous fee margin.
+  const owed = Number(initialData.amount)
+  if (!['MWK', 'MK'].includes(provider.currency) || !(provider.amount >= owed && provider.amount <= owed * 1.1 + 5)) {
     throw new Error('Verified payment amount or currency does not match.')
   }
 

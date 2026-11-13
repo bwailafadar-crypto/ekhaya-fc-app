@@ -136,8 +136,13 @@ export async function checkShopPayment(txRef: string, expectedUid?: string) {
   if (!['success', 'successful', 'paid', 'completed'].includes(status)) return { status: 'pending' }
   const amount = Number(data.amount ?? data.charge ?? data.total_amount)
   const currency = String(data.currency ?? 'MWK').toUpperCase()
-  if (amount !== Number(pay.amount) || !['MWK', 'MK'].includes(currency)) {
-    await payRef.update({ status: 'review', note: `PayChangu said ${currency} ${amount}`, updatedAt: FieldValue.serverTimestamp() })
+  // PayChangu adds its transaction fee on top, so the amount it reports is the
+  // order total PLUS the fee. Accept any amount from the order total up to the
+  // total plus a generous fee margin; reject underpayment or a wildly wrong sum.
+  const owed = Number(pay.amount)
+  const paidEnough = amount >= owed && amount <= owed * 1.1 + 5
+  if (!paidEnough || !['MWK', 'MK'].includes(currency)) {
+    await payRef.update({ status: 'review', note: `PayChangu said ${currency} ${amount} (owed ${owed})`, updatedAt: FieldValue.serverTimestamp() })
     return { status: 'review' }
   }
   const tx = String(data.trans_id ?? data.ref_id ?? data.reference ?? pay.chargeId).slice(0, 40)
