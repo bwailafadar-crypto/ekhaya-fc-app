@@ -110,8 +110,11 @@ service cloud.firestore {
           && request.auth.uid == uid
           && resource.data.role == request.resource.data.role
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'fullName', 'phone', 'photoDataUrl', 'lastOrderAt', 'updatedAt'
+            'fullName', 'phone', 'photoDataUrl', 'lastOrderAt', 'follows', 'updatedAt'
           ])
+          // Followed players: a short list of player ids.
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['follows'])
+            || (request.resource.data.follows is list && request.resource.data.follows.size() <= 30))
           // Shop: one order per minute (the order is saved together with this time).
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastOrderAt'])
             || (request.resource.data.lastOrderAt == request.time

@@ -1,5 +1,5 @@
 import { collection, getDocs, query, where } from 'firebase/firestore'
-import { ArrowLeft, Bell, BellOff, UserRound } from 'lucide-react'
+import { ArrowLeft, Bandage, Bell, BellOff, UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -12,7 +12,7 @@ import { db } from '../firebase'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import type { Fixture, Player } from '../types'
 import { ekhayaOutcome, formatMalawiDate, isPlayed, sortByDate } from '../utils/football'
-import { pushSupport, savedFollows, setFollow } from '../utils/push'
+import { enablePush, pushSupport, savedFollows, savedPrefs, setFollow } from '../utils/push'
 
 const POSITION_NAMES: Record<string, string> = { GK: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }
 
@@ -48,14 +48,18 @@ function FollowButton({ player }: { player: Player }) {
     if (!user) return
     setBusy(true)
     try {
-      if (!following) {
-        const support = await pushSupport()
-        if (support !== 'ok') { showToast(FOLLOW_PROBLEMS[support] ?? 'Alerts are not available on this device.', 'error'); return }
-      }
+      // Following always works; goal alerts are a bonus where the device allows them.
       const list = await setFollow(user.uid, player.id, !following)
       const now = list.includes(player.id)
       setFollowing(now)
-      showToast(now ? `Following ${first}. You'll get an alert when he scores.` : `You no longer follow ${first}.`)
+      if (!now) { showToast(`You no longer follow ${first}.`); return }
+      const support = await pushSupport().catch(() => 'unsupported' as const)
+      if (support === 'ok') {
+        try { await enablePush(user.uid, savedPrefs()); await setFollow(user.uid, player.id, true) } catch { /* following still saved */ }
+        showToast(`Following ${first}. You'll get an alert when he scores.`)
+      } else {
+        showToast(`Following ${first}.`)
+      }
     } catch (error) {
       const code = error instanceof Error ? error.message : ''
       showToast(FOLLOW_PROBLEMS[code] ?? 'Could not save. Check your connection and try again.', 'error')
@@ -115,7 +119,7 @@ export default function PlayerDetailPage() {
         <PlayerAvatar player={player} large />
         <div className="player-profile-heading">
           <span className="page-eyebrow">{position ?? 'Squad'}{player.number == null ? '' : ` · #${player.number}`}</span>
-          <h1>{player.name}{player.injured && <span className="player-injured-badge">Injured</span>}</h1>
+          <h1>{player.name}{player.injured && <span className="player-injured-badge"><Bandage size={13} aria-hidden="true" /> Injured</span>}</h1>
           <p>Ekhaya FC{age != null ? ` · ${age} years` : ''}{player.nationality ? ` · ${player.nationality}` : ''}</p>
           <FollowButton key={player.id} player={player} />
         </div>

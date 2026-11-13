@@ -44,9 +44,11 @@ export async function setFollow(uid: string, playerId: string, follow: boolean) 
   const next = follow ? [...new Set([...current, playerId])].slice(0, MAX_FOLLOWS) : current.filter((id) => id !== playerId)
   writeLocal(FOLLOWS_KEY, JSON.stringify(next))
   try {
+    // Save the follow to the fan's account so it sticks, with or without alerts.
+    await setDoc(doc(db, 'users', uid), { follows: next, updatedAt: serverTimestamp() }, { merge: true })
+    // If alerts are already on, keep the notification target in step too.
     const token = savedToken()
-    if (token) await updateDoc(doc(db, 'pushTokens', token), { follows: next, updatedAt: serverTimestamp() })
-    else if (follow) await enablePush(uid, savedPrefs())
+    if (token) await updateDoc(doc(db, 'pushTokens', token), { follows: next, updatedAt: serverTimestamp() }).catch(() => undefined)
   } catch (error) {
     if (follow) writeLocal(FOLLOWS_KEY, JSON.stringify(current))
     throw error

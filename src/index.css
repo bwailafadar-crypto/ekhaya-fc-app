@@ -3007,5 +3007,5 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 }
 
 /* Injured player indicator */
-.player-injured { font-style: normal; display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #fff; background: #d0342c; padding: 2px 7px; border-radius: 999px; vertical-align: middle; }
-.player-injured-badge { display: inline-block; margin-left: 10px; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #fff; background: #d0342c; padding: 3px 10px; border-radius: 999px; vertical-align: middle; }
+.player-injured { font-style: normal; display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #fff; background: #d0342c; padding: 2px 7px; border-radius: 999px; vertical-align: middle; }
+.player-injured-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #fff; background: #d0342c; padding: 3px 10px; border-radius: 999px; vertical-align: middle; }
