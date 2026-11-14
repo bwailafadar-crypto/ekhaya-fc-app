@@ -1,0 +1,25 @@
+# On-demand: load the live app in a headless browser and report runtime errors.
+name: Diagnose live app
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to check'
+        type: string
+        default: 'https://ekhaya-fc-app.web.app/'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/diagnose-live.cjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm init -y && npm i -D playwright@1.47.2
+      - run: npx playwright install --with-deps chromium
+      - name: Check live app
+        run: node scripts/diagnose-live.cjs "${{ github.event.inputs.url }}"
