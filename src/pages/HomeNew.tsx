@@ -1,7 +1,7 @@
 // The Home screen: next match with a live countdown, last result with its
 // scorers, Ekhaya's league place and top scorer, the trophy, then news.
 // Admin → App health → "New Home screen" switches back to the old Home.
-import { ArrowRight, CalendarDays, Clapperboard, MapPin, Medal, Newspaper, ShieldCheck, ShoppingBag, Target, Trophy, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clapperboard, MapPin, Medal, Newspaper, ShieldCheck, ShoppingBag, Target, Trophy, Users, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -121,6 +121,7 @@ export default function NewHome() {
 
     <section className="nh-shortcuts" aria-label="Quick links">
       <Link to="/squad"><Users size={19} /><span>Squad</span></Link>
+      <Link to="/women"><UsersRound size={19} /><span>Women</span></Link>
       {scorersOpen && <Link to="/scorers"><Medal size={19} /><span>Scorers</span></Link>}
       <Link to="/table"><Trophy size={19} /><span>Table</span></Link>
       {shopOpen && <Link to="/shop"><ShoppingBag size={19} /><span>Shop</span></Link>}
