@@ -233,10 +233,10 @@ function MatchHero({ live, next }: { live?: Fixture; next?: Fixture }) {
         <div className="fz-hero-team"><TeamLogo name={fixture.away} /><span>{fixture.away}</span></div>
       </div>
       {isLive
-        ? <Link className="button fz-hero-cta" to="/live"><Radio size={15} aria-hidden="true" /> Watch it live</Link>
+        ? <Link className="button button-primary fz-hero-cta" to="/live"><Radio size={15} aria-hidden="true" /> Watch it live</Link>
         : <>
             <div className="fz-hero-meta"><span>{formatMalawiDate(fixture.date)} · {formatMalawiTime(fixture.date)}</span>{ko > now && <span className="fz-hero-count">{countdownText(ko, now)}</span>}</div>
-            <button type="button" className="button fz-hero-cta" onClick={() => scrollToSection('fz-predict')}><Target size={15} aria-hidden="true" /> Predict the score</button>
+            <button type="button" className="button button-primary fz-hero-cta" onClick={() => scrollToSection('fz-predict')}><Target size={15} aria-hidden="true" /> Predict the score</button>
           </>}
     </Card>
   )

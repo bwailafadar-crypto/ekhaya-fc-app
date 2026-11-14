@@ -69,7 +69,7 @@ export default function HeroPicker({ players, currentPickId, matchLabel, saving,
     </div>
 
     <div className="hp-foot">
-      <button type="button" className="button hp-confirm" disabled={!chosen || saving} onClick={() => chosen && onPick(chosen)}>
+      <button type="button" className="button button-primary hp-confirm" disabled={!chosen || saving} onClick={() => chosen && onPick(chosen)}>
         {saving ? 'Saving…' : chosen ? `Pick ${chosen.name}` : 'Select a player'}
       </button>
     </div>

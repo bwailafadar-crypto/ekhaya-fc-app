@@ -85,7 +85,7 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
               ? (!myPlayer && <p className="fz-note"><Lock size={14} aria-hidden="true" /> You didn't pick for this match.</p>)
               : squad.length === 0
                 ? <p className="fz-note">The squad list will appear here soon.</p>
-                : <button type="button" className="button mh-choose" onClick={() => setPicking(true)}><Shirt size={16} aria-hidden="true" /> {myPlayer ? 'Change your hero' : 'Choose your hero'}</button>}
+                : <button type="button" className="button button-primary mh-choose" onClick={() => setPicking(true)}><Shirt size={16} aria-hidden="true" /> {myPlayer ? 'Change your hero' : 'Choose your hero'}</button>}
           </>
         : <p className="mh-sub">The next men's match will open here for picks once it's scheduled.</p>}
 
