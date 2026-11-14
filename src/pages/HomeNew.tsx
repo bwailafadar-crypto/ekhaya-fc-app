@@ -54,7 +54,9 @@ export default function NewHome() {
   const ekhaya = table.find((row) => isClub(row.team))
   // A cup Ekhaya won this season (the final is in the fixtures).
   const trophy = sortByDate(mens.filter((fixture) => fixture.status === 'finished' && isCupCompetition(fixture.competition) && /final/i.test(`${fixture.round ?? ''} ${fixture.id}`) && !/semi|quarter|qf|sf/i.test(`${fixture.round ?? ''} ${fixture.id}`) && ekhayaOutcome(fixture) === 'W'), 'desc')[0]
-  const news = newsResult.items.slice(0, 3)
+  // Home is the men's page, so keep women's-team stories out of its news feed
+  // (they live on the Ekhaya Women page). Matches "women", "cowgirls", "ladies".
+  const news = newsResult.items.filter((item) => !/\b(women'?s?|cowgirls?|ladies)\b/i.test(`${item.title} ${item.summary}`)).slice(0, 3)
   const outcome = last ? ekhayaOutcome(last) : null
 
   return <div className="nh">
