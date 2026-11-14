@@ -77,7 +77,7 @@ jobs:
         run: node scripts/security-check.cjs
       - name: Keep the backup (14 days)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ekhaya-backup-${{ github.run_number }}
           path: backup/
