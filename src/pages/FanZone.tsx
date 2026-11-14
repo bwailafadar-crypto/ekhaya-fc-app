@@ -270,7 +270,8 @@ export default function FanZone() {
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   const players = useFirestoreCollection<Player>('players')
   const polls = useFirestoreCollection<Poll>('polls')
-  const real = fixtures.items.filter((fixture) => !fixture.isTest)
+  // Fan Zone is the men's team only — the women's team has its own section.
+  const real = fixtures.items.filter((fixture) => !fixture.isTest && (fixture.squad ?? 'men') === 'men')
   const liveMatch = sortByDate(real.filter((fixture) => fixture.status === 'live'), 'asc')[0]
   const nextMatch = sortByDate(real.filter((fixture) => fixture.status === 'upcoming'), 'asc')[0]
   const lastMatch = sortByDate(real.filter(isPlayed), 'desc')[0]
