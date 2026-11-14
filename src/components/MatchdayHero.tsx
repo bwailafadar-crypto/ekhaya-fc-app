@@ -6,9 +6,9 @@ import { db } from '../firebase'
 import { useMyDoc } from '../hooks/useCounts'
 import { inSquad } from '../hooks/useSquad'
 import type { Fixture, HeroComp, HeroPick, Player } from '../types'
-import { burst } from '../utils/celebrate'
 import { saveErrorText } from '../utils/fanZone'
 import { formatMalawiDate, formatMalawiTime } from '../utils/football'
+import HeroPicker from './HeroPicker'
 import PlayerAvatar from './PlayerAvatar'
 import { useToast } from './ToastContext'
 import { Card } from './UI'
@@ -26,6 +26,7 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
   const fixtureId = isMensNext ? nextMatch!.id : ''
   const myPick = useMyDoc<Omit<HeroPick, 'id'>>(user && fixtureId ? ['fixtures', fixtureId, 'heroPicks', user.uid] : null)
   const [saving, setSaving] = useState('')
+  const [picking, setPicking] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(timer) }, [])
 
@@ -42,12 +43,12 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
   const matchNo = Math.min(played + 1, MATCHES_PER_ROUND)
   const prize = round?.prize ?? 'Ekhaya FC jersey'
 
-  async function pick(player: Player, button?: HTMLElement | null) {
+  async function pick(player: Player) {
     if (!user || !fixtureId || locked) return
     setSaving(player.id)
     try {
       await setDoc(doc(db, 'fixtures', fixtureId, 'heroPicks', user.uid), { playerId: player.id, name: (profile?.fullName ?? '').slice(0, 120), updatedAt: serverTimestamp() })
-      burst(button ?? null, 16)
+      setPicking(false)
       showToast(`Your matchday hero: ${player.name}. Picks lock at kickoff.`)
     } catch (error) {
       showToast(saveErrorText(error, 'Your pick was not saved. Check your connection and try again.'), 'error')
@@ -59,6 +60,7 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
   const myPlayer = myPick.data ? squad.find((player) => player.id === myPick.data?.playerId) : undefined
 
   return (
+    <>
     <Card className="mh-card">
       <div className="mh-head">
         <div className="mh-prize"><Shirt size={20} aria-hidden="true" /></div>
@@ -74,22 +76,16 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
 
       {isMensNext
         ? <>
-            <p className="mh-sub">{locked ? 'Picks are closed for this match.' : `Pick your hero for ${nextMatch!.home} v ${nextMatch!.away} · ${formatMalawiDate(nextMatch!.date)} ${formatMalawiTime(nextMatch!.date)}`}</p>
-            {myPlayer && <p className="mh-mypick">Your pick: <strong>{myPlayer.name}</strong>{myPlayer.number != null ? ` · #${myPlayer.number}` : ''}{!locked ? ' — tap another to change' : ''}</p>}
-            {locked && !myPlayer
-              ? <p className="fz-note"><Lock size={14} aria-hidden="true" /> You didn't pick for this match.</p>
+            <p className="mh-sub">{locked ? 'Picks are closed for this match.' : `${nextMatch!.home} v ${nextMatch!.away} · ${formatMalawiDate(nextMatch!.date)} ${formatMalawiTime(nextMatch!.date)}`}</p>
+            {myPlayer && <div className="mh-chosen">
+              <PlayerAvatar player={myPlayer} />
+              <div className="mh-chosen-id"><strong>{myPlayer.name}</strong><span>Your hero{myPlayer.position ? ` · ${myPlayer.position}` : ''}{myPlayer.number != null ? ` · #${myPlayer.number}` : ''}</span></div>
+            </div>}
+            {locked
+              ? (!myPlayer && <p className="fz-note"><Lock size={14} aria-hidden="true" /> You didn't pick for this match.</p>)
               : squad.length === 0
                 ? <p className="fz-note">The squad list will appear here soon.</p>
-                : <div className="mh-grid">
-                    {squad.map((player) => {
-                      const chosen = myPick.data?.playerId === player.id
-                      return <button key={player.id} type="button" className={`mh-player${chosen ? ' mh-player-on' : ''}`} disabled={locked || saving !== ''} onClick={(event) => void pick(player, event.currentTarget)} aria-pressed={chosen}>
-                        <PlayerAvatar player={player} />
-                        <span className="mh-player-name">{player.name}</span>
-                        {player.number != null && <span className="mh-player-no">#{player.number}</span>}
-                      </button>
-                    })}
-                  </div>}
+                : <button type="button" className="button mh-choose" onClick={() => setPicking(true)}><Shirt size={16} aria-hidden="true" /> {myPlayer ? 'Change your hero' : 'Choose your hero'}</button>}
           </>
         : <p className="mh-sub">The next men's match will open here for picks once it's scheduled.</p>}
 
@@ -104,5 +100,14 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
         </div>)}
       </div>}
     </Card>
+    {picking && !locked && <HeroPicker
+      players={squad}
+      currentPickId={myPick.data?.playerId}
+      matchLabel={nextMatch ? `${nextMatch.home} v ${nextMatch.away}` : ''}
+      saving={saving !== ''}
+      onPick={(player) => void pick(player)}
+      onClose={() => setPicking(false)}
+    />}
+    </>
   )
 }
