@@ -29,7 +29,7 @@ export async function saveGithubKey(token: string) {
   void logAction('Changed the GitHub alerts key', token.trim() ? 'new key saved' : 'key removed')
 }
 
-export async function dispatchAlert(alert: { kind: 'match' | 'news' | 'test' | 'player'; title: string; body: string; path: string; player?: string }) {
+export async function dispatchAlert(alert: { kind: 'match' | 'news' | 'test' | 'player' | 'broadcast'; title: string; body: string; path: string; player?: string }) {
   const token = await githubKey()
   if (!token) throw new Error('no-key')
   const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${WORKFLOW}/dispatches`, {

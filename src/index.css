@@ -382,6 +382,8 @@ html:has(.install-page), body:has(.install-page) { min-width: 0; }
 .admin-card-heading h2 { margin: 0; font-size: 20px; }
 .admin-card-heading select, .admin-field input, .admin-field select { width: 100%; min-height: 42px; padding: 0 10px; color: var(--ink); background: #FCFBF8; border: 1px solid var(--line); border-radius: 9px; font-size: 12px; }
 .admin-form { display: flex; flex-direction: column; gap: 15px; }
+.admin-broadcast { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line, rgba(0,0,0,0.08)); }
+.admin-broadcast textarea { resize: vertical; }
 .admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px 9px; }
 .admin-field { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .admin-field > span { color: var(--muted); font-size: 10px; font-weight: 700; }

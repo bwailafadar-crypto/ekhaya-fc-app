@@ -18,13 +18,13 @@ function arg(name, fallback = '') {
 }
 
 async function sendAlert({ kind, title, body, path, player = '' }, db, messaging) {
-  if (!['match', 'news', 'test', 'player'].includes(kind)) throw new Error(`Unknown alert kind "${kind}"`)
+  if (!['match', 'news', 'test', 'player', 'broadcast'].includes(kind)) throw new Error(`Unknown alert kind "${kind}"`)
   if (kind === 'player' && !player) throw new Error('A player alert needs --player')
   if (!title) throw new Error('An alert needs a title')
   const safePath = path.startsWith('/') ? path : '/'
   const link = `${APP_URL}/#${safePath}`
-  // "test" alerts go to every device so the setup can be checked.
-  const query = kind === 'test' ? db.collection('pushTokens')
+  // "test" and admin "broadcast" alerts go to every device that has alerts on.
+  const query = kind === 'test' || kind === 'broadcast' ? db.collection('pushTokens')
     : kind === 'player' ? db.collection('pushTokens').where('follows', 'array-contains', player)
     : db.collection('pushTokens').where(`prefs.${kind}`, '==', true)
   let docs = (await query.get()).docs

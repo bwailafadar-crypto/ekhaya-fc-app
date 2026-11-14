@@ -1,0 +1,36 @@
+# Sends a matchday reminder before each Ekhaya kick-off (men's and women's).
+# Free: runs on GitHub Actions, no Firebase Blaze plan needed.
+name: Match reminder
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 * * * *'   # hourly; a lock stops double reminders
+
+concurrency:
+  group: match-reminder
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: alerts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: alerts/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: alerts
+      - name: Send reminders
+        working-directory: alerts
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          node reminder.cjs
+          rm -f "$RUNNER_TEMP/sa.json"
