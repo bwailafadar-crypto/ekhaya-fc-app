@@ -72,6 +72,8 @@ export interface Fixture {
   motmWinnerVotes?: number
   motmTotalVotes?: number
   motmTally?: Record<string, number>
+  /** Matchday Hero: set true once this match has been scored into the competition. */
+  heroScored?: boolean
 }
 
 export interface AppliedStandingChange {
@@ -253,4 +255,22 @@ export interface Poll {
 export interface PollVote { id: string; option: number; updatedAt?: Timestamp }
 export interface ScorePrediction { id: string; home: number; away: number; name: string; updatedAt?: Timestamp }
 export interface MotmVote { id: string; playerId: string; updatedAt?: Timestamp }
+
+/** Matchday Hero competition: a fan's one player pick for a match. */
+export interface HeroPick { id: string; playerId: string; name: string; updatedAt?: Timestamp }
+/** A fan's running total in the current competition round. */
+export interface HeroStanding { name: string; points: number }
+/** heroComp/current: the live competition round that fans read. */
+export interface HeroComp {
+  roundNumber: number
+  status: 'open' | 'won'
+  matchesInRound: number
+  countedFixtureIds: string[]
+  standings: Record<string, HeroStanding>
+  prize?: string
+  winnerUid?: string
+  winnerName?: string
+  winnerPoints?: number
+  updatedAt?: Timestamp
+}
 

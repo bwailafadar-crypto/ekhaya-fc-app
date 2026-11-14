@@ -1,5 +1,5 @@
 import { collection, doc, getDocs, limit, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
-import { ChevronRight, HeartHandshake, Lock, Minus, Plus, Radio, Share2, Star, Target, Trophy, Vote } from 'lucide-react'
+import { ChevronRight, HeartHandshake, Lock, Minus, Plus, Radio, Share2, Shirt, Star, Target, Trophy, Vote } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -17,6 +17,7 @@ import type { Fixture, Player, Poll, PollVote, ScorePrediction } from '../types'
 import { formatMalawiDate, formatMalawiTime, isPlayed, sortByDate } from '../utils/football'
 import { percent, saveErrorText } from '../utils/fanZone'
 import MotmCard, { ResultBar } from '../components/MotmCard'
+import MatchdayHero from '../components/MatchdayHero'
 import { burst } from '../utils/celebrate'
 
 const MAX_GOALS = 20
@@ -280,6 +281,7 @@ export default function FanZone() {
   if (fixtures.loading || players.loading || polls.loading) return <><PageHeader eyebrow="Supporters" title="Fan Zone" /><div className="loading-list"><Skeleton /><Skeleton /></div></>
 
   const nav = [
+    { id: 'fz-hero', label: 'Jersey', icon: <Shirt size={15} aria-hidden="true" /> },
     nextMatch && { id: 'fz-predict', label: 'Predict', icon: <Target size={15} aria-hidden="true" /> },
     (openPolls.length || closedPolls.length) && { id: 'fz-say', label: 'Vote', icon: <Vote size={15} aria-hidden="true" /> },
     lastMatch && { id: 'fz-motm', label: 'MOTM', icon: <Star size={15} aria-hidden="true" /> },
@@ -292,6 +294,10 @@ export default function FanZone() {
 
     <MatchHero live={liveMatch} next={nextMatch} />
     <QuickNav items={nav} />
+
+    <Section id="fz-hero" icon={<Shirt size={17} />} title="Matchday Hero" hint="Pick a player — win a jersey">
+      <MatchdayHero nextMatch={nextMatch} players={players.items} />
+    </Section>
 
     <Section id="fz-predict" icon={<Target size={17} />} title="Predict the score" hint={nextMatch ? 'Call it right and earn fan points' : undefined}>
       {nextMatch

@@ -233,6 +233,25 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
+      // Matchday Hero competition: one player pick per fan, only before kick-off.
+      // Points are scored by the server (service account) after the match.
+      match /heroPicks/{uid} {
+        allow read: if signedIn();
+        allow create, update: if canPlay()
+          && request.auth.uid == uid
+          && fixtureDoc(fixtureId).status == 'upcoming'
+          && fixtureDoc(fixtureId).get('predictionsLocked', false) != true
+          && fixtureDoc(fixtureId).get('isTest', false) != true
+          && request.resource.data.keys().hasOnly(['playerId', 'name', 'updatedAt'])
+          && request.resource.data.keys().hasAll(['playerId', 'name', 'updatedAt'])
+          && request.resource.data.playerId is string
+          && exists(/databases/$(database)/documents/players/$(request.resource.data.playerId))
+          // The name shown on the leaderboard is the fan's real profile name.
+          && request.resource.data.name == myName()
+          && request.resource.data.updatedAt == request.time;
+        allow delete: if isAdmin();
+      }
+
       // Fan Zone: one man-of-the-match vote per fan after a real match,
       // until an admin closes voting.
       match /motm/{uid} {
@@ -361,6 +380,12 @@ service cloud.firestore {
     // Season leaderboard, calculated by admins after each match so fans read
     // one small document instead of every prediction ever made.
     match /leaderboard/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    // Matchday Hero competition standings and past winners. Fans read; the
+    // server (service account) and admins write the scored results.
+    match /heroComp/{docId} {
       allow read: if signedIn();
       allow write: if isAdmin();
     }

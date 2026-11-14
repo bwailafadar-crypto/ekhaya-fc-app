@@ -1095,6 +1095,38 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
 .fz-invite strong { display: block; font-size: 14px; }
 .fz-invite small { color: var(--muted); font-size: 11px; }
 .fz-invite .button { flex: 0 0 auto; width: auto; }
+
+/* Matchday Hero competition */
+.mh-card { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.mh-head { display: flex; align-items: center; gap: 11px; }
+.mh-prize { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; color: #6B540E; background: linear-gradient(135deg, #FFF0BF, #E8C95A); border: 1px solid var(--gold); border-radius: 12px; }
+.mh-head-text h3 { margin: 0; font-family: 'Oswald', sans-serif; font-size: 18px; line-height: 1.1; }
+.mh-head-text span { color: var(--muted); font-size: 11px; font-weight: 600; }
+.mh-winner { margin: 0; padding: 8px 11px; display: flex; align-items: center; gap: 6px; color: #6B540E; background: linear-gradient(120deg, #FFF6D6, #F8E4A0); border: 1px solid var(--gold); border-radius: 10px; font-size: 12px; font-weight: 700; }
+.mh-scoring { display: flex; flex-wrap: wrap; gap: 7px; }
+.mh-scoring span { padding: 5px 10px; background: rgb(255 255 255 / 75%); border: 1px solid var(--glass-line); border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.mh-scoring b { color: var(--gold-dark); }
+.mh-sub { margin: 0; color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.45; }
+.mh-mypick { margin: 0; padding: 8px 11px; background: #FFF8E1; border: 1px solid var(--gold); border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--ink); }
+.mh-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mh-player { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 6px; background: rgb(255 255 255 / 70%); border: 1px solid var(--glass-line); border-radius: 12px; cursor: pointer; transition: border-color 160ms ease, background 160ms ease, transform 120ms ease; }
+.mh-player:hover:not(:disabled), .mh-player:focus-visible { border-color: var(--gold); background: #FFF8E1; }
+.mh-player:active:not(:disabled) { transform: scale(.97); }
+.mh-player:disabled { opacity: .6; cursor: default; }
+.mh-player-on { border-color: var(--gold); background: linear-gradient(135deg, #FFF6D6, #F6E09A); box-shadow: 0 2px 8px rgb(201 162 39 / 28%); }
+.mh-player .player-avatar { width: 46px; height: 46px; flex-basis: 46px; font-size: 15px; }
+.mh-player-name { font-size: 11px; font-weight: 700; line-height: 1.15; text-align: center; overflow-wrap: anywhere; }
+.mh-player-no { font-size: 10px; font-weight: 700; color: var(--muted); }
+.mh-you { margin: 0; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.mh-you strong { color: var(--gold-dark); }
+.mh-board { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px solid rgb(201 162 39 / 16%); }
+.mh-board-title { font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.mh-row { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 8px; padding: 7px 9px; background: rgb(255 255 255 / 65%); border: 1px solid var(--glass-line); border-radius: 9px; }
+.mh-row-me { border-color: var(--gold); background: #FFF8E1; }
+.mh-rank { font-family: 'Oswald', sans-serif; font-size: 14px; font-weight: 600; color: var(--gold-dark); text-align: center; }
+.mh-row-name { min-width: 0; font-size: 12px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mh-row-pts { font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600; color: var(--ink); }
+.mh-board-admin { border-top: none; padding-top: 0; }
 .fz-card { padding: 16px; }
 .fz-card-compact { padding: 13px 15px; }
 .fz-card-heading { margin-bottom: 14px; display: flex; align-items: flex-start; gap: 10px; }

@@ -1,0 +1,31 @@
+# Scores the Matchday Hero competition after men's matches (free, no Blaze plan).
+# Runs hourly and can be run by hand from the Actions tab.
+name: Score Matchday Hero
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 * * * *'   # hourly; scoring is idempotent (heroScored flag)
+
+concurrency:
+  group: hero-comp
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env: { FIREBASE_SA: "${{ secrets.FIREBASE_SA }}" }
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Score competition
+        run: node scripts/score-hero-comp.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
