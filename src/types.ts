@@ -22,6 +22,8 @@ export interface Team {
 export interface Fixture {
   id: string
   competition: string
+  /** Which Ekhaya side this match belongs to. Missing counts as men's. */
+  squad?: 'men' | 'women'
   season?: string
   /** Cup round, e.g. "Quarter-final · 1st leg" or "Final". */
   round?: string | null
@@ -188,6 +190,8 @@ export interface Player {
   name: string
   number: number | null
   team: string
+  /** Which Ekhaya side this player belongs to. Missing counts as men's. */
+  squad?: 'men' | 'women'
   position: 'GK' | 'DEF' | 'MID' | 'FWD' | null
   dob: string | null
   nationality: string | null
@@ -215,6 +219,8 @@ export interface Standing {
   id: string
   position: number
   team: string
+  /** Which league this row belongs to. Missing counts as men's. */
+  squad?: 'men' | 'women'
   played: number
   won: number
   drawn: number

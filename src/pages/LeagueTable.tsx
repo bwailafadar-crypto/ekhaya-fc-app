@@ -4,6 +4,8 @@ import { useFlag } from '../hooks/useFlag'
 import TeamLogo from '../components/TeamLogo'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import SquadTabs from '../components/SquadTabs'
+import { inSquad, useSquad } from '../hooks/useSquad'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import type { Fixture, FormEntry, Standing } from '../types'
@@ -14,7 +16,8 @@ const RELEGATED = 3
 
 export default function LeagueTable() {
   const { items, loading, error } = useFirestoreCollection<Standing>('standings')
-  const rows = [...items].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+  const [squad, setSquad] = useSquad()
+  const rows = [...items].filter((row) => inSquad(row.squad, squad)).sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   // Phones show the short table (MP, G, PTS, form); "All columns" adds W, D, L and GD.
   const [full, setFull] = useState(false)
@@ -31,11 +34,12 @@ export default function LeagueTable() {
   const norm = (name: string) => name.trim().toLowerCase()
   // Next league match for a team, when the app knows it (Ekhaya's fixtures).
   const nextFor = (team: string) => fixtures.items
-    .filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest && (norm(fixture.home) === norm(team) || norm(fixture.away) === norm(team)))
+    .filter((fixture) => inSquad(fixture.squad, squad) && fixture.status === 'upcoming' && !fixture.isTest && (norm(fixture.home) === norm(team) || norm(fixture.away) === norm(team)))
     .sort((a, b) => a.date.localeCompare(b.date))[0]
 
   return <>
-    <PageHeader eyebrow="2026 season" title="League table" description="FDH Championship standings" />
+    <PageHeader eyebrow="2026 season" title="League table" description={squad === 'women' ? "Women's league standings" : 'FDH Championship standings'} />
+    <SquadTabs value={squad} onChange={setSquad} />
     {loading ? <div className="table-loading"><Skeleton /><Skeleton /><Skeleton /><Skeleton /></div>
       : error ? <EmptyState icon={Table2} title="Table unavailable" description={error} />
         : rows.length === 0 ? <EmptyState icon={Table2} title="Standings are not available" description="The club table will appear here when data is added." />

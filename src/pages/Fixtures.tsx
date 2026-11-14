@@ -6,7 +6,9 @@ import CupCard from '../components/CupCard'
 import { CUPS, matchesFilter } from '../utils/competitions'
 import { cupMatches } from '../utils/cupSeason'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
+import SquadTabs from '../components/SquadTabs'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import { inSquad, useSquad } from '../hooks/useSquad'
 import type { Fixture } from '../types'
 import { isPlayed, sortByDate } from '../utils/football'
 
@@ -24,8 +26,10 @@ function teamKey(name: string) {
 }
 
 export default function Fixtures() {
-  const { items, loading, error } = useFirestoreCollection<Fixture>('fixtures')
+  const { items: all, loading, error } = useFirestoreCollection<Fixture>('fixtures')
   const [filter, setFilter] = useCompetitionFilter()
+  const [squad, setSquad] = useSquad()
+  const items = all.filter((fixture) => inSquad(fixture.squad, squad))
   const fixtures = sortByDate(items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest && matchesFilter(fixture.competition, filter)), 'asc')
   const completed = items.filter((fixture) => isPlayed(fixture) && !fixture.isTest
     && fixture.homeScore != null && fixture.awayScore != null)
@@ -39,10 +43,12 @@ export default function Fixtures() {
   }
 
   // Picking a cup also shows how Ekhaya's season in it is going (or how it ended).
-  const cupsShown = filter === 'cups' ? CUPS : CUPS.filter((cup) => cup.id === filter)
+  // The tracked cup runs are the men's team's, so only show them on the men's tab.
+  const cupsShown = squad === 'men' ? (filter === 'cups' ? CUPS : CUPS.filter((cup) => cup.id === filter)) : []
 
   return <>
     <PageHeader eyebrow={filterLabel(filter)} title="Fixtures" description="Upcoming matches · Malawi time (CAT)" />
+    <SquadTabs value={squad} onChange={setSquad} />
     <CompetitionTabs value={filter} onChange={setFilter} />
     {loading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : error ? <EmptyState icon={CalendarDays} title="Fixtures unavailable" description={error} />

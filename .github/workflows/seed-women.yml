@@ -1,0 +1,24 @@
+name: Seed women's team
+on:
+  workflow_dispatch:
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts
+      - name: Write key
+        env: { FIREBASE_SA: "${{ secrets.FIREBASE_SA }}" }
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Seed
+        run: node scripts/seed-women.cjs
+      - name: Publish the fan snapshot
+        run: node scripts/publish-snapshot.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

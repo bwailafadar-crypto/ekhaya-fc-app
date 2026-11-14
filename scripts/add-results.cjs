@@ -40,7 +40,9 @@ async function main() {
     const r = { id: f.id, date: String(f.date).slice(0, 10), home: f.home, away: f.away, homeScore: Number(f.homeScore), awayScore: Number(f.awayScore) }
     if (!results.some((o) => sameMatch(o, r))) results.push(r)
   }
-  const teamNames = standingsSnap.docs.map((doc) => doc.data().team)
+  // Men's league rebuild only — never touch women's standings rows.
+  const mensStandings = standingsSnap.docs.filter((doc) => (doc.data().squad ?? 'men') === 'men')
+  const teamNames = mensStandings.map((doc) => doc.data().team)
   const ALIAS = { civoutd: 'Civil Service United', civilservice: 'Civil Service United', csu: 'Civil Service United', dedzadynamos: 'Goshen City Dedza Dynamos', gcdedzadynamos: 'Goshen City Dedza Dynamos', bigbullets: 'FCB Nyasa Big Bullets', bullets: 'FCB Nyasa Big Bullets', mitundu: 'Luanar Mitundu', luanar: 'Luanar Mitundu', mafco: 'MAFCO F.C', creck: 'Creck Sporting', crecksc: 'Creck Sporting', moyale: 'Moyale Barracks', kb: 'Kamuzu Barracks' }
   const known = (raw) => { const n = norm(ALIAS[norm(raw)] || raw); return teamNames.find((t) => norm(t) === n) || teamNames.find((t) => norm(t).includes(n) || n.includes(norm(t))) }
   const today0 = new Date().toISOString().slice(0, 10)
@@ -77,7 +79,7 @@ async function main() {
     return n ? { opponent: norm(n.home) === norm(team) ? n.away : n.home, date: n.date, home: norm(n.home) === norm(team), ...(n.venue ? { venue: n.venue } : {}) } : null
   }
 
-  const ordered = standingsSnap.docs.map((doc) => ({ doc, row: doc.data(), c: table.get(norm(doc.data().team)) })).filter((x) => x.c)
+  const ordered = mensStandings.map((doc) => ({ doc, row: doc.data(), c: table.get(norm(doc.data().team)) })).filter((x) => x.c)
     .sort((a, b) => b.c.points - a.c.points || (b.c.goalsFor - b.c.goalsAgainst) - (a.c.goalsFor - a.c.goalsAgainst) || b.c.goalsFor - a.c.goalsFor || a.row.team.localeCompare(b.row.team))
   say(`${apply ? 'SAVING' : 'PREVIEW'}: table from ${results.length} results (${fresh.length} new)`)
   const batch = db.batch()

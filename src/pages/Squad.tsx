@@ -1,8 +1,10 @@
 import { Bandage, ChevronRight, UserRound, UsersRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PlayerAvatar from '../components/PlayerAvatar'
+import SquadTabs from '../components/SquadTabs'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import { inSquad, useSquad } from '../hooks/useSquad'
 import type { Player } from '../types'
 
 const positions = [
@@ -15,15 +17,18 @@ const positions = [
 
 export default function Squad() {
   const { items, loading, error } = useFirestoreCollection<Player>('players')
+  const [squad, setSquad] = useSquad()
 
   if (loading) return <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
   if (error) return <EmptyState icon={UsersRound} title="Squad unavailable" description={error} />
   if (items.length === 0) return <EmptyState icon={UsersRound} title="Squad not available" description="Players will appear here when the club publishes the squad." />
 
+  const squadItems = items.filter((player) => inSquad(player.squad, squad))
   return <>
-    <PageHeader eyebrow="The Ekhaya team" title="First team" description={`${items.length} players`} />
-    {positions.map(({ key, label }) => {
-      const group = items.filter((player) => player.position === key)
+    <PageHeader eyebrow={squad === 'women' ? 'The Cowgirls' : 'The Ekhaya team'} title={squad === 'women' ? "Women's team" : 'First team'} description={`${squadItems.length} players`} />
+    <SquadTabs value={squad} onChange={setSquad} />
+    {squadItems.length === 0 ? <EmptyState icon={UsersRound} title={`No ${squad === 'women' ? "women's" : "men's"} squad yet`} description="Players will appear here when the club publishes the squad." /> : positions.map(({ key, label }) => {
+      const group = squadItems.filter((player) => player.position === key)
         .sort((a, b) => (a.number ?? 1000) - (b.number ?? 1000) || a.name.localeCompare(b.name))
       if (group.length === 0) return null
       return <section className="squad-section" key={label}>
