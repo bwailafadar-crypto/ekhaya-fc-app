@@ -38,24 +38,24 @@ const players = [
 
 // Played results (Ekhaya's two wins), dates from the FAM first-round fixture list.
 const results = [
-  { id: 'w-2026-11-01-ekhaya-bangwe', date: '2026-11-01', time: '10:00', home: 'Ekhaya FC', away: 'Bangwe All Stars', homeScore: 3, awayScore: 0, venue: 'Mpira Stadium' },
-  { id: 'w-2026-11-07-fomo-ekhaya', date: '2026-11-07', time: '14:00', home: 'Fomo FC', away: 'Ekhaya FC', homeScore: 0, awayScore: 6, venue: 'Mulanje Park' },
+  { id: 'w-2026-11-01-ekhaya-bangwe', date: '2026-11-01', time: '10:00', home: 'Ekhaya Women', away: 'Bangwe All Stars', homeScore: 3, awayScore: 0, venue: 'Mpira Stadium' },
+  { id: 'w-2026-11-07-fomo-ekhaya', date: '2026-11-07', time: '14:00', home: 'Fomo FC', away: 'Ekhaya Women', homeScore: 0, awayScore: 6, venue: 'Mulanje Park' },
 ]
 
 // Ekhaya's upcoming fixtures (weeks 3–7) from the FAM first-round fixture list.
 const upcoming = [
-  { id: 'w-2026-11-15-allan-ekhaya', date: '2026-11-15', time: '14:00', home: 'Allan Ladies', away: 'Ekhaya FC', venue: 'Works Ground' },
-  { id: 'w-2026-11-21-ekhaya-nsuwadzi', date: '2026-11-21', time: '11:00', home: 'Ekhaya FC', away: 'Nsuwadzi Queens', venue: 'Mpira Stadium' },
-  { id: 'w-2026-11-28-ekhaya-sitima', date: '2026-11-28', time: '10:00', home: 'Ekhaya FC', away: 'Sitima YCE', venue: 'Mpira Stadium' },
-  { id: 'w-2026-12-05-emmanuel-ekhaya', date: '2026-12-05', time: '14:00', home: 'Emmanuel Bullets', away: 'Ekhaya FC', venue: 'St. Mathews Stadium' },
-  { id: 'w-2026-12-12-ndirande-ekhaya', date: '2026-12-12', time: '14:00', home: 'Ndirande Soccer Giants', away: 'Ekhaya FC', venue: 'Nyambadwe Ground' },
+  { id: 'w-2026-11-15-allan-ekhaya', date: '2026-11-15', time: '14:00', home: 'Allan Ladies', away: 'Ekhaya Women', venue: 'Works Ground' },
+  { id: 'w-2026-11-21-ekhaya-nsuwadzi', date: '2026-11-21', time: '11:00', home: 'Ekhaya Women', away: 'Nsuwadzi Queens', venue: 'Mpira Stadium' },
+  { id: 'w-2026-11-28-ekhaya-sitima', date: '2026-11-28', time: '10:00', home: 'Ekhaya Women', away: 'Sitima YCE', venue: 'Mpira Stadium' },
+  { id: 'w-2026-12-05-emmanuel-ekhaya', date: '2026-12-05', time: '14:00', home: 'Emmanuel Bullets', away: 'Ekhaya Women', venue: 'St. Mathews Stadium' },
+  { id: 'w-2026-12-12-ndirande-ekhaya', date: '2026-12-12', time: '14:00', home: 'Ndirande Soccer Giants', away: 'Ekhaya Women', venue: 'Nyambadwe Ground' },
 ]
 
 // Official Southern Region FAM Women's League table (2026). W/D/L derived from
 // points over 2 games; the graphic publishes only P, GD and Pts.
 const wdl = (pts) => pts === 6 ? [2, 0, 0] : pts === 3 ? [1, 0, 1] : [0, 0, 2]
 const standings = [
-  { id: 'women-ekhaya-fc', team: 'Ekhaya FC', position: 1, gd: 9, points: 6, gf: 9, ga: 0 },
+  { id: 'women-ekhaya-fc', team: 'Ekhaya Women', position: 1, gd: 9, points: 6, gf: 9, ga: 0 },
   { id: 'women-allan-ladies', team: 'Allan Ladies', position: 2, gd: 3, points: 6 },
   { id: 'women-nsuwadzi-queens', team: 'Nsuwadzi Queens', position: 3, gd: 2, points: 3 },
   { id: 'women-emmanuel-bullets', team: 'Emmanuel Bullets', position: 4, gd: -1, points: 3 },
@@ -69,7 +69,7 @@ const standings = [
   const batch = db.batch()
   for (const p of players) {
     batch.set(db.collection('players').doc(p.id), {
-      name: p.name, number: p.n, team: 'Ekhaya FC', squad: 'women',
+      name: p.name, number: p.n, team: 'Ekhaya Women', squad: 'women',
       position: p.pos ?? null, nationality: 'Malawian', captain: p.captain ?? false,
       dob: null, preferredFoot: null, heightCm: null, photoDataUrl: null, injured: false,
       stats: { ...zeroStats, goals: p.goals ?? 0, appearances: p.apps ?? 0, starts: p.apps ?? 0 },

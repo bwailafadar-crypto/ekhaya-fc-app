@@ -51,7 +51,7 @@ export default function LeagueTable({ squad = 'men' }: { squad?: Squad }) {
                   const topN = squad === 'women' ? 2 : TOP8
                   const relN = squad === 'women' ? 2 : RELEGATED
                   const zone = rows.length > topN + relN && index < topN ? 'zone-top8' : rows.length > topN + relN && index >= rows.length - relN ? 'zone-relegation' : ''
-                  const isEkhaya = row.id === 'ekhaya-fc' || row.team.toLowerCase() === 'ekhaya fc'
+                  const isEkhaya = row.team.trim().toLowerCase().startsWith('ekhaya')
                   const form = row.form ?? []
                   return <tr key={row.id} className={[zone, isEkhaya ? 'standings-ekhaya' : ''].filter(Boolean).join(' ') || undefined}>
                     <td className="standings-position" title={zone === 'zone-top8' ? (squad === 'women' ? 'Top 2' : 'Airtel Top 8 place') : zone === 'zone-relegation' ? 'Relegation place' : undefined}>{row.position ?? 0}{row.previousPosition != null && row.previousPosition !== row.position && <span className={row.previousPosition > row.position ? 'pos-up' : 'pos-down'} aria-label={row.previousPosition > row.position ? `Up ${row.previousPosition - row.position}` : `Down ${row.position - row.previousPosition}`}>{row.previousPosition > row.position ? '▲' : '▼'}</span>}</td>

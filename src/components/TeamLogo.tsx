@@ -31,7 +31,8 @@ export default function TeamLogo({
   const normalizedName = name.trim().toLocaleLowerCase()
   const team = teams.find((item) => item.name.toLocaleLowerCase() === normalizedName
     || item.shortName.toLocaleLowerCase() === normalizedName)
-  const slug = team?.id ?? slugFromName(name)
+  // Any Ekhaya side (incl. "Ekhaya Women") uses the club crest.
+  const slug = normalizedName.startsWith('ekhaya') ? 'ekhaya-fc' : team?.id ?? slugFromName(name)
   const style = { '--logo-size': crest ? '44px' : '30px' } as CSSProperties
   const classes = `team-logo${crest ? ' team-logo-crest' : ''} ${className}`.trim()
 

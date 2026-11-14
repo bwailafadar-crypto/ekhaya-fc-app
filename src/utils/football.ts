@@ -31,10 +31,13 @@ export function isLiveNow(fixture: Fixture) {
   return fixture.status === 'live' && !fixture.editing
 }
 
+/** True for any Ekhaya side — "Ekhaya FC" (men) or "Ekhaya Women". */
+export const isEkhayaTeam = (name: string) => name.trim().toLocaleLowerCase().startsWith('ekhaya')
+
 export function ekhayaOutcome(fixture: Fixture): 'W' | 'D' | 'L' | null {
   if (!isPlayed(fixture) || fixture.homeScore == null || fixture.awayScore == null) return null
-  const isHome = fixture.home.toLocaleLowerCase() === 'ekhaya fc'
-  const isAway = fixture.away.toLocaleLowerCase() === 'ekhaya fc'
+  const isHome = isEkhayaTeam(fixture.home)
+  const isAway = isEkhayaTeam(fixture.away)
   if (!isHome && !isAway) return null
   const ekhayaGoals = isHome ? fixture.homeScore : fixture.awayScore
   const opponentGoals = isHome ? fixture.awayScore : fixture.homeScore

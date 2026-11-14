@@ -9,7 +9,7 @@ import { Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { inSquad, type Squad } from '../hooks/useSquad'
 import type { Fixture } from '../types'
-import { ekhayaOutcome, isPlayed, sortByDate } from '../utils/football'
+import { ekhayaOutcome, isEkhayaTeam, isPlayed, sortByDate } from '../utils/football'
 
 export default function Results({ squad = 'men' }: { squad?: Squad }) {
   const { items: all, loading, error } = useFirestoreCollection<Fixture>('fixtures')
@@ -17,7 +17,7 @@ export default function Results({ squad = 'men' }: { squad?: Squad }) {
   const items = all.filter((fixture) => inSquad(fixture.squad, squad))
   const results = sortByDate(items.filter((fixture) => isPlayed(fixture) && !fixture.isTest && matchesFilter(fixture.competition, filter)), 'desc')
   const form = results
-    .filter((fixture) => fixture.home.toLowerCase() === 'ekhaya fc' || fixture.away.toLowerCase() === 'ekhaya fc')
+    .filter((fixture) => isEkhayaTeam(fixture.home) || isEkhayaTeam(fixture.away))
     .slice(0, 5)
     .map(ekhayaOutcome)
     .filter((result): result is 'W' | 'D' | 'L' => result !== null)
@@ -35,7 +35,7 @@ export default function Results({ squad = 'men' }: { squad?: Squad }) {
     {!loading && wonCups.map(({ cup, final }) => <ChampionsCelebration key={cup.id} cup={cup} final={final} />)}
     {!loading && !error && form.length > 0 && (
       <Card className="form-card">
-        <div className="form-summary-heading"><span>EKHAYA FC</span><span>LAST {form.length}</span></div>
+        <div className="form-summary-heading"><span>{squad === 'women' ? 'EKHAYA WOMEN' : 'EKHAYA FC'}</span><span>LAST {form.length}</span></div>
         <div className="form-dots" aria-label={`Recent form ${form.join(' ')}`}>
           {form.map((result, index) => <span key={`${result}-${index}`} className={`form-dot form-dot-${result.toLowerCase()}`} aria-label={result}>{result}</span>)}
         </div>
