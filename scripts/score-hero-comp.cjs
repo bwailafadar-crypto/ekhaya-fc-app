@@ -72,7 +72,26 @@ function decideWinner(standings) {
   return best
 }
 
+// One-off baseline: mark every already-finished men's match as scored (so the
+// competition does not retroactively count the back-catalogue) and start a clean
+// round 1. Triggered with HERO_RESET=1.
+async function resetBaseline() {
+  const snap = await db.collection('fixtures').where('status', '==', 'finished').get()
+  let marked = 0
+  for (const d of snap.docs) {
+    const f = d.data()
+    if (!f.isTest && isMen(f) && isClub(f) && f.heroScored !== true) { await d.ref.set({ heroScored: true }, { merge: true }); marked += 1 }
+  }
+  // Clear any rounds already decided during the bad run.
+  const rounds = await db.collection('heroComp').get()
+  for (const d of rounds.docs) { if (d.id.startsWith('round-')) await d.ref.delete() }
+  await db.doc('heroComp/current').set({ ...freshRound(1), updatedAt: FieldValue.serverTimestamp() })
+  note(`Matchday Hero: reset done. Baselined ${marked} past match(es); competition starts fresh at round 1.`)
+}
+
 ;(async () => {
+  if (process.env.HERO_RESET === '1') { await resetBaseline(); return }
+
   const { ref, data } = await loadCurrent()
   let round = data
 

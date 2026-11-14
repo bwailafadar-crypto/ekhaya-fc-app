@@ -3,6 +3,11 @@
 name: Score Matchday Hero
 on:
   workflow_dispatch:
+    inputs:
+      reset:
+        description: 'Set to 1 to baseline past matches and restart at round 1'
+        type: string
+        default: ''
   schedule:
     - cron: '25 * * * *'   # hourly; scoring is idempotent (heroScored flag)
 
@@ -25,6 +30,8 @@ jobs:
           printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
       - name: Score competition
+        env:
+          HERO_RESET: ${{ github.event.inputs.reset }}
         run: node scripts/score-hero-comp.cjs
       - name: Remove key
         if: always()
