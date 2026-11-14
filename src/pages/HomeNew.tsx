@@ -1,7 +1,7 @@
 // The Home screen: next match with a live countdown, last result with its
 // scorers, Ekhaya's league place and top scorer, the trophy, then news.
 // Admin → App health → "New Home screen" switches back to the old Home.
-import { ArrowRight, CalendarDays, Clapperboard, MapPin, Medal, Newspaper, ShieldCheck, ShoppingBag, Target, Trophy, Users, UsersRound } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clapperboard, MapPin, Medal, Newspaper, ShoppingBag, Target, Trophy, Users, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -32,7 +32,6 @@ export default function NewHome() {
   const firstName = profile?.fullName?.trim().split(/\s+/)[0] || user?.displayName?.trim().split(/\s+/)[0] || 'Fan'
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const standings = useFirestoreCollection<Standing>('standings')
-  const membershipOpen = useFlag('membershipPayments')
   const scorersOpen = useFlag('topScorers')
   // Staff see the Shop link even while it's "coming soon" to fans, so they can
   // keep setting it up.
@@ -126,7 +125,6 @@ export default function NewHome() {
       <Link to="/table"><Trophy size={19} /><span>Table</span></Link>
       {shopOpen && <Link to="/shop"><ShoppingBag size={19} /><span>Shop</span></Link>}
       <Link to="/tv"><Clapperboard size={19} /><span>TV</span>{!tvOpen && <small className="shortcut-soon">Soon</small>}</Link>
-      <Link to="/membership"><ShieldCheck size={19} /><span>Join</span>{!membershipOpen && <small className="shortcut-soon">Soon</small>}</Link>
     </section>
 
     <section className="nh-section">
