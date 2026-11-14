@@ -43,19 +43,21 @@ export default function LeagueTable({ squad = 'men' }: { squad?: Squad }) {
           : <><div className="standings-view" role="group" aria-label="Table view"><button type="button" className={!full ? 'active' : ''} onClick={() => setFull(false)}>Short</button><button type="button" className={full ? 'active' : ''} onClick={() => setFull(true)}>All columns</button></div><div className={`standings-scroll${full ? ' standings-full' : ''}`} role="region" aria-label="League standings" tabIndex={0}>
             <table className="standings-table">
               <thead>
-                <tr><th scope="col">#</th><th scope="col" className="standings-team-heading">Team</th><th scope="col" title="Matches played">MP</th><th scope="col" className="col-extra">W</th><th scope="col" className="col-extra">D</th><th scope="col" className="col-extra">L</th><th scope="col" title="Goals for : goals against">G</th><th scope="col" className="col-extra" title="Goal difference">GD</th><th scope="col">PTS</th><th scope="col" className="standings-form-heading" title="Next match, then the last 5 results (latest first)">Form</th></tr>
+                <tr><th scope="col">#</th><th scope="col" className="standings-team-heading">Team</th><th scope="col" title="Matches played">MP</th><th scope="col" className="col-extra">W</th><th scope="col" className="col-extra">D</th><th scope="col" className="col-extra">L</th>{squad === 'women' ? <th scope="col" title="Goal difference">GD</th> : <><th scope="col" title="Goals for : goals against">G</th><th scope="col" className="col-extra" title="Goal difference">GD</th></>}<th scope="col">PTS</th><th scope="col" className="standings-form-heading" title="Next match, then the last 5 results (latest first)">Form</th></tr>
               </thead>
               <tbody>
                 {rows.map((row, index) => {
-                  // 1–8 play in the Airtel Top 8; the last 3 go down (only once the table has enough teams).
-                  const zone = rows.length > TOP8 + RELEGATED && index < TOP8 ? 'zone-top8' : rows.length > TOP8 + RELEGATED && index >= rows.length - RELEGATED ? 'zone-relegation' : ''
+                  // Men's: top 8 (Airtel Top 8), bottom 3 relegated. Women's: top 2, bottom 2.
+                  const topN = squad === 'women' ? 2 : TOP8
+                  const relN = squad === 'women' ? 2 : RELEGATED
+                  const zone = rows.length > topN + relN && index < topN ? 'zone-top8' : rows.length > topN + relN && index >= rows.length - relN ? 'zone-relegation' : ''
                   const isEkhaya = row.id === 'ekhaya-fc' || row.team.toLowerCase() === 'ekhaya fc'
                   const form = row.form ?? []
                   return <tr key={row.id} className={[zone, isEkhaya ? 'standings-ekhaya' : ''].filter(Boolean).join(' ') || undefined}>
-                    <td className="standings-position" title={zone === 'zone-top8' ? 'Airtel Top 8 place' : zone === 'zone-relegation' ? 'Relegation place' : undefined}>{row.position ?? 0}{row.previousPosition != null && row.previousPosition !== row.position && <span className={row.previousPosition > row.position ? 'pos-up' : 'pos-down'} aria-label={row.previousPosition > row.position ? `Up ${row.previousPosition - row.position}` : `Down ${row.position - row.previousPosition}`}>{row.previousPosition > row.position ? '▲' : '▼'}</span>}</td>
+                    <td className="standings-position" title={zone === 'zone-top8' ? (squad === 'women' ? 'Top 2' : 'Airtel Top 8 place') : zone === 'zone-relegation' ? 'Relegation place' : undefined}>{row.position ?? 0}{row.previousPosition != null && row.previousPosition !== row.position && <span className={row.previousPosition > row.position ? 'pos-up' : 'pos-down'} aria-label={row.previousPosition > row.position ? `Up ${row.previousPosition - row.position}` : `Down ${row.position - row.previousPosition}`}>{row.previousPosition > row.position ? '▲' : '▼'}</span>}</td>
                     <th scope="row" className="standings-team"><span className="standings-team-content"><TeamLogo name={row.team} /><span>{row.team}</span></span></th>
                     <td>{row.played ?? 0}</td><td className="col-extra">{row.won ?? 0}</td><td className="col-extra">{row.drawn ?? 0}</td><td className="col-extra">{row.lost ?? 0}</td>
-                    <td className="standings-goals">{row.goalsFor ?? 0}:{row.goalsAgainst ?? 0}</td><td className="col-extra">{row.goalDifference ?? 0}</td>
+                    {squad === 'women' ? <td className="standings-goals">{(row.goalDifference ?? 0) > 0 ? '+' : ''}{row.goalDifference ?? 0}</td> : <><td className="standings-goals">{row.goalsFor ?? 0}:{row.goalsAgainst ?? 0}</td><td className="col-extra">{row.goalDifference ?? 0}</td></>}
                     <td className="standings-points">{row.points ?? 0}</td>
                     <td><div className="table-form-boxes" aria-label={`Last results, latest first: ${form.slice(-5).reverse().join(' ')}`}>
                       {(() => {
@@ -75,11 +77,15 @@ export default function LeagueTable({ squad = 'men' }: { squad?: Squad }) {
               </tbody>
             </table>
           </div>{detail && <MatchSheet data={detail} fixtures={fixtures.items} onClose={() => setDetail(null)} />}</>}
-    {rows.length > TOP8 + RELEGATED && <ul className="table-zones" aria-label="What the colours mean">
+    {squad === 'men' && rows.length > TOP8 + RELEGATED && <ul className="table-zones" aria-label="What the colours mean">
       <li><i className="zone-key zone-key-top8" aria-hidden="true" />1–{TOP8}: Airtel Top 8</li>
       <li><i className="zone-key zone-key-relegation" aria-hidden="true" />Last {RELEGATED}: relegated</li>
     </ul>}
-    {scorersOpen && <Link className="table-scorers-link" to="/scorers">⚽ Top scorers & Golden Boot race →</Link>}
+    {squad === 'women' && rows.length > 4 && <ul className="table-zones" aria-label="What the colours mean">
+      <li><i className="zone-key zone-key-top8" aria-hidden="true" />Top 2</li>
+      <li><i className="zone-key zone-key-relegation" aria-hidden="true" />Last 2: relegated</li>
+    </ul>}
+    {squad === 'men' && scorersOpen && <Link className="table-scorers-link" to="/scorers">⚽ Top scorers & Golden Boot race →</Link>}
     <p className="table-scroll-hint">{full ? 'Swipe sideways to see all columns. ' : ''}Form: next match (?), then the last 5 results, latest first.</p>
   </>
 }
