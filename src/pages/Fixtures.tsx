@@ -6,9 +6,8 @@ import CupCard from '../components/CupCard'
 import { CUPS, matchesFilter } from '../utils/competitions'
 import { cupMatches } from '../utils/cupSeason'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
-import SquadTabs from '../components/SquadTabs'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import { inSquad, useSquad } from '../hooks/useSquad'
+import { inSquad, type Squad } from '../hooks/useSquad'
 import type { Fixture } from '../types'
 import { isPlayed, sortByDate } from '../utils/football'
 
@@ -25,10 +24,9 @@ function teamKey(name: string) {
   return teamAliases[key] ?? key
 }
 
-export default function Fixtures() {
+export default function Fixtures({ squad = 'men' }: { squad?: Squad }) {
   const { items: all, loading, error } = useFirestoreCollection<Fixture>('fixtures')
   const [filter, setFilter] = useCompetitionFilter()
-  const [squad, setSquad] = useSquad()
   const items = all.filter((fixture) => inSquad(fixture.squad, squad))
   const fixtures = sortByDate(items.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest && matchesFilter(fixture.competition, filter)), 'asc')
   const completed = items.filter((fixture) => isPlayed(fixture) && !fixture.isTest
@@ -47,9 +45,8 @@ export default function Fixtures() {
   const cupsShown = squad === 'men' ? (filter === 'cups' ? CUPS : CUPS.filter((cup) => cup.id === filter)) : []
 
   return <>
-    <PageHeader eyebrow={filterLabel(filter)} title="Fixtures" description="Upcoming matches · Malawi time (CAT)" />
-    <SquadTabs value={squad} onChange={setSquad} />
-    <CompetitionTabs value={filter} onChange={setFilter} />
+    <PageHeader eyebrow={squad === 'women' ? "The Cowgirls" : filterLabel(filter)} title={squad === 'women' ? "Women's fixtures" : 'Fixtures'} description="Upcoming matches · Malawi time (CAT)" />
+    {squad === 'men' && <CompetitionTabs value={filter} onChange={setFilter} />}
     {loading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : error ? <EmptyState icon={CalendarDays} title="Fixtures unavailable" description={error} />
         : fixtures.length ? fixtures.map((fixture) => <MatchCard key={fixture.id} fixture={fixture} previousMeeting={previousMeeting(fixture)} />)

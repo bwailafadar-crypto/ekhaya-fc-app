@@ -7,12 +7,14 @@ import { CUPS, matchesFilter } from '../utils/competitions'
 import { cupMatches, cupStatus } from '../utils/cupSeason'
 import { Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
+import { inSquad, type Squad } from '../hooks/useSquad'
 import type { Fixture } from '../types'
 import { ekhayaOutcome, isPlayed, sortByDate } from '../utils/football'
 
-export default function Results() {
-  const { items, loading, error } = useFirestoreCollection<Fixture>('fixtures')
+export default function Results({ squad = 'men' }: { squad?: Squad }) {
+  const { items: all, loading, error } = useFirestoreCollection<Fixture>('fixtures')
   const [filter, setFilter] = useCompetitionFilter()
+  const items = all.filter((fixture) => inSquad(fixture.squad, squad))
   const results = sortByDate(items.filter((fixture) => isPlayed(fixture) && !fixture.isTest && matchesFilter(fixture.competition, filter)), 'desc')
   const form = results
     .filter((fixture) => fixture.home.toLowerCase() === 'ekhaya fc' || fixture.away.toLowerCase() === 'ekhaya fc')
@@ -28,8 +30,8 @@ export default function Results() {
   })
 
   return <>
-    <PageHeader eyebrow={filterLabel(filter)} title="Results" description="Latest completed matches" />
-    <CompetitionTabs value={filter} onChange={setFilter} />
+    <PageHeader eyebrow={squad === 'women' ? "The Cowgirls" : filterLabel(filter)} title={squad === 'women' ? "Women's results" : 'Results'} description="Latest completed matches" />
+    {squad === 'men' && <CompetitionTabs value={filter} onChange={setFilter} />}
     {!loading && wonCups.map(({ cup, final }) => <ChampionsCelebration key={cup.id} cup={cup} final={final} />)}
     {!loading && !error && form.length > 0 && (
       <Card className="form-card">

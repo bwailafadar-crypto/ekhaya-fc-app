@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Activity, BarChart3, ScrollText, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, Vote } from 'lucide-react'
+import { Activity, BarChart3, ScrollText, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, UsersRound, Vote } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { useFlag } from '../hooks/useFlag'
 import LogoutButton from '../components/LogoutButton'
@@ -9,6 +9,7 @@ const items = [
   { to: '/competitions', label: 'Competitions · league & cups', icon: Medal },
   { to: '/results', label: 'Results', icon: Trophy },
   { to: '/squad', label: 'Squad', icon: Users },
+  { to: '/women', label: 'Ekhaya Women · The Cowgirls', icon: UsersRound },
   { to: '/news', label: 'News', icon: Newspaper },
   { to: '/tv', label: 'Ekhaya TV · videos & live', icon: Clapperboard },
   { to: '/club', label: 'Club & honours · trophy cabinet', icon: Landmark },

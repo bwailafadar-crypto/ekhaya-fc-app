@@ -25,6 +25,7 @@ const Results = lazyPage(() => import('./pages/Results'))
 const LeagueTable = lazyPage(() => import('./pages/LeagueTable'))
 const LiveMatch = lazyPage(() => import('./pages/LiveMatch'))
 const Squad = lazyPage(() => import('./pages/Squad'))
+const WomenHub = lazyPage(() => import('./pages/WomenHub'))
 const News = lazyPage(() => import('./pages/News'))
 const FanZone = lazyPage(() => import('./pages/FanZone'))
 const Membership = lazyPage(() => import('./pages/Membership'))
@@ -74,6 +75,11 @@ export default function App() {
                 <Route path="/live" element={<LiveMatch />} />
                 <Route path="/squad" element={<Squad />} />
                 <Route path="/squad/:id" element={<PlayerDetailPage />} />
+                <Route path="/women" element={<WomenHub />} />
+                <Route path="/women/squad" element={<Squad squad="women" />} />
+                <Route path="/women/results" element={<Results squad="women" />} />
+                <Route path="/women/fixtures" element={<Fixtures squad="women" />} />
+                <Route path="/women/table" element={<LeagueTable squad="women" />} />
                 <Route path="/news" element={<News />} />
                 <Route path="/news/:id" element={<News />} />
                 <Route path="/fanzone" element={<FanZone />} />

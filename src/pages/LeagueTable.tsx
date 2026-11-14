@@ -4,8 +4,7 @@ import { useFlag } from '../hooks/useFlag'
 import TeamLogo from '../components/TeamLogo'
 import { EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import SquadTabs from '../components/SquadTabs'
-import { inSquad, useSquad } from '../hooks/useSquad'
+import { inSquad, type Squad } from '../hooks/useSquad'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import type { Fixture, FormEntry, Standing } from '../types'
@@ -14,9 +13,8 @@ import { formatMalawiDate } from '../utils/football'
 const TOP8 = 8
 const RELEGATED = 3
 
-export default function LeagueTable() {
+export default function LeagueTable({ squad = 'men' }: { squad?: Squad }) {
   const { items, loading, error } = useFirestoreCollection<Standing>('standings')
-  const [squad, setSquad] = useSquad()
   const rows = [...items].filter((row) => inSquad(row.squad, squad)).sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   // Phones show the short table (MP, G, PTS, form); "All columns" adds W, D, L and GD.
@@ -38,8 +36,7 @@ export default function LeagueTable() {
     .sort((a, b) => a.date.localeCompare(b.date))[0]
 
   return <>
-    <PageHeader eyebrow="2026 season" title="League table" description={squad === 'women' ? "Women's league standings" : 'FDH Championship standings'} />
-    <SquadTabs value={squad} onChange={setSquad} />
+    <PageHeader eyebrow="2026 season" title={squad === 'women' ? "Women's league table" : 'League table'} description={squad === 'women' ? "The Cowgirls' league standings" : 'FDH Championship standings'} />
     {loading ? <div className="table-loading"><Skeleton /><Skeleton /><Skeleton /><Skeleton /></div>
       : error ? <EmptyState icon={Table2} title="Table unavailable" description={error} />
         : rows.length === 0 ? <EmptyState icon={Table2} title="Standings are not available" description="The club table will appear here when data is added." />
