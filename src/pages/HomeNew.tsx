@@ -48,7 +48,8 @@ export default function NewHome() {
   const mens = fixtures.filter((fixture) => (fixture.squad ?? 'men') === 'men')
   const live = fixtures.find(isLiveNow)
   // Matches still marked upcoming long after kick-off (not recorded yet) are skipped.
-  const next = sortByDate(mens.filter((fixture) => fixture.status === 'upcoming' && new Date(fixture.date).getTime() > now - 3 * 3600000), 'asc')[0]
+  // Next match is the club's soonest game across BOTH teams (men's or women's).
+  const next = sortByDate(fixtures.filter((fixture) => fixture.status === 'upcoming' && new Date(fixture.date).getTime() > now - 3 * 3600000), 'asc')[0]
   const last = sortByDate(mens.filter((fixture) => isPlayed(fixture) && !fixture.editing), 'desc')[0]
   const table = [...standings.items].filter((row) => (row.squad ?? 'men') === 'men').sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
   const ekhaya = table.find((row) => isClub(row.team))
