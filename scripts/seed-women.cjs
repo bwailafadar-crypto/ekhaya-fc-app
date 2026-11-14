@@ -36,10 +36,19 @@ const players = [
   { id: 'women-jonathan-30', name: 'Jonathan', n: 30 },
 ]
 
-// Known results (Ekhaya's two wins). Bangwe date is an estimate — confirm it.
+// Played results (Ekhaya's two wins), dates from the FAM first-round fixture list.
 const results = [
-  { id: 'w-2026-11-02-ekhaya-bangwe', date: '2026-11-02', home: 'Ekhaya FC', away: 'Bangwe All Stars', homeScore: 3, awayScore: 0, venue: 'Mpira Stadium' },
-  { id: 'w-2026-11-07-fomo-ekhaya', date: '2026-11-07', home: 'Fomo FC', away: 'Ekhaya FC', homeScore: 0, awayScore: 6, venue: 'Mulanje Park' },
+  { id: 'w-2026-11-01-ekhaya-bangwe', date: '2026-11-01', time: '10:00', home: 'Ekhaya FC', away: 'Bangwe All Stars', homeScore: 3, awayScore: 0, venue: 'Mpira Stadium' },
+  { id: 'w-2026-11-07-fomo-ekhaya', date: '2026-11-07', time: '14:00', home: 'Fomo FC', away: 'Ekhaya FC', homeScore: 0, awayScore: 6, venue: 'Mulanje Park' },
+]
+
+// Ekhaya's upcoming fixtures (weeks 3–7) from the FAM first-round fixture list.
+const upcoming = [
+  { id: 'w-2026-11-15-allan-ekhaya', date: '2026-11-15', time: '14:00', home: 'Allan Ladies', away: 'Ekhaya FC', venue: 'Works Ground' },
+  { id: 'w-2026-11-21-ekhaya-nsuwadzi', date: '2026-11-21', time: '11:00', home: 'Ekhaya FC', away: 'Nsuwadzi Queens', venue: 'Mpira Stadium' },
+  { id: 'w-2026-11-28-ekhaya-sitima', date: '2026-11-28', time: '10:00', home: 'Ekhaya FC', away: 'Sitima YCE', venue: 'Mpira Stadium' },
+  { id: 'w-2026-12-05-emmanuel-ekhaya', date: '2026-12-05', time: '14:00', home: 'Emmanuel Bullets', away: 'Ekhaya FC', venue: 'St. Mathews Stadium' },
+  { id: 'w-2026-12-12-ndirande-ekhaya', date: '2026-12-12', time: '14:00', home: 'Ndirande Soccer Giants', away: 'Ekhaya FC', venue: 'Nyambadwe Ground' },
 ]
 
 // Official Southern Region FAM Women's League table (2026). W/D/L derived from
@@ -67,11 +76,20 @@ const standings = [
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true })
   }
+  // Remove the earlier estimated-date Bangwe fixture (now dated from the list).
+  batch.delete(db.collection('fixtures').doc('w-2026-11-02-ekhaya-bangwe'))
   for (const r of results) {
     batch.set(db.collection('fixtures').doc(r.id), {
-      competition: "Women's League", squad: 'women', date: `${r.date}T14:00:00+02:00`,
+      competition: "Women's League", squad: 'women', date: `${r.date}T${r.time}:00+02:00`,
       home: r.home, away: r.away, homeScore: r.homeScore, awayScore: r.awayScore,
       status: 'finished', venue: r.venue, season: '2026', updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true })
+  }
+  for (const f of upcoming) {
+    batch.set(db.collection('fixtures').doc(f.id), {
+      competition: "Women's League", squad: 'women', date: `${f.date}T${f.time}:00+02:00`,
+      home: f.home, away: f.away, homeScore: null, awayScore: null,
+      status: 'upcoming', venue: f.venue, season: '2026', updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true })
   }
   for (const s of standings) {
@@ -84,5 +102,5 @@ const standings = [
     }, { merge: true })
   }
   await batch.commit()
-  note(`Seeded ${players.length} players, ${results.length} results, ${standings.length} table rows.`)
+  note(`Seeded ${players.length} players, ${results.length} results, ${upcoming.length} fixtures, ${standings.length} table rows.`)
 })().catch((e) => { console.log('::error::' + e.message); process.exit(1) })
