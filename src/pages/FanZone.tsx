@@ -250,7 +250,7 @@ function QuickNav({ items }: { items: Array<{ id: string; label: string; icon: R
 function ShareCard() {
   const { showToast } = useToast()
   async function share() {
-    const data = { title: 'Ekhaya FC', text: 'Follow Ekhaya FC — live scores, predictions and more. Up the Ekhaya! 💛', url: APP_URL }
+    const data = { title: 'Ekhaya FC', text: 'Follow Ekhaya FC — live scores, predictions and the Matchday Hero competition.', url: APP_URL }
     try {
       if (navigator.share) { await navigator.share(data); return }
       await navigator.clipboard.writeText(APP_URL)
@@ -259,7 +259,7 @@ function ShareCard() {
   }
   return (
     <Card className="fz-invite">
-      <div><strong>Bring the fans in 💛</strong><small>Share the app and climb the ranks together.</small></div>
+      <div><strong>Bring more supporters in</strong><small>Share the app and climb the table together.</small></div>
       <Button type="button" variant="secondary" onClick={() => void share()}><Share2 size={15} aria-hidden="true" /> Share</Button>
     </Card>
   )
@@ -289,7 +289,13 @@ export default function FanZone() {
   ].filter(Boolean) as Array<{ id: string; label: string; icon: ReactNode }>
 
   return <div className="fan-zone">
-    <PageHeader eyebrow="Supporters" title="Fan Zone" description="Predict scores, pick the man of the match and have your say." />
+    <header className="fz-masthead">
+      <img className="fz-masthead-crest" src="./team-logos/ekhaya-fc.png" alt="" aria-hidden="true" />
+      <div>
+        <h1>Fan Zone</h1>
+        <p>Predict results, pick your matchday hero and climb the supporters' table.</p>
+      </div>
+    </header>
     {(fixtures.error || players.error || polls.error) && <p className="live-error" role="alert">Some Fan Zone content could not be loaded. Check your connection.</p>}
 
     <MatchHero live={liveMatch} next={nextMatch} />

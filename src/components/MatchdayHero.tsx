@@ -48,7 +48,7 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
     try {
       await setDoc(doc(db, 'fixtures', fixtureId, 'heroPicks', user.uid), { playerId: player.id, name: (profile?.fullName ?? '').slice(0, 120), updatedAt: serverTimestamp() })
       burst(button ?? null, 16)
-      showToast(`Your matchday hero: ${player.name}. Up the Ekhaya! 💛`)
+      showToast(`Your matchday hero: ${player.name}. Picks lock at kickoff.`)
     } catch (error) {
       showToast(saveErrorText(error, 'Your pick was not saved. Check your connection and try again.'), 'error')
     } finally {
@@ -68,7 +68,7 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
         </div>
       </div>
 
-      {prevRound.data?.winnerName && <p className="mh-winner"><Trophy size={14} aria-hidden="true" /> Round {prevRound.data.roundNumber}: <strong>{prevRound.data.winnerName}</strong> won the jersey with {prevRound.data.winnerPoints} pts! 🎉</p>}
+      {prevRound.data?.winnerName && <p className="mh-winner"><Trophy size={14} aria-hidden="true" /> Round {prevRound.data.roundNumber}: <strong>{prevRound.data.winnerName}</strong> won the jersey with {prevRound.data.winnerPoints} pts.</p>}
 
       <div className="mh-scoring"><span>⚽ Goal <b>+5</b></span><span>👟 Assist <b>+3</b></span><span>⭐ MOM <b>+4</b></span></div>
 
