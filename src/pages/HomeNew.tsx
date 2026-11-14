@@ -43,14 +43,17 @@ export default function NewHome() {
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer) }, [])
 
   const fixtures = fixturesResult.items.filter((fixture) => !fixture.isTest)
+  // Home is the men's team's page; women's team has its own section. A LIVE match
+  // can be either team, but next match, last result and the table are men's only.
+  const mens = fixtures.filter((fixture) => (fixture.squad ?? 'men') === 'men')
   const live = fixtures.find(isLiveNow)
   // Matches still marked upcoming long after kick-off (not recorded yet) are skipped.
-  const next = sortByDate(fixtures.filter((fixture) => fixture.status === 'upcoming' && new Date(fixture.date).getTime() > now - 3 * 3600000), 'asc')[0]
-  const last = sortByDate(fixtures.filter((fixture) => isPlayed(fixture) && !fixture.editing), 'desc')[0]
-  const table = [...standings.items].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+  const next = sortByDate(mens.filter((fixture) => fixture.status === 'upcoming' && new Date(fixture.date).getTime() > now - 3 * 3600000), 'asc')[0]
+  const last = sortByDate(mens.filter((fixture) => isPlayed(fixture) && !fixture.editing), 'desc')[0]
+  const table = [...standings.items].filter((row) => (row.squad ?? 'men') === 'men').sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
   const ekhaya = table.find((row) => isClub(row.team))
   // A cup Ekhaya won this season (the final is in the fixtures).
-  const trophy = sortByDate(fixtures.filter((fixture) => fixture.status === 'finished' && isCupCompetition(fixture.competition) && /final/i.test(`${fixture.round ?? ''} ${fixture.id}`) && !/semi|quarter|qf|sf/i.test(`${fixture.round ?? ''} ${fixture.id}`) && ekhayaOutcome(fixture) === 'W'), 'desc')[0]
+  const trophy = sortByDate(mens.filter((fixture) => fixture.status === 'finished' && isCupCompetition(fixture.competition) && /final/i.test(`${fixture.round ?? ''} ${fixture.id}`) && !/semi|quarter|qf|sf/i.test(`${fixture.round ?? ''} ${fixture.id}`) && ekhayaOutcome(fixture) === 'W'), 'desc')[0]
   const news = newsResult.items.slice(0, 3)
   const outcome = last ? ekhayaOutcome(last) : null
 
