@@ -3008,7 +3008,8 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 
 /* Women's team hub hero */
 .women-hero { position: relative; border-radius: 16px; overflow: hidden; min-height: 210px; background-size: cover; background-position: center 28%; margin: 2px 0 14px; display: flex; align-items: flex-end; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-.women-hero-overlay { width: 100%; padding: 26px 18px 16px; background: linear-gradient(to top, rgba(45,20,75,0.92) 0%, rgba(45,20,75,0.45) 55%, rgba(45,20,75,0) 100%); color: #fff; }
+.women-hero-overlay { width: 100%; padding: 26px 18px 16px; background: linear-gradient(to top, rgba(45,20,75,0.92) 0%, rgba(45,20,75,0.45) 55%, rgba(45,20,75,0) 100%); color: #fff; display: flex; align-items: flex-end; gap: 12px; }
+.women-hero-crest { width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
 .women-hero-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: #e6c2ff; }
 .women-hero-title { margin: 3px 0 0; font-size: clamp(26px, 8vw, 34px); font-weight: 900; line-height: 1.05; }
 .women-hero-sub { margin: 4px 0 0; font-size: 14px; opacity: .92; }

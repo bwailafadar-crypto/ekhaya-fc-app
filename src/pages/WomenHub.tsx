@@ -21,9 +21,12 @@ export default function WomenHub() {
   return <>
     <section className="women-hero" style={{ backgroundImage: 'url(./women/hero.jpg)' }} aria-label="Ekhaya Women">
       <div className="women-hero-overlay">
-        <span className="women-hero-eyebrow">The Cowgirls</span>
-        <h1 className="women-hero-title">Ekhaya Women</h1>
-        <p className="women-hero-sub">Ekhaya FC women's team</p>
+        <img className="women-hero-crest" src="./team-logos/ekhaya-fc.png" alt="Ekhaya FC crest" width={56} height={56} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+        <div>
+          <span className="women-hero-eyebrow">The Cowgirls</span>
+          <h1 className="women-hero-title">Ekhaya Women</h1>
+          <p className="women-hero-sub">Ekhaya FC women's team</p>
+        </div>
       </div>
     </section>
 
