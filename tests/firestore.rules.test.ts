@@ -356,7 +356,7 @@ test('shop orders: own order, real order number, one per minute', async () => {
   await assertFails(place('o3', order('hack')))
   await assertFails(place('o4', order('EK-ABC14', { uid: 'fan-2' })))
   await assertFails(place('o5', order('EK-ABC15', { total: 99_000_000 })))
-  await assertSucceeds(place('o6', order('EK-ABC16')))
+  await assertSucceeds(place('o6', order('EK-A2#9B')))
   // Fans can't read other fans' orders
   await assertFails(getDoc(doc(signedIn('fan-2'), 'shopOrders/o6')))
 })

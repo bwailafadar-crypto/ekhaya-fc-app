@@ -24,7 +24,7 @@ export default function OrderCollect() {
 
   async function lookup(raw: string) {
     const clean = raw.trim().toUpperCase().replace(/^EKHAYA:/, '')
-    if (!/^EK-[A-Z0-9]{5}$/.test(clean)) { setMsg('That is not a valid order code (looks like EK-AB12C).'); return }
+    if (!/^EK-[A-Z0-9#@*]{5,8}$/.test(clean)) { setMsg('That is not a valid order code (looks like EK-A2#9B).'); return }
     setMsg(''); setBusy(true); setOrder(null)
     try {
       const snap = await getDocs(query(collection(db, 'shopOrders'), where('ref', '==', clean), limit(1)))
@@ -87,7 +87,7 @@ export default function OrderCollect() {
       : canScan && <Button type="button" variant="secondary" onClick={() => { setOrder(null); setMsg(''); setScanning(true) }}><ScanLine size={16} /> Scan collection pass</Button>}
 
     <form className="collect-manual" onSubmit={(e) => { e.preventDefault(); void lookup(code) }}>
-      <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Or type code, e.g. EK-AB12C" maxLength={8} aria-label="Order code" />
+      <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Or type code, e.g. EK-7K#M9Q" maxLength={9} aria-label="Order code" />
       <Button type="submit" disabled={busy || !code.trim()}>Check</Button>
     </form>
 

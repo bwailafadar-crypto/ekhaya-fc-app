@@ -149,7 +149,15 @@ const subscribe = (l: () => void) => { listeners.add(l); return () => listeners.
 
 export function useShopStore() { return useSyncExternalStore(subscribe, () => store) }
 
-export const newOrderRef = () => `EK-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
+// A collection code that always mixes letters, numbers and a symbol, so it is
+// harder to guess. Ambiguous characters (0/O, 1/I) are left out.
+export const newOrderRef = () => {
+  const L = 'ABCDEFGHJKLMNPQRSTUVWXYZ', D = '23456789', S = '#@*'
+  const pick = (set: string) => set[Math.floor(Math.random() * set.length)]
+  const chars = [pick(L), pick(L), pick(D), pick(D), pick(S), pick(L + D)]
+  for (let i = chars.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [chars[i], chars[j]] = [chars[j], chars[i]] }
+  return `EK-${chars.join('')}`
+}
 
 /** A cart line as saved with an order: no picture, no empty fields. */
 export function orderLine(line: CartLine) {
