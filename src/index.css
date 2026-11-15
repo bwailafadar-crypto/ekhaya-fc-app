@@ -2789,6 +2789,14 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .collect-total { font-size: 12px; opacity: .85; }
 .collect-verdict { margin-top: 2px; font-size: 13px; font-weight: 700; }
 .collect-detail .button { margin-top: 8px; align-self: flex-start; }
+
+/* Admin orders: code roster + hand-over */
+.shop-order-search { width: 100%; margin: 0 0 12px; padding: 11px 13px; font-size: 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--card); }
+.shop-order-nomatch { margin: 0; padding: 14px; font-size: 13.5px; font-weight: 700; color: #A3291B; background: #FDECEA; border: 1.5px solid #E89B92; border-radius: 12px; }
+.shop-order-code { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 600; letter-spacing: .06em; color: var(--ink); padding: 2px 9px; background: #FBF1CF; border: 1px solid var(--gold); border-radius: 8px; }
+.shop-order-collected { margin: 0; font-size: 12px; font-weight: 700; color: #2E7D4F; }
+.shop-collect-btn { padding: 8px 13px; font-size: 13px; font-weight: 700; color: #fff; background: #2E7D4F; border: 0; border-radius: 10px; cursor: pointer; }
+.shop-collect-btn:hover { background: #276c44; }
 .shop-orders > li > div { display: flex; align-items: center; justify-content: space-between; }
 .shop-orders small { color: var(--muted); }
 .shop-status { padding: 3px 9px; border-radius: 999px; background: #EFEEE9; font-size: 11px; font-weight: 800; }

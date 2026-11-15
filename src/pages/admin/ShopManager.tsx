@@ -4,6 +4,7 @@ import { addDoc, collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc
 import { ImagePlus, Package, Pencil, Plus, ScanLine, Settings, ShoppingBag, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import OrderCollect from './OrderCollect'
+import { useAuth } from '../../auth/AuthContext'
 import ShirtArt from '../../components/ShirtArt'
 import { useToast } from '../../components/ToastContext'
 import { Button, Card } from '../../components/UI'
@@ -29,6 +30,8 @@ export default function ShopManager() {
   const [tab, setTab] = useState<'orders' | 'products' | 'collect' | 'settings'>('products')
   const [editing, setEditing] = useState<(Omit<ShopProduct, 'id'> & { id?: string }) | null>(null)
   const [busy, setBusy] = useState(false)
+  const [search, setSearch] = useState('')
+  const { user } = useAuth()
 
   useEffect(() => onSnapshot(collection(db, 'shopProducts'), (s) => setProducts(s.docs.map((d) => ({ ...(d.data() as ShopProduct), id: d.id })).sort((a, b) => (a.order ?? 99) - (b.order ?? 99))), () => setProducts([])), [])
   useEffect(() => onSnapshot(collection(db, 'shopOrders'), (s) => setOrders(s.docs.map((d) => ({ ...(d.data() as ShopOrder), id: d.id })).sort((a, b) => (b.createdAt?.seconds ?? Infinity) - (a.createdAt?.seconds ?? Infinity))), () => setOrders([])), [])
@@ -58,6 +61,18 @@ export default function ShopManager() {
     try { await updateDoc(doc(db, 'shopOrders', o.id), { status, updatedAt: serverTimestamp() }); void logAction(`Order ${STATUS_LABEL[status]}`, `${o.ref} · ${o.name} · MK ${o.total}`) } catch (e) { showToast(e instanceof Error ? e.message : 'Not saved.', 'error') }
   }
 
+  async function handOver(o: ShopOrder) {
+    if (!window.confirm(`Hand over ${o.ref} to ${o.name}? This marks it collected and the code can't be used again.`)) return
+    try {
+      await updateDoc(doc(db, 'shopOrders', o.id), { status: 'collected', collectedAt: serverTimestamp(), collectedBy: user?.uid ?? '', updatedAt: serverTimestamp() })
+      void logAction('Order collected', `${o.ref} · ${o.name} · MK ${o.total}`)
+      showToast(`${o.ref} handed over to ${o.name}.`)
+    } catch (e) { showToast(e instanceof Error ? e.message : 'Not saved.', 'error') }
+  }
+
+  const query = search.trim().toLowerCase()
+  const shownOrders = query ? orders.filter((o) => `${o.ref} ${o.name} ${o.phone}`.toLowerCase().includes(query)) : orders
+
   return <Card className="admin-card shop-admin">
     <div className="fz-card-heading"><ShoppingBag size={18} aria-hidden="true" /><div><h2>Club shop</h2><span>{products.filter(isPublished).length} on sale · {open.length} open order{open.length === 1 ? '' : 's'}</span></div></div>
     <div className="shop-print-tabs">
@@ -83,18 +98,24 @@ export default function ShopManager() {
     </>)}
 
     {tab === 'orders' && (!orders.length ? <p className="live-help">No orders yet. When a fan orders, it shows here (and on WhatsApp if you set the number in Settings).</p>
-      : <ul className="shop-admin-orders">{orders.map((o) => <li key={o.id} className={`s-${o.status}`}>
-        <div className="shop-order-top"><strong>{o.ref}</strong><span>{o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'just now'}</span><b>{mwk(o.total)}</b></div>
-        <p>{o.name} · <a href={`tel:${o.phone}`}>{o.phone}</a> · {o.delivery === 'delivery' ? `Deliver: ${o.address ?? ''}` : 'Pick up'}</p>
+      : <>
+        <input className="shop-order-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Match a code the fan brings, e.g. EK-7K#M9Q (or name)" aria-label="Find order by code or name" />
+        {query && !shownOrders.length
+          ? <p className="shop-order-nomatch">⛔ No order matches “{search.trim()}”. Do not hand over a product for this code.</p>
+          : <ul className="shop-admin-orders">{shownOrders.map((o) => { const payable = o.status === 'paid' || o.status === 'ready'; return <li key={o.id} className={`s-${o.status}`}>
+        <div className="shop-order-top"><code className="shop-order-code">{o.ref}</code><span>{o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'just now'}</span><b>{mwk(o.total)}</b></div>
+        <p>{o.name} · <a href={`tel:${o.phone}`}>{o.phone}</a> · {o.delivery === 'delivery' ? `Deliver: ${o.address ?? ''}` : 'Pick up'} · <span className={`shop-status s-${o.status}`}>{STATUS_LABEL[o.status] ?? o.status}</span></p>
         <ul>{o.lines.map((l, i) => <li key={i}>{l.qty} × {l.name}{l.variant ? <b>, {l.variant}</b> : null}{l.size ? ` (${l.size})` : ''}{l.printName || l.printNumber ? <em> print {l.printName} {l.printNumber}</em> : null}</li>)}</ul>
         <p className="shop-order-pay">{o.payment ? <>Payment: <b>{o.payment.method === 'airtel' ? 'Airtel Money' : o.payment.method === 'mpamba' ? 'TNM Mpamba' : o.payment.method === 'fdh' ? 'FDH Bank' : 'Cash'}</b>{o.payment.txId ? <> · transaction <b>{o.payment.txId}</b></> : o.payment.method !== 'cash' ? ' · no transaction ID yet' : ''}</> : 'Payment: not chosen'}</p>
+        {o.status === 'collected' && <p className="shop-order-collected">✓ Collected{o.collectedAt?.seconds ? ` on ${new Date(o.collectedAt.seconds * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''} — this code can't be used again.</p>}
         <div className="shop-order-actions">
           {(o.status === 'new' || o.status === 'confirmed') && <button type="button" className="shop-paid-btn" onClick={() => void setStatus(o, 'paid')}>✓ Mark paid</button>}
-          {o.status === 'paid' && <button type="button" className="shop-paid-btn" onClick={() => void setStatus(o, 'ready')}>✓ Ready to collect</button>}
+          {payable && <button type="button" className="shop-collect-btn" onClick={() => void handOver(o)}>✓ Hand over &amp; mark collected</button>}
           <select value={o.status} onChange={(e) => void setStatus(o, e.target.value as OrderStatus)} aria-label="Order status">{ORDER_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select>
           <a className="shop-wa" href={waLink(o.phone, `Hello ${o.name}, about your Ekhaya FC shop order ${o.ref} (${mwk(o.total)}): `)} target="_blank" rel="noopener noreferrer">WhatsApp the fan</a>
         </div>
-      </li>)}</ul>)}
+      </li> })}</ul>}
+      </>)}
 
     {tab === 'collect' && <OrderCollect />}
     {tab === 'settings' && <SettingsForm />}
