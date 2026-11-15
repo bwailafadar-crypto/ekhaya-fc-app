@@ -27,7 +27,7 @@ export default function ShopManager() {
   const { showToast } = useToast()
   const [products, setProducts] = useState<ShopProduct[]>([])
   const [orders, setOrders] = useState<ShopOrder[]>([])
-  const [tab, setTab] = useState<'orders' | 'products' | 'collect' | 'settings'>('products')
+  const [tab, setTab] = useState<'orders' | 'products' | 'collect' | 'settings'>('orders')
   const [editing, setEditing] = useState<(Omit<ShopProduct, 'id'> & { id?: string }) | null>(null)
   const [busy, setBusy] = useState(false)
   const [search, setSearch] = useState('')
