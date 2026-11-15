@@ -29,6 +29,13 @@ const price = (p) => p.variants?.length ? Math.min(...p.variants.map((v) => Numb
   if (noImage.length) warn(`${noImage.length} visible product(s) have no photo: ${noImage.map((p) => p.name).join(', ')}`)
 
   const settings = (await db.doc('shopSettings/main').get()).data()
-  if (!settings) warn('No shop settings found (pickup place, payment numbers). Set them in Admin -> Shop.')
-  else note(`Shop settings: pickup "${settings.pickupPlace || '—'}", Airtel ${settings.airtelNumber || '—'}, Mpamba ${settings.mpambaNumber || '—'}.`)
+  if (!settings) { warn('No shop settings found. Set them in Admin -> Shop.'); return }
+  const show = (k) => settings[k] ? String(settings[k]) : 'MISSING'
+  note('Shop settings:')
+  ;['pickupPlace', 'whatsapp', 'airtelNumber', 'mpambaNumber', 'payName', 'fdhAccount', 'fdhAccountName', 'deliveryPrice', 'printPrice', 'payMode'].forEach((k) => note(`  ${k}: ${show(k)}`))
+  const gaps = []
+  if (!settings.whatsapp) gaps.push('WhatsApp number (needed so fans can send orders and get payment details)')
+  if (!settings.mpambaNumber) gaps.push('TNM Mpamba number (fans who pick Mpamba see no number)')
+  if (!settings.airtelNumber) gaps.push('Airtel Money number')
+  if (gaps.length) warn(`Settings to complete: ${gaps.join('; ')}.`)
 })().catch((error) => { console.error('✖', error.message); process.exit(1) })
