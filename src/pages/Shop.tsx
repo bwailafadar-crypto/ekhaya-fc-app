@@ -90,7 +90,7 @@ export default function Shop() {
 
   if (all.loading) return <div className="shop">{bar}<p className="page-loading">Loading the shop…</p></div>
 
-  if (id) return <div className="shop">{bar}{product ? <ProductPage key={product.id} product={product} siblings={product.group ? products.filter((p) => p.group === product.group) : []} settings={settings} onAdded={(buy) => setParams(buy ? { cart: '1', step: 'details' } : { cart: '1' })} /> : <EmptyState icon={Shirt} title="Not in the shop" description="This item was sold out or taken off the shop." />}{panels}</div>
+  if (id) return <div className="shop">{bar}{product ? <ProductPage key={product.id} product={product} siblings={product.group ? products.filter((p) => p.group === product.group) : []} related={products.filter((p) => p.id !== product.id && !(product.group && p.group === product.group) && !p.soldOut).sort((a, b) => Number(b.category === product.category) - Number(a.category === product.category)).slice(0, 6)} settings={settings} onAdded={(buy) => setParams(buy ? { cart: '1', step: 'details' } : { cart: '1' })} /> : <EmptyState icon={Shirt} title="Not in the shop" description="This item was sold out or taken off the shop." />}{panels}</div>
 
   if (!products.length) return <div className="shop">{bar}
     <section className="shop-hero shop-hero-soon"><ShirtArt colour="home" className="shop-hero-shirt" /><div><small>Ekhaya FC</small><h2>The shop opens soon</h2><p>Kits, training wear, scarves and caps, with your name and number printed.</p></div></section>
@@ -157,7 +157,7 @@ export default function Shop() {
   </div>
 }
 
-function ProductPage({ product, siblings, settings, onAdded }: { product: ShopProduct; siblings: ShopProduct[]; settings: ReturnType<typeof settingsWithDefaults>; onAdded: (buy: boolean) => void }) {
+function ProductPage({ product, siblings, related, settings, onAdded }: { product: ShopProduct; siblings: ShopProduct[]; related: ShopProduct[]; settings: ReturnType<typeof settingsWithDefaults>; onAdded: (buy: boolean) => void }) {
   const { showToast } = useToast()
   const { wish } = useShopStore()
   const players = useFirestoreCollection<Player>('players').items
@@ -262,6 +262,14 @@ function ProductPage({ product, siblings, settings, onAdded }: { product: ShopPr
         <li><Truck size={15} aria-hidden="true" /> Delivery {mwk(settings.deliveryPrice)}</li>
       </ul>
     </div>
+
+    {related.length > 0 && <section className="shop-reel shop-reel-related">
+      <div className="shop-reel-head"><h2>Complete the look</h2><span className="shop-reel-all">More from the Ekhaya store</span></div>
+      <div className="shop-reel-track">{related.map((p) => <Link key={p.id} to={`/shop/${p.id}`} className="shop-feature">
+        <div className="shop-feature-pic"><ProductPicture product={p} />{p.badge ? <span className={`shop-badge b-${p.badge.toLowerCase()}`}>{p.badge}</span> : null}</div>
+        <strong>{p.name}</strong><Price product={p} />
+      </Link>)}</div>
+    </section>}
 
     {guide && <Sheet label="Size guide" onClose={() => setGuide(false)}>
       <div className="shop-sheet-head"><h3>Size guide</h3><button type="button" className="shop-icon-btn" onClick={() => setGuide(false)} aria-label="Close"><X size={18} /></button></div>

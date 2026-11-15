@@ -2665,6 +2665,7 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .shop-sort select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 12px; }
 /* Shop: "New in" featured reel (club-store style) */
 .shop-reel { margin: 4px 0 14px; }
+.shop-reel-related { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
 .shop-reel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .shop-reel-head h2 { margin: 0; font-family: 'Oswald', sans-serif; font-size: 20px; letter-spacing: .02em; text-transform: uppercase; }
 .shop-reel-all { color: var(--muted); font-size: 11.5px; font-weight: 600; text-decoration: none; }
