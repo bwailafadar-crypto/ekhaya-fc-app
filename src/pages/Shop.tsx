@@ -298,8 +298,8 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
   const [step, setStep] = useState<Step>(startStep)
   const [name, setName] = useState(profile?.fullName ?? '')
   const [phone, setPhone] = useState(profile?.phone ?? '')
-  const [delivery, setDelivery] = useState<'pickup' | 'delivery'>('pickup')
-  const [address, setAddress] = useState('')
+  const [delivery] = useState<'pickup' | 'delivery'>('pickup')
+  const [address] = useState('')
   const [method, setMethod] = useState<PayMethod>('airtel')
   const [txId, setTxId] = useState('')
   const [ref] = useState(newOrderRef)
@@ -445,15 +445,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     : step === 'details' ? <div className="shop-checkout">
       <label className="admin-field"><span>Your name</span><input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
       <label className="admin-field"><span>Phone (WhatsApp)</span><input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="0991 234 567" /></label>
-      <strong className="shop-sub">How do you want to get it?</strong>
-      <div className="shop-print-tabs" role="radiogroup" aria-label="Delivery">
-        <button type="button" role="radio" aria-checked={delivery === 'pickup'} className={delivery === 'pickup' ? 'active' : ''} onClick={() => setDelivery('pickup')}>Pick up · free</button>
-        <button type="button" role="radio" aria-checked={delivery === 'delivery'} className={delivery === 'delivery' ? 'active' : ''} onClick={() => setDelivery('delivery')}>Delivery · {mwk(settings.deliveryPrice)}</button>
-      </div>
-      {delivery === 'pickup' ? <p className="live-help">Pick up at {settings.pickupPlace}. The club tells you when it's ready.</p>
-        : <label className="admin-field"><span>Deliver to (town, area, landmark)</span><textarea rows={2} value={address} maxLength={200} onChange={(e) => setAddress(e.target.value)} placeholder="Blantyre, Chilomoni, near the market" /></label>}
-      <div className="shop-total"><span>Items</span><b>{mwk(subtotal)}</b></div>
-      <div className="shop-total"><span>Delivery</span><b>{fee ? mwk(fee) : 'Free'}</b></div>
+      <p className="live-help">Collect at {settings.pickupPlace}. The club tells you when it's ready.</p>
       <div className="shop-total grand"><span>Total</span><b>{mwk(total)}</b></div>
       <Button type="button" onClick={toPayment}>Continue to payment</Button>
     </div>
