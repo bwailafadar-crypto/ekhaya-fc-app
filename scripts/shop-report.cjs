@@ -33,6 +33,15 @@ const price = (p) => p.variants?.length ? Math.min(...p.variants.map((v) => Numb
   const show = (k) => settings[k] ? String(settings[k]) : 'MISSING'
   note('Shop settings:')
   ;['pickupPlace', 'whatsapp', 'airtelNumber', 'mpambaNumber', 'payName', 'fdhAccount', 'fdhAccountName', 'deliveryPrice', 'printPrice', 'payMode'].forEach((k) => note(`  ${k}: ${show(k)}`))
+  // PIN payment (PayChangu) prerequisites.
+  const flags = (await db.doc('appConfig/flags').get()).data()?.flags ?? {}
+  note('PIN payment (PayChangu):')
+  note(`  shopPinPay flag: ${flags.shopPinPay === true ? 'ON' : 'OFF (default off)'}`)
+  note(`  payApi (pay server URL): ${settings.payApi ? settings.payApi : 'MISSING'}`)
+  note(`  payMode: ${settings.payMode || '(not live)'}`)
+  const pinReady = flags.shopPinPay === true && settings.payApi && settings.payMode === 'live'
+  if (!pinReady) warn(`PIN prompt will NOT fire for fans. Need: shopPinPay ON${flags.shopPinPay === true ? ' ✓' : ''}, payApi set${settings.payApi ? ' ✓' : ''}, payMode live${settings.payMode === 'live' ? ' ✓' : ''}.`)
+
   const gaps = []
   if (!settings.whatsapp) gaps.push('WhatsApp number (needed so fans can send orders and get payment details)')
   if (!settings.mpambaNumber) gaps.push('TNM Mpamba number (fans who pick Mpamba see no number)')
