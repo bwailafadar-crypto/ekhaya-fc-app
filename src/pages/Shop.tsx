@@ -3,7 +3,7 @@
 // player or your own name), wishlist, a cart and an order that goes to the
 // club on WhatsApp. /shop and /shop/:id
 import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore'
-import { ArrowLeft, Heart, Minus, Package, Plus, Ruler, Shirt, ShoppingBag, Truck, X } from 'lucide-react'
+import { ArrowLeft, Heart, Minus, Package, Plus, Ruler, ShieldCheck, Shirt, ShoppingBag, Truck, X } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
@@ -63,6 +63,9 @@ export default function Shop() {
 
   const product = id ? products.find((p) => p.id === id) ?? (all.items as ShopProduct[]).find((p) => p.id === id && isStaff) : undefined
   const hero = products.find((p) => p.featured) ?? products[0]
+  const picks = products.filter((p) => (p.featured || p.badge === 'New') && !p.soldOut)
+  const featured = (picks.length > 1 ? picks : products.filter((p) => !p.soldOut)).slice(0, 8)
+  const personalise = products.find((p) => p.personalisable && !p.soldOut)
 
   const shown = useMemo(() => {
     const list = products.filter((p) => category === 'all' || (category === 'wish' ? wish.includes(p.id) : p.category === category))
@@ -108,8 +111,18 @@ export default function Shop() {
       </Link>)}
 
     <div className="shop-perks">
-      <span><Package size={15} aria-hidden="true" /> Pick up at {settings.pickupPlace}</span>
+      <span><ShieldCheck size={15} aria-hidden="true" /> Official Ekhaya FC store</span>
+      <span><Shirt size={15} aria-hidden="true" /> Add name &amp; number</span>
+      <span><Package size={15} aria-hidden="true" /> Collect at {settings.pickupPlace}</span>
     </div>
+
+    {category === 'all' && featured.length > 1 && <section className="shop-reel">
+      <div className="shop-reel-head"><h2>New in</h2><Link to="/shop" className="shop-reel-all" onClick={() => setCategory('all')}>The latest Ekhaya drops</Link></div>
+      <div className="shop-reel-track">{featured.map((p) => <Link key={p.id} to={`/shop/${p.id}`} className="shop-feature">
+        <div className="shop-feature-pic"><ProductPicture product={p} />{p.badge ? <span className={`shop-badge b-${p.badge.toLowerCase()}`}>{p.badge}</span> : null}</div>
+        <strong>{p.name}</strong><Price product={p} />
+      </Link>)}</div>
+    </section>}
 
     <div className="shop-chips" role="tablist" aria-label="Categories">
       {[{ key: 'all' as const, label: 'All' }, ...CATEGORIES.filter((c) => products.some((p) => p.category === c.key)), ...(wish.length ? [{ key: 'wish' as const, label: `♥ Saved (${wish.length})` }] : [])].map((c) =>
@@ -134,6 +147,10 @@ export default function Shop() {
       </div>)}
     </div>
     {category === 'wish' && !shown.length && <EmptyState icon={Heart} title="Nothing saved" description="Tap the heart on an item to keep it here." />}
+    {personalise && category === 'all' && <Link to={`/shop/${personalise.id}`} className="shop-promo">
+      <div className="shop-promo-text"><small>Make it yours</small><h3>Your name on the shirt</h3><p>Add any name and number to the official Ekhaya kit — just like the players.</p><span className="shop-hero-cta">Personalise now</span></div>
+      <ProductPicture product={personalise} className="shop-promo-pic" />
+    </Link>}
     <div className="shop-accept"><span>We accept</span>{(['airtel', 'mpamba', 'fdh'] as PayMethod[]).map((m) => <PayIcon key={m} method={m} settings={settings} />)}</div>
     <p className="shop-pay-note">{settings.paymentNote}</p>
     {panels}
