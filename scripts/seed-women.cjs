@@ -100,8 +100,8 @@ const standings = [
     }, { merge: true })
   }
   // Confirmed lineup for the Allan Ladies match (XI in sheet order + subs).
-  const startingXI = ['women-chakalamba-0', 'women-mwalilino-20', 'women-mugwa-12', 'women-genala-17', 'women-fabiano-66', 'women-chinkusa-8', 'women-nzokomela-4', 'women-carlos-6', 'women-lloyd-13', 'women-kayira', 'women-issa-15']
-  const bench = ['women-bwitubwitu-99', 'women-munthali-47', 'women-moses-22', 'women-jonathan-30', 'women-nthambo-9', 'women-dafter-14', 'women-john-48', 'women-mwale-21', 'women-chikumba-10']
+  const startingXI = ['women-chakalamba-0', 'women-mwalilino-20', 'women-mugwa-12', 'women-genala-17', 'women-fabiano-66', 'women-chinkusa-8', 'women-munthali-47', 'women-carlos-6', 'women-lloyd-13', 'women-kayira', 'women-issa-15']
+  const bench = ['women-bwitubwitu-99', 'women-nzokomela-4', 'women-moses-22', 'women-jonathan-30', 'women-nthambo-9', 'women-dafter-14', 'women-john-48', 'women-mwale-21', 'women-chikumba-10']
   batch.set(db.collection('fixtures').doc('w-2026-11-15-allan-ekhaya'), {
     startingPlayerIds: startingXI, benchPlayerIds: bench, formation: '4-3-3', lineupConfirmed: true,
     updatedAt: FieldValue.serverTimestamp(),
