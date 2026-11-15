@@ -45,7 +45,7 @@ const results = [
 
 // Ekhaya's upcoming fixtures (weeks 3–7) from the FAM first-round fixture list.
 const upcoming = [
-  { id: 'w-2026-11-15-allan-ekhaya', date: '2026-11-15', time: '14:00', home: 'Allan Ladies', away: 'Ekhaya Women', venue: 'Works Ground' },
+  { id: 'w-2026-11-15-allan-ekhaya', date: '2026-11-15', time: '14:30', home: 'Allan Ladies', away: 'Ekhaya Women', venue: 'Works Ground' },
   { id: 'w-2026-11-21-ekhaya-nsuwadzi', date: '2026-11-21', time: '11:00', home: 'Ekhaya Women', away: 'Nsuwadzi Queens', venue: 'Mpira Stadium' },
   { id: 'w-2026-11-28-ekhaya-sitima', date: '2026-11-28', time: '10:00', home: 'Ekhaya Women', away: 'Sitima YCE', venue: 'Mpira Stadium' },
   { id: 'w-2026-12-05-emmanuel-ekhaya', date: '2026-12-05', time: '14:00', home: 'Emmanuel Bullets', away: 'Ekhaya Women', venue: 'St. Mathews Stadium' },
