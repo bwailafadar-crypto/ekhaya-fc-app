@@ -296,8 +296,8 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
   const { showToast } = useToast()
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>(startStep)
-  const [name, setName] = useState(profile?.fullName ?? '')
-  const [phone, setPhone] = useState(profile?.phone ?? '')
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
   const [delivery] = useState<'pickup' | 'delivery'>('pickup')
   const [address] = useState('')
   const [method, setMethod] = useState<PayMethod>('airtel')
@@ -309,7 +309,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
   const staff = profile?.role === 'admin' || profile?.role === 'superadmin'
   const pinTest = settings.payMode !== 'live'
   const pinOn = useFlag('shopPinPay') && Boolean(payApiBase(settings)) && (!pinTest || staff)
-  const [payFrom, setPayFrom] = useState(profile?.phone ?? '')
+  const [payFrom, setPayFrom] = useState('')
   const [orderId, setOrderId] = useState('')
   const [pin, setPin] = useState<{ state: 'idle' | 'starting' | 'waiting' | 'failed'; message?: string; txRef?: string }>({ state: 'idle' })
   const [manual, setManual] = useState(false)
