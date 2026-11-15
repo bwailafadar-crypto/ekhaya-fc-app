@@ -5,10 +5,8 @@ import PlayerAvatar from './PlayerAvatar'
 
 const POSITIONS = ['All', 'GK', 'DEF', 'MID', 'FWD'] as const
 type Pos = typeof POSITIONS[number]
-const SORTS = [{ key: 'goals', label: 'Goals' }, { key: 'assists', label: 'Assists' }, { key: 'name', label: 'Name' }] as const
-type SortKey = typeof SORTS[number]['key']
 
-/** Full-screen player selector for the Matchday Hero pick (FPL-style). */
+/** Full-screen player selector for the Matchday Hero pick. Fans see names only. */
 export default function HeroPicker({ players, currentPickId, matchLabel, saving, onPick, onClose }: {
   players: Player[]
   currentPickId?: string
@@ -19,7 +17,6 @@ export default function HeroPicker({ players, currentPickId, matchLabel, saving,
 }) {
   const [term, setTerm] = useState('')
   const [pos, setPos] = useState<Pos>('All')
-  const [sort, setSort] = useState<SortKey>('goals')
   const [selected, setSelected] = useState(currentPickId ?? '')
 
   useEffect(() => {
@@ -33,8 +30,8 @@ export default function HeroPicker({ players, currentPickId, matchLabel, saving,
     const q = term.trim().toLowerCase()
     return players
       .filter((player) => (pos === 'All' || player.position === pos) && (!q || player.name.toLowerCase().includes(q)))
-      .sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : (b.stats?.[sort] ?? 0) - (a.stats?.[sort] ?? 0))
-  }, [players, term, pos, sort])
+      .sort((a, b) => (a.number ?? 99) - (b.number ?? 99) || a.name.localeCompare(b.name))
+  }, [players, term, pos])
 
   const chosen = players.find((player) => player.id === selected)
 
@@ -49,10 +46,8 @@ export default function HeroPicker({ players, currentPickId, matchLabel, saving,
       <div className="hp-chips" role="tablist" aria-label="Position">
         {POSITIONS.map((option) => <button key={option} type="button" role="tab" aria-selected={pos === option} className={`hp-chip${pos === option ? ' on' : ''}`} onClick={() => setPos(option)}>{option}</button>)}
       </div>
-      <div className="hp-sorts"><span>Sort</span>{SORTS.map((option) => <button key={option.key} type="button" className={`hp-sort${sort === option.key ? ' on' : ''}`} onClick={() => setSort(option.key)}>{option.label}</button>)}</div>
     </div>
 
-    <div className="hp-listhead"><span>Player</span><span className="hp-stat">G</span><span className="hp-stat">A</span><span className="hp-stat">Apps</span></div>
     <div className="hp-list">
       {list.length === 0
         ? <p className="hp-empty">No players match that search.</p>
@@ -61,9 +56,6 @@ export default function HeroPicker({ players, currentPickId, matchLabel, saving,
               <PlayerAvatar player={player} />
               <span className="hp-id"><span className="hp-name">{player.name}</span><span className="hp-meta">{player.position ?? 'Squad'}{player.number != null ? ` · #${player.number}` : ''}</span></span>
             </span>
-            <span className="hp-stat">{player.stats?.goals ?? 0}</span>
-            <span className="hp-stat">{player.stats?.assists ?? 0}</span>
-            <span className="hp-stat">{player.stats?.appearances ?? 0}</span>
             {selected === player.id && <span className="hp-tick" aria-hidden="true"><Check size={15} /></span>}
           </button>)}
     </div>

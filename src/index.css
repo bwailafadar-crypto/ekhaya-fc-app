@@ -1185,10 +1185,10 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
 .hp-listhead .hp-stat { text-align: center; }
 .hp-list { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 14px calc(8px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 7px; }
 .hp-empty { padding: 24px 6px; text-align: center; color: rgb(247 244 236 / 60%); font-size: 13px; }
-.hp-row { position: relative; display: grid; grid-template-columns: 1fr 34px 34px 46px; align-items: center; gap: 8px; padding: 9px 11px; background: rgb(255 255 255 / 6%); border: 1px solid rgb(255 255 255 / 10%); border-radius: 12px; cursor: pointer; text-align: left; transition: border-color 140ms ease, background 140ms ease; }
+.hp-row { position: relative; display: flex; align-items: center; gap: 8px; padding: 11px; background: rgb(255 255 255 / 6%); border: 1px solid rgb(255 255 255 / 10%); border-radius: 12px; cursor: pointer; text-align: left; transition: border-color 140ms ease, background 140ms ease; }
 .hp-row:hover, .hp-row:focus-visible { border-color: rgb(201 162 39 / 45%); }
 .hp-row.on { border-color: var(--gold-light); background: linear-gradient(135deg, rgb(201 162 39 / 26%), rgb(201 162 39 / 10%)); }
-.hp-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.hp-main { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
 .hp-main .player-avatar { width: 40px; height: 40px; flex-basis: 40px; font-size: 13px; }
 .hp-id { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .hp-name { font-size: 13px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
