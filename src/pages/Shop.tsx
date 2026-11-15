@@ -4,6 +4,7 @@
 // club on WhatsApp. /shop and /shop/:id
 import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore'
 import { ArrowLeft, Heart, Minus, Package, Plus, Ruler, Shirt, ShoppingBag, Truck, X } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -536,6 +537,11 @@ function OrdersPanel({ onClose }: { onClose: () => void }) {
           <button type="button" onClick={() => void saveTx(o)}>Send</button>
         </div>}
         {o.payment?.txId && <small>Transaction: {o.payment.txId}</small>}
+        {(o.status === 'paid' || o.status === 'ready') && o.delivery === 'pickup' && <div className="shop-pass">
+          <div className="shop-pass-qr"><QRCodeSVG value={o.ref} size={128} level="M" /></div>
+          <div className="shop-pass-info"><span className="shop-pass-label">Collection pass</span><strong>{o.ref}</strong><small>Show this at {settings.pickupPlace} to collect. Staff scan it once — keep it safe.</small></div>
+        </div>}
+        {o.status === 'collected' && <div className="shop-pass shop-pass-done"><span className="shop-pass-stamp">✓ Collected</span><small>This order has been collected{o.collectedAt?.seconds ? ` on ${new Date(o.collectedAt.seconds * 1000).toLocaleDateString()}` : ''}.</small></div>}
         {settings.whatsapp && <a className="shop-link" href={waLink(settings.whatsapp, `Hello, about my Ekhaya FC shop order ${o.ref} (${mwk(o.total)}): `)} target="_blank" rel="noopener noreferrer">Ask the club on WhatsApp</a>}
       </li> })}</ul>}
   </Sheet>

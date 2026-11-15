@@ -205,4 +205,7 @@ export interface ShopOrder {
   status: OrderStatus
   payment?: { method: 'airtel' | 'mpamba' | 'fdh' | 'cash'; txId?: string }
   createdAt?: { toMillis?: () => number; seconds?: number } | null
+  /** Set by staff when the fan collects, so a copied pass can't be reused. */
+  collectedAt?: { toMillis?: () => number; seconds?: number } | null
+  collectedBy?: string
 }

@@ -1,8 +1,9 @@
 // Admin → Shop: products (photos, price, sizes, printing), shop settings
 // (WhatsApp number, printing and delivery prices, banner) and fans' orders.
 import { addDoc, collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
-import { ImagePlus, Package, Pencil, Plus, Settings, ShoppingBag, Trash2 } from 'lucide-react'
+import { ImagePlus, Package, Pencil, Plus, ScanLine, Settings, ShoppingBag, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import OrderCollect from './OrderCollect'
 import ShirtArt from '../../components/ShirtArt'
 import { useToast } from '../../components/ToastContext'
 import { Button, Card } from '../../components/UI'
@@ -25,7 +26,7 @@ export default function ShopManager() {
   const { showToast } = useToast()
   const [products, setProducts] = useState<ShopProduct[]>([])
   const [orders, setOrders] = useState<ShopOrder[]>([])
-  const [tab, setTab] = useState<'orders' | 'products' | 'settings'>('products')
+  const [tab, setTab] = useState<'orders' | 'products' | 'collect' | 'settings'>('products')
   const [editing, setEditing] = useState<(Omit<ShopProduct, 'id'> & { id?: string }) | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -62,6 +63,7 @@ export default function ShopManager() {
     <div className="shop-print-tabs">
       <button type="button" className={tab === 'products' ? 'active' : ''} onClick={() => setTab('products')}><Package size={14} /> Products</button>
       <button type="button" className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}><ShoppingBag size={14} /> Orders{open.length ? ` (${open.length})` : ''}</button>
+      <button type="button" className={tab === 'collect' ? 'active' : ''} onClick={() => setTab('collect')}><ScanLine size={14} /> Collect</button>
       <button type="button" className={tab === 'settings' ? 'active' : ''} onClick={() => setTab('settings')}><Settings size={14} /> Settings</button>
     </div>
 
@@ -94,6 +96,7 @@ export default function ShopManager() {
         </div>
       </li>)}</ul>)}
 
+    {tab === 'collect' && <OrderCollect />}
     {tab === 'settings' && <SettingsForm />}
   </Card>
 }
