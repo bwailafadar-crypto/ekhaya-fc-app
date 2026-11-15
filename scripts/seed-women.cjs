@@ -11,29 +11,30 @@ const note = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : 
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 const zeroStats = { appearances: 0, starts: 0, minutes: 0, goals: 0, assists: 0, yellowCards: 0, redCards: 0, cleanSheets: 0 }
 
-// Stable ids keep updates on the same doc. Goals from the Golden Boot graphic.
+// Full squad from the lineup v Allan Ladies (real names and numbers).
+// Goals carried from the Golden Boot graphic for the known scorers.
 const players = [
-  { id: 'women-bwitubwitu-99', name: 'Bwitubwitu', n: 99, pos: 'GK' },
-  { id: 'women-chinkusa-9', name: 'Chinkusa', n: 9, captain: true },
-  { id: 'women-mwalilino-20', name: 'Mwalilino', n: 20 },
-  { id: 'women-carlos-6', name: 'Carlos', n: 6 },
-  { id: 'women-mugwa-12', name: 'Mugwa', n: 12 },
+  // Starting XI
+  { id: 'women-chakalamba-0', name: 'Scolastica Chakalamba', n: 0, pos: 'GK' },
+  { id: 'women-mwalilino-20', name: 'Precious Mwalilino', n: 20 },
+  { id: 'women-mugwa-12', name: 'Eliza Mugwa', n: 12 },
+  { id: 'women-genala-17', name: 'Wonderful Genala', n: 17 },
+  { id: 'women-fabiano-66', name: 'Eneless Fabiano', n: 66, pos: 'FWD', goals: 6, apps: 2 },
+  { id: 'women-chinkusa-8', name: 'Stella Chinkusa', n: 8, captain: true },
+  { id: 'women-nzokomela-4', name: 'Patuma Nzokomela', n: 4 },
+  { id: 'women-carlos-6', name: 'Nirza Carlos', n: 6 },
+  { id: 'women-lloyd-13', name: 'Evelyn Lloyd', n: 13 },
+  { id: 'women-kayira', name: 'Joyce Kayira', n: null },
+  { id: 'women-issa-15', name: 'Tema Issa', n: 15, goals: 1, apps: 2 },
+  // Substitutes
+  { id: 'women-bwitubwitu-99', name: 'Fortune Bwitubwitu', n: 99, pos: 'GK' },
+  { id: 'women-munthali-47', name: 'Kettie Munthali', n: 47 },
   { id: 'women-moses-22', name: 'Eunice Moses', n: 22, goals: 1, apps: 2 },
-  { id: 'women-genala-17', name: 'Genala', n: 17 },
-  { id: 'women-fabiano-66', name: 'Enoless Fabiano', n: 66, pos: 'FWD', goals: 6, apps: 2 },
-  { id: 'women-dafter-14', name: 'Dafter', n: 14 },
-  { id: 'women-lloyd-13', name: 'Lloyd', n: 13 },
-  { id: 'women-issa-15', name: 'Temwa Issah', n: 15, goals: 1, apps: 2 },
-  { id: 'women-chelewani', name: 'Maria Chelewani', n: null, goals: 1, apps: 2 },
-  { id: 'women-chakalamba-0', name: 'Chakalamba', n: 0, pos: 'GK' },
-  { id: 'women-munthali-47', name: 'Munthali', n: 47 },
-  { id: 'women-mhango-18', name: 'Mhango', n: 18 },
-  { id: 'women-john-48', name: 'John', n: 48 },
-  { id: 'women-mwale-21', name: 'Mwale', n: 21 },
-  { id: 'women-mbisa-26', name: 'Mbisa', n: 26 },
-  { id: 'women-kaira-4', name: 'Kaira', n: 4 },
-  { id: 'women-nthambo-9', name: 'Nthambo', n: 9 },
-  { id: 'women-jonathan-30', name: 'Jonathan', n: 30 },
+  { id: 'women-jonathan-30', name: 'Agness Jonathan', n: 30 },
+  { id: 'women-nthambo-9', name: 'Catherine Nthambo', n: 9 },
+  { id: 'women-dafter-14', name: 'Mirriam Dafter', n: 14 },
+  { id: 'women-john-48', name: 'Sina John', n: 48 },
+  { id: 'women-mwale-21', name: 'Rabecca Mwale', n: 21 },
 ]
 
 // Played results (Ekhaya's two wins), dates from the FAM first-round fixture list.
@@ -67,6 +68,11 @@ const standings = [
 
 ;(async () => {
   const batch = db.batch()
+  // Remove earlier estimated women's players that aren't in the real squad.
+  const keep = new Set(players.map((p) => p.id))
+  const existing = await db.collection('players').where('squad', '==', 'women').get()
+  let removed = 0
+  for (const d of existing.docs) { if (!keep.has(d.id)) { batch.delete(d.ref); removed += 1 } }
   for (const p of players) {
     batch.set(db.collection('players').doc(p.id), {
       name: p.name, number: p.n, team: 'Ekhaya Women', squad: 'women',
@@ -102,5 +108,5 @@ const standings = [
     }, { merge: true })
   }
   await batch.commit()
-  note(`Seeded ${players.length} players, ${results.length} results, ${upcoming.length} fixtures, ${standings.length} table rows.`)
+  note(`Seeded ${players.length} players (removed ${removed} old), ${results.length} results, ${upcoming.length} fixtures, ${standings.length} table rows.`)
 })().catch((e) => { console.log('::error::' + e.message); process.exit(1) })
