@@ -2678,6 +2678,24 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .shop-feature-pic .shop-badge { position: absolute; top: 9px; left: 9px; }
 .shop-feature strong { font-size: 13.5px; line-height: 1.2; }
 
+/* Shop motion — staggered entrance + gloss sweep on hover */
+@keyframes shopRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.shop-grid .shop-card, .shop-reel-track .shop-feature { animation: shopRise .5s cubic-bezier(.22, .61, .36, 1) both; }
+.shop-grid .shop-card:nth-child(1), .shop-reel-track .shop-feature:nth-child(1) { animation-delay: .03s; }
+.shop-grid .shop-card:nth-child(2), .shop-reel-track .shop-feature:nth-child(2) { animation-delay: .09s; }
+.shop-grid .shop-card:nth-child(3), .shop-reel-track .shop-feature:nth-child(3) { animation-delay: .15s; }
+.shop-grid .shop-card:nth-child(4), .shop-reel-track .shop-feature:nth-child(4) { animation-delay: .21s; }
+.shop-grid .shop-card:nth-child(5), .shop-reel-track .shop-feature:nth-child(5) { animation-delay: .27s; }
+.shop-grid .shop-card:nth-child(6), .shop-reel-track .shop-feature:nth-child(6) { animation-delay: .33s; }
+.shop-grid .shop-card:nth-child(n+7), .shop-reel-track .shop-feature:nth-child(n+7) { animation-delay: .39s; }
+.shop-card-pic::before, .shop-feature-pic::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(115deg, transparent 32%, rgb(255 255 255 / 55%) 50%, transparent 68%); transform: translateX(-130%); transition: transform .7s ease; }
+.shop-feature-pic { overflow: hidden; }
+.shop-card:hover .shop-card-pic::before, .shop-feature:hover .shop-feature-pic::before { transform: translateX(130%); }
+@media (prefers-reduced-motion: reduce) {
+  .shop-grid .shop-card, .shop-reel-track .shop-feature { animation: none; }
+  .shop-card-pic::before, .shop-feature-pic::before { display: none; }
+}
+
 /* Shop: personalise promo banner */
 .shop-promo { position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr 38%; align-items: center; gap: 10px; margin: 16px 0; padding: 18px; border-radius: 20px; text-decoration: none; color: #fff; background: radial-gradient(circle at 18% 20%, #3a2f0c 0%, var(--ink) 62%); }
 .shop-promo-text small { color: var(--gold-light); font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
