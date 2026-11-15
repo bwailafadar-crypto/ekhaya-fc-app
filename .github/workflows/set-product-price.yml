@@ -1,0 +1,39 @@
+# Set a shop product's price by name match (exactly one must match).
+name: Set product price
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Product name (substring, must match exactly one)'
+        type: string
+        required: true
+      price:
+        description: 'Price in MWK'
+        type: string
+        required: true
+
+jobs:
+  set:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/set-product-price.cjs
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i firebase-admin@12 --no-save --no-audit --no-fund
+      - name: Write key
+        env: { FIREBASE_SA: "${{ secrets.FIREBASE_SA }}" }
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - name: Set price
+        env:
+          PRODUCT_NAME: ${{ github.event.inputs.name }}
+          PRICE: ${{ github.event.inputs.price }}
+        run: node scripts/set-product-price.cjs
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
