@@ -26,9 +26,11 @@ const TARGET = 'alick lungu'
     const bench = f.benchPlayerIds ?? []
     const evs = (await db.collection('fixtures').doc(f.id).collection('events').get()).docs.map((d) => d.data())
     const inStart = starters.includes(me.id), inBench = bench.includes(me.id)
-    const mine = evs.filter((e) => e.playerId === me.id || e.assistPlayerId === me.id || e.inPlayerId === me.id || e.outPlayerId === me.id)
+    const cameOn = evs.some((e) => e.kind === 'substitution' && e.subbedInPlayerId === me.id)
+    const mine = evs.filter((e) => e.playerId === me.id || e.assistPlayerId === me.id || e.subbedInPlayerId === me.id || e.subbedOutPlayerId === me.id)
+    const played = inStart || cameOn || evs.some((e) => e.playerId === me.id || e.assistPlayerId === me.id)
     if (!inStart && !inBench && !mine.length) continue
-    note(`${f.date?.slice(0,10)} ${f.home} v ${f.away}: start=${inStart} bench=${inBench} XI=${starters.length} | events about him: ${mine.map((e) => `${e.kind}@${e.minute ?? '?'}${e.inPlayerId === me.id ? ' (ON)' : ''}`).join(', ') || 'none'}`)
+    note(`${f.date?.slice(0,10)} ${f.home} v ${f.away}: start=${inStart} bench=${inBench} cameOn=${cameOn} PLAYED=${played} XI=${starters.length} | ${mine.map((e) => `${e.kind}@${e.minute ?? '?'}${e.subbedInPlayerId === me.id ? '(ON)' : ''}${e.subbedOutPlayerId === me.id ? '(OFF)' : ''}`).join(', ') || 'no events about him'}`)
     // also show all event kinds present to see if subs are recorded at all
     const kinds = {}; evs.forEach((e) => { kinds[e.kind] = (kinds[e.kind] || 0) + 1 })
     note(`   all event kinds in this match: ${JSON.stringify(kinds)}`)
