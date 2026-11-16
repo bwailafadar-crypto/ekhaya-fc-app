@@ -1802,7 +1802,12 @@ select.auth-input { appearance: auto; }
 .follow-button { margin-top: 10px; min-height: 36px; padding: 0 14px; display: inline-flex; align-items: center; gap: 7px; color: var(--ink); background: linear-gradient(120deg, var(--gold-light), var(--gold)); border: 0; border-radius: 999px; font: 700 12.5px 'Inter', sans-serif; cursor: pointer; }
 .follow-button.following { color: #fff; background: rgb(255 255 255 / 14%); border: 1px solid rgb(232 201 90 / 55%); }
 .follow-button:disabled { opacity: .7; }
-.player-headline-stats { margin: -8px 0 18px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.player-headline-stats { margin: -8px 0 18px; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.player-discipline { display: flex; gap: 8px; margin: 4px 0 0; }
+.player-discipline .disc-card { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: var(--ink, #1a1a1a); }
+.player-discipline .disc-card i { width: 11px; height: 15px; border-radius: 2px; display: inline-block; }
+.player-discipline .disc-yellow i { background: #f6c915; }
+.player-discipline .disc-red i { background: #e4322b; }
 .player-headline-stats div { padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: linear-gradient(160deg, #FFFCF2, #fff); border: 1px solid rgb(201 162 39 / 35%); border-radius: 14px; }
 .player-headline-stats strong { color: var(--gold-dark); font-size: 26px; line-height: 1; }
 .player-headline-stats span { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; }

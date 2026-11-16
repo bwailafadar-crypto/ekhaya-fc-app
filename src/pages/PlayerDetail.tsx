@@ -110,6 +110,9 @@ export default function PlayerDetailPage() {
 
   const age = playerAge(player.dob)
   const position = player.position ? POSITION_NAMES[player.position] : null
+  const footLabel = player.preferredFoot === 'Both' ? 'Both feet' : player.preferredFoot ? `${player.preferredFoot} foot` : null
+  const yellows = player.stats?.yellowCards ?? 0
+  const reds = player.stats?.redCards ?? 0
   return (
     <>
       <Link className="back-link" to="/squad"><ArrowLeft size={17} /> Squad</Link>
@@ -119,7 +122,11 @@ export default function PlayerDetailPage() {
         <div className="player-profile-heading">
           <span className="page-eyebrow">{position ?? 'Squad'}{player.number == null ? '' : ` · #${player.number}`}</span>
           <h1>{player.name}{player.injured && <span className="player-injured-badge"><Bandage size={13} aria-hidden="true" /> Injured</span>}</h1>
-          <p>Ekhaya FC{age != null ? ` · ${age} years` : ''}{player.nationality ? ` · ${player.nationality}` : ''}</p>
+          <p>Ekhaya FC{age != null ? ` · ${age} years` : ''}{player.nationality ? ` · ${player.nationality}` : ''}{footLabel ? ` · ${footLabel}` : ''}</p>
+          {(yellows > 0 || reds > 0) && <p className="player-discipline" aria-label={`${yellows} yellow card${yellows === 1 ? '' : 's'}, ${reds} red card${reds === 1 ? '' : 's'}`}>
+            {yellows > 0 && <span className="disc-card disc-yellow"><i aria-hidden="true" /> {yellows}</span>}
+            {reds > 0 && <span className="disc-card disc-red"><i aria-hidden="true" /> {reds}</span>}
+          </p>}
           <FollowButton key={player.id} player={player} />
         </div>
       </section>
