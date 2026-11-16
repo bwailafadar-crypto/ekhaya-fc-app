@@ -43,11 +43,14 @@ const floor = { 'john mchema': 3 } // user-stated totals that must not be reduce
     const nw = newApps[d.id] || 0
     let total = s + nw
     if (floor[n] != null && total < floor[n]) total = floor[n]
-    rows.push({ name: d.data().name, s, nw, total })
-    if (WRITE) batch.set(d.ref, { stats: { appearances: total }, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
+    // Only update players on the sheet (plus explicit floors). Others keep their
+    // existing app count so live-logged appearances aren't wiped to 0.
+    const inScope = (n in sheet) || (n in floor)
+    rows.push({ name: d.data().name, s, nw, total, inScope })
+    if (WRITE && inScope) batch.set(d.ref, { stats: { appearances: total }, updatedAt: FieldValue.serverTimestamp() }, { merge: true })
   }
   if (WRITE) await batch.commit()
   rows.sort((a, b) => b.total - a.total)
-  for (const r of rows) note(`${r.name}: ${r.s} sheet + ${r.nw} new = ${r.total}${WRITE ? ' (saved)' : ''}`)
+  for (const r of rows) note(`${r.name}: ${r.s} sheet + ${r.nw} new = ${r.total}${r.inScope ? (WRITE ? ' (saved)' : '') : ' (left as-is)'}`)
   note(WRITE ? 'Appearances updated.' : 'DRY RUN (set WRITE=1 to save).')
 })().catch((e) => { console.log('::error::' + e.message); process.exit(1) })
