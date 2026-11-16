@@ -11,7 +11,9 @@ const db = getFirestore()
 const note = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : t)
 const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim()
 const WRITE = process.env.WRITE === '1'
-const CUTOFF = '2026-09-01' // 2nd round onward; everything earlier is in the sheet
+// A "new" match (not in the sheet) is one the app fully recorded with a confirmed
+// starting XI. The 1st-round matches were imported with results only (0 starters),
+// so this cleanly separates the two without date guessing or duplicate risk.
 
 const sheet = { 'chimwemwe chunga': 16, 'vincent salawira': 15, 'james lumbe': 15, 'clever mkungula': 14, 'samuel rukura': 14, 'isaiah nyirenda': 14, 'blessings malinda': 14, 'happy mphepo': 13, 'andrew lameck': 13, 'hermas masinja': 13, 'allen chihana': 13, 'levison mnyenyembe': 12, 'charles mafaiti': 11, 'wongani kaponya': 11, 'moses banda': 10, 'james stambuli': 9, 'aubrey simbi': 8, 'gift chunga': 6, 'josephy mcdonald': 5, 'lucky tizola': 2, 'alfred chizinga': 2, 'fanizo mwansambo': 1, 'gift magola': 1, 'george mateyo': 1, 'amos sande': 0, 'joshua waka': 0, 'mudrick salomu': 0, 'joseph saiwa': 0, 'alick lungu': 0, 'hadji james': 0, 'limbani kutambe': 0, 'davie juao': 0 }
 const floor = { 'john mchema': 3 } // user-stated totals that must not be reduced
@@ -23,7 +25,7 @@ const floor = { 'john mchema': 3 } // user-stated totals that must not be reduce
   // New-match live appearances (>= CUTOFF)
   const fixtures = (await db.collection('fixtures').get()).docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .filter((f) => !f.isTest && (f.squad ?? 'men') === 'men' && f.status === 'finished' && String(f.date || '') >= CUTOFF)
+    .filter((f) => !f.isTest && (f.squad ?? 'men') === 'men' && f.status === 'finished' && (f.startingPlayerIds ?? []).length >= 11)
   const newApps = {}
   for (const f of fixtures) {
     const ids = new Set(f.startingPlayerIds ?? [])
@@ -31,7 +33,7 @@ const floor = { 'john mchema': 3 } // user-stated totals that must not be reduce
     for (const e of evs) { if (e.playerId) ids.add(e.playerId); if (e.assistPlayerId) ids.add(e.assistPlayerId); if (e.inPlayerId) ids.add(e.inPlayerId) }
     for (const id of ids) newApps[id] = (newApps[id] || 0) + 1
   }
-  note(`New 2nd-round matches counted (>= ${CUTOFF}): ${fixtures.length} -> ${fixtures.map((f) => `${f.date?.slice(0,10)} ${f.home} v ${f.away}`).join('; ')}`)
+  note(`New matches counted (confirmed XI): ${fixtures.length} -> ${fixtures.map((f) => `${f.date?.slice(0,10)} ${f.home} v ${f.away}`).join('; ')}`)
 
   const batch = db.batch()
   const rows = []
