@@ -252,22 +252,6 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
-      // Fan Zone: one man-of-the-match vote per fan after a real match,
-      // until an admin closes voting.
-      match /motm/{uid} {
-        allow read: if signedIn();
-        allow create, update: if canPlay()
-          && request.auth.uid == uid
-          && fixtureDoc(fixtureId).status == 'finished'
-          && fixtureDoc(fixtureId).get('isTest', false) != true
-          && fixtureDoc(fixtureId).get('motmClosed', false) != true
-          && request.resource.data.keys().hasOnly(['playerId', 'updatedAt'])
-          && request.resource.data.keys().hasAll(['playerId', 'updatedAt'])
-          && request.resource.data.playerId is string
-          && exists(/databases/$(database)/documents/players/$(request.resource.data.playerId))
-          && request.resource.data.updatedAt == request.time;
-        allow delete: if isAdmin();
-      }
 
       // Stadium check-in: one per fan per match, from team news until full time.
       match /checkins/{uid} {

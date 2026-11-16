@@ -25,16 +25,14 @@ export function FanLevelCard() {
     <p className="fz-note">{level.next ? `${level.next.from - points} more point${level.next.from - points === 1 ? '' : 's'} to ${level.next.name}` : 'You reached the top level. Ekhaya legend!'}</p>
     {b && <ul className="fan-level-breakdown">
       <li><span>Predictions</span><b>{b.predictions}</b></li>
-      <li><span>MOTM votes</span><b>{b.motmVotes * FAN_POINTS.motmVote}</b></li>
       <li><span>Poll votes</span><b>{b.pollVotes * FAN_POINTS.pollVote}</b></li>
       <li><span>Friends invited</span><b>{b.invites * FAN_POINTS.invite}</b></li>
     </ul>}
     <details className="fan-level-how"><summary>How to earn points</summary><ul>
       <li>Invite a friend who joins: <b>{FAN_POINTS.invite}</b></li>
       <li>Exact score prediction: <b>{POINTS_EXACT}</b> · right result: <b>{POINTS_RESULT}</b></li>
-      <li>Vote for man of the match: <b>{FAN_POINTS.motmVote}</b></li>
       <li>Vote in a poll: <b>{FAN_POINTS.pollVote}</b></li>
-    </ul><p className="fz-note">Levels: {LEVELS.map((item) => `${item.name} ${item.from}+`).join(' · ')}. Points are added after each match, when man of the match voting closes, and every few hours.</p></details>
+    </ul><p className="fz-note">Levels: {LEVELS.map((item) => `${item.name} ${item.from}+`).join(' · ')}. Points are added after each match and every few hours.</p></details>
   </Card>
 }
 

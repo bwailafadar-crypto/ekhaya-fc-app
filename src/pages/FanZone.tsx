@@ -1,5 +1,5 @@
 import { collection, doc, getDocs, limit, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
-import { ChevronRight, HeartHandshake, Lock, Minus, Plus, Radio, Share2, Shirt, Star, Target, Trophy, Vote } from 'lucide-react'
+import { ChevronRight, HeartHandshake, Lock, Minus, Plus, Radio, Share2, Shirt, Target, Trophy, Vote } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -16,7 +16,7 @@ import { useCounts, useMyDoc } from '../hooks/useCounts'
 import type { Fixture, Player, Poll, PollVote, ScorePrediction } from '../types'
 import { formatMalawiDate, formatMalawiTime, isPlayed, sortByDate } from '../utils/football'
 import { percent, saveErrorText } from '../utils/fanZone'
-import MotmCard, { ResultBar } from '../components/MotmCard'
+import { ResultBar } from '../components/ResultBar'
 import MatchdayHero from '../components/MatchdayHero'
 import { burst } from '../utils/celebrate'
 
@@ -285,7 +285,6 @@ export default function FanZone() {
     { id: 'fz-hero', label: 'Jersey', icon: <Shirt size={15} aria-hidden="true" /> },
     nextMatch && { id: 'fz-predict', label: 'Predict', icon: <Target size={15} aria-hidden="true" /> },
     (openPolls.length || closedPolls.length) && { id: 'fz-say', label: 'Vote', icon: <Vote size={15} aria-hidden="true" /> },
-    lastMatch && { id: 'fz-motm', label: 'MOTM', icon: <Star size={15} aria-hidden="true" /> },
     { id: 'fz-ranks', label: 'Ranks', icon: <Trophy size={15} aria-hidden="true" /> },
   ].filter(Boolean) as Array<{ id: string; label: string; icon: ReactNode }>
 
@@ -317,10 +316,6 @@ export default function FanZone() {
       {openPolls.map((poll) => <PollCard key={poll.id} poll={poll} />)}
       {closedPolls.length > 0 && <h3 className="fz-section-title">Recent results</h3>}
       {closedPolls.map((poll) => <PollCard key={poll.id} poll={poll} />)}
-    </Section>}
-
-    {lastMatch && <Section id="fz-motm" icon={<Star size={17} />} title="Man of the match" hint={`${lastMatch.home} ${lastMatch.homeScore ?? 0}–${lastMatch.awayScore ?? 0} ${lastMatch.away}`}>
-      <MotmCard fixture={lastMatch} players={players.items} />
     </Section>}
 
     <Section id="fz-ranks" icon={<Trophy size={17} />} title="Your Ekhaya status" hint="Earn points by predicting, voting and showing up">

@@ -123,7 +123,7 @@ export default function AdminAlertRelay() {
       newsReady = true
     }, () => undefined)
 
-    // Fan points also change between matches (poll and MOTM votes, new
+    // Fan points also change between matches (poll votes, new
     // predictions): refresh the boards when they are more than 2 hours old,
     // checked shortly after an admin opens the app and every 30 minutes.
     const refreshPointsIfOld = async () => {

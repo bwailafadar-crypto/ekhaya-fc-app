@@ -1,6 +1,6 @@
 // Matchday Hero competition scorer (free; runs on GitHub Actions).
 // For each finished men's match not yet scored, award fans who picked a player
-// that did something: +5 per goal, +3 per assist, +4 if he was man of the match.
+// that did something: +5 per goal, +3 per assist.
 // Points accumulate over a round of 5 matches; the fan on top wins a jersey,
 // then the round rolls over automatically.
 //   node scripts/score-hero-comp.cjs
@@ -13,7 +13,7 @@ initializeApp({ credential: cert(JSON.parse(fs.readFileSync(kf, 'utf8'))) })
 const db = getFirestore()
 const note = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : t)
 
-const GOAL = 5, ASSIST = 3, MOM = 4
+const GOAL = 5, ASSIST = 3
 const MATCHES_PER_ROUND = 5
 const PRIZE = 'Ekhaya FC jersey'
 const CLUB = /ekhaya/i
@@ -34,7 +34,7 @@ async function loadCurrent() {
   return { ref, data }
 }
 
-// Points each player earned this match, from goals (scorer + assist) and MOM.
+// Points each player earned this match, from goals (scorer + assist).
 async function playerPoints(fixtureId, fixture) {
   const points = {}
   const add = (pid, n) => { if (pid) points[pid] = (points[pid] || 0) + n }
@@ -45,7 +45,6 @@ async function playerPoints(fixtureId, fixture) {
     add(g.playerId, GOAL)
     add(g.assistPlayerId, ASSIST)
   }
-  if (fixture.motmWinnerId) add(fixture.motmWinnerId, MOM)
   return points // { playerId: pointsForPickingHim }
 }
 

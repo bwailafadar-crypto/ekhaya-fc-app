@@ -14,7 +14,7 @@ import { usePublishedNews } from '../hooks/usePublishedNews'
 import type { Fixture } from '../types'
 import { isLiveNow, isPlayed, sortByDate } from '../utils/football'
 import { matchMinute } from '../utils/matchClock'
-import { LatestGoal, MotmSpotlight, NextLineup } from '../components/HomeParts'
+import { LatestGoal, NextLineup } from '../components/HomeParts'
 import NewHome from './HomeNew'
 
 export default function Home() {
@@ -62,7 +62,7 @@ function LegacyHome() {
         <PageHeader eyebrow="Full time" title="Last result" action={<Link className="text-link" to="/results">Results <ArrowRight size={15} /></Link>} />
         {fixturesResult.loading ? <Skeleton className="home-skeleton" />
           : fixturesResult.error ? null
-          : lastResult ? <><MatchCard fixture={lastResult} /><MotmSpotlight fixture={lastResult} /><MatchSummary fixture={lastResult} compact /></>
+          : lastResult ? <><MatchCard fixture={lastResult} /><MatchSummary fixture={lastResult} compact /></>
             : <Card><EmptyState icon={Trophy} title="No results yet" /></Card>}
       </section>
 

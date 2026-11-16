@@ -162,14 +162,13 @@ test('stories: live score, team news, next match and full time come from the fix
 test('fan points: predictions, votes, check-ins and invites add up; levels follow the points', () => {
   const rows = fanPointsTable({
     predictionPoints: [{ uid: 'a', points: 4, name: 'Amos' }],
-    motmVoters: ['a', 'b', 'b'],
     pollVoters: ['b'],
     checkIns: [{ uid: 'c', name: 'Chikondi' }, { uid: 'a' }],
     inviters: ['c', 'c'],
     names: { b: 'Bertha' },
   })
-  // a: 4 + 2 (vote) + 5 (check-in) = 11; b: 2 votes x2 + 1 poll = 5; c: 5 + 2 invites x10 = 25
-  assert.deepEqual(rows.map((row) => [row.name, row.points, row.rank, row.level]), [['Chikondi', 25, 1, 'Supporter'], ['Amos', 11, 2, 'Rookie'], ['Bertha', 5, 3, 'Rookie']])
+  // a: 4 + 5 (check-in) = 9; b: 1 poll = 1; c: 5 + 2 invites x10 = 25
+  assert.deepEqual(rows.map((row) => [row.name, row.points, row.rank, row.level]), [['Chikondi', 25, 1, 'Supporter'], ['Amos', 9, 2, 'Rookie'], ['Bertha', 1, 3, 'Rookie']])
   assert.equal(levelFor(0).name, 'Rookie')
   assert.equal(levelFor(100).name, 'Ultra')
   assert.equal(levelFor(250).next, null)

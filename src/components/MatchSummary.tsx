@@ -1,19 +1,19 @@
-import { Goal, Pencil, Square, Star, Target } from 'lucide-react'
+import { Goal, Pencil, Square, Target } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { competitionLabel } from '../utils/competitions'
 import { collection, query, where } from 'firebase/firestore'
 import { db } from '../firebase'
-import { useCounts, useMyDoc } from '../hooks/useCounts'
+import { useCounts } from '../hooks/useCounts'
 import { useLiveDocs } from '../hooks/useLiveDocs'
-import type { Fixture, MatchEvent, Player } from '../types'
+import type { Fixture, MatchEvent } from '../types'
 import { minuteLabel } from '../utils/goals'
 
 function sameTeam(a: string, b: string) {
   return a.trim().toLowerCase() === b.trim().toLowerCase()
 }
 
-/** Full-time summary: scorers, cards, fans' man of the match and prediction stats. */
+/** Full-time summary: scorers, cards and prediction stats. */
 export default function MatchSummary({ fixture, compact = false, onEdit }: { fixture: Fixture; compact?: boolean; onEdit?: () => void }) {
   const { role } = useAuth()
   const canEdit = (role === 'admin' || role === 'superadmin') && !fixture.isTest && (fixture.status === 'finished' || Boolean(fixture.editing))
@@ -28,10 +28,6 @@ export default function MatchSummary({ fixture, compact = false, onEdit }: { fix
   const cards = byMinute.filter((event) => event.kind === 'card')
   const sideGoals = (team: string) => goals.filter((event) => sameTeam(event.team, team))
 
-  // The fans' man of the match is saved on the match when voting closes.
-  // Only the winner's record is read (1 read), not the whole squad with photos.
-  const leader = useMyDoc<Player>(fixture.motmClosed && fixture.motmWinnerId ? ['players', fixture.motmWinnerId] : null).data ?? undefined
-  const leaderVotes = fixture.motmWinnerVotes
   const totalPredictions = predictionCounts.counts.total ?? 0
   const exact = predictionCounts.counts.exact ?? 0
 
@@ -54,9 +50,8 @@ export default function MatchSummary({ fixture, compact = false, onEdit }: { fix
       {fixture.note && <p className="match-summary-note">{fixture.note}</p>}
       {!compact && cards.length > 0 && <ul className="match-summary-cards">{cards.map((event) => <li key={event.id}><Square size={12} className={event.card === 'red' ? 'card-red' : 'card-yellow'} aria-label={`${event.card === 'red' ? 'Red' : 'Yellow'} card`} /> {event.minute}' {event.playerName || event.team}</li>)}</ul>}
       {!fixture.isTest && fixture.status === 'finished' && !compact && <Link className="match-summary-report" to={`/report/${encodeURIComponent(fixture.id)}`}>Full match report & share →</Link>}
-      {!fixture.isTest && (leader || totalPredictions > 0) && <div className="match-summary-extras">
-        {leader && <span><Star size={14} aria-hidden="true" /> Fans' man of the match: <strong>{leader.name}</strong>{leaderVotes ? ` (${leaderVotes} vote${leaderVotes === 1 ? '' : 's'})` : ''}</span>}
-        {totalPredictions > 0 && <span><Target size={14} aria-hidden="true" /> {exact} of {totalPredictions} fans predicted {home}–{away}</span>}
+      {!fixture.isTest && totalPredictions > 0 && <div className="match-summary-extras">
+        <span><Target size={14} aria-hidden="true" /> {exact} of {totalPredictions} fans predicted {home}–{away}</span>
       </div>}
     </section>
   )

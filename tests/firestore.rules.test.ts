@@ -239,7 +239,6 @@ test('Fan Zone: a fan who has not confirmed their email can predict, vote for MO
   await seedDocument('polls/poll-1', { status: 'open', options: ['A', 'B'] })
   const db = testEnvironment.authenticatedContext('fan-7', { email: 'fan-7@example.com', email_verified: false }).firestore()
   await assertSucceeds(setDoc(doc(db, 'fixtures/next/predictions/fan-7'), { home: 2, away: 1, name: 'Fan Seven', updatedAt: serverTimestamp() }))
-  await assertSucceeds(setDoc(doc(db, 'fixtures/last/motm/fan-7'), { playerId: 'p1', updatedAt: serverTimestamp() }))
   await assertSucceeds(setDoc(doc(db, 'polls/poll-1/votes/fan-7'), { option: 1, updatedAt: serverTimestamp() }))
   // Matchday Hero: pick a player before kick-off; not after it starts, and the player must exist.
   await assertSucceeds(setDoc(doc(db, 'fixtures/next/heroPicks/fan-7'), { playerId: 'p1', name: 'Fan Seven', updatedAt: serverTimestamp() }))

@@ -34,7 +34,7 @@ export default function HeroCompAdmin() {
 
   return <Card className="admin-card">
     <div className="fz-card-heading"><Shirt size={18} /><div><h2>Matchday Hero competition</h2><span>{round ? `Round ${round.roundNumber} · ${played} of ${round.matchesInRound ?? 5} matches scored · prize: ${round.prize ?? 'Ekhaya FC jersey'}` : 'No round yet — it starts after the first scored match.'}</span></div></div>
-    <p className="fz-note">Scores by itself every hour after men's matches: ⚽ goal +5, 👟 assist +3, ⭐ MOM +4. The top fan after 5 matches wins the jersey, then a new round starts.</p>
+    <p className="fz-note">Scores by itself every hour after men's matches: ⚽ goal +5, 👟 assist +3. The top fan after 5 matches wins the jersey, then a new round starts.</p>
     {ranked.length > 0
       ? <div className="mh-board mh-board-admin">
           {ranked.map((row, index) => <div key={row.uid} className="mh-row"><span className="mh-rank">{index + 1}</span><span className="mh-row-name">{row.name}</span><span className="mh-row-pts">{row.points}</span></div>)}

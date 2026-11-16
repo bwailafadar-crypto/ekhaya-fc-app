@@ -1659,7 +1659,7 @@ select.auth-input { appearance: auto; }
   color: inherit; font-size: 0.9rem; line-height: 1.4;
 }
 
-/* update 60: big-club match centre (commentary, GOAL! moment, share cards, MOTM) */
+/* update 60: big-club match centre (commentary, GOAL! moment, share cards) */
 .share-bar { margin: 10px 0 4px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .share-bar::-webkit-scrollbar { display: none; }
 .share-chip { min-height: 36px; padding: 0 14px; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; color: var(--ink-2); background: rgb(255 255 255 / 72%); border: 1px solid rgb(201 162 39 / 45%); border-radius: 999px; font: 700 12px 'Inter', sans-serif; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 2px 8px rgb(158 124 18 / 10%); }
@@ -1692,23 +1692,6 @@ select.auth-input { appearance: auto; }
 @keyframes goal-shake { 0%, 100% { transform: none; } 25% { transform: rotate(-4deg) scale(1.06); } 75% { transform: rotate(4deg) scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .goal-splash, .goal-splash-card, .goal-splash-word { animation: none; } }
 
-.matchday-vote { margin-top: 10px; }
-
-.motm-spotlight { margin: 10px 0; padding: 12px 14px; display: flex; align-items: center; gap: 12px; color: var(--ink); background: linear-gradient(120deg, #FFF8DE, #fff 65%); border: 1px solid rgb(201 162 39 / 50%); border-radius: 16px; box-shadow: 0 6px 18px rgb(158 124 18 / 12%); text-decoration: none; }
-.motm-spotlight .player-avatar-large { width: 62px; height: 62px; flex-basis: 62px; font-size: 20px; }
-.motm-spotlight > span:not(.motm-spotlight-star):not(.player-avatar) { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
-.motm-spotlight small { color: var(--gold-dark); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-.motm-spotlight strong { font: 600 18px 'Oswald', sans-serif; }
-.motm-spotlight strong em { color: var(--gold-dark); font-style: normal; }
-.motm-spotlight i { color: var(--muted); font-size: 11px; font-style: normal; }
-.motm-spotlight > svg { color: var(--gold-dark); flex: 0 0 auto; }
-.motm-spotlight-star { width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; color: #fff; background: linear-gradient(140deg, var(--gold-light), var(--gold-dark)); border-radius: 50%; font-size: 22px; }
-
-.player-awards { margin: 12px 0 4px; padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start; background: linear-gradient(120deg, #FFF8DE, #fff 70%); border: 1px solid rgb(201 162 39 / 45%); border-radius: 14px; }
-.player-awards-star { color: var(--gold); font-size: 26px; line-height: 1; }
-.player-awards strong { font: 600 15px 'Oswald', sans-serif; }
-.player-awards ul { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
-.player-awards a { color: var(--muted); font-size: 12px; text-decoration: none; }
 .matchday-tabs { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 .goal-splash-card .player-avatar-large.player-avatar-fallback { font-size: 40px; }
 
@@ -2244,7 +2227,7 @@ select.auth-input { appearance: auto; }
 .pitch-row:nth-last-child(5) .pitch-player { animation-delay: 560ms; }
 .pitch-sub-off, .pitch-goals, .pitch-assists, .pitch-card { animation: m-badge 420ms ease-out 900ms both; }
 
-/* Bars fill from the left (polls, man of the match, fan level) */
+/* Bars fill from the left (polls, fan level) */
 .fz-bar-fill, .fan-level-bar i, .gps-bar i, .match-stat-bars i { transform-origin: left center; animation: m-grow 900ms cubic-bezier(.2,.7,.2,1) 200ms both; }
 .match-stat-bars i:last-child { transform-origin: right center; }
 
@@ -2264,7 +2247,7 @@ select.auth-input { appearance: auto; }
 .matchday-reactions button.selected span { display: inline-block; animation: m-badge 420ms ease-out; }
 
 /* Tabs in the match centre: content fades in when you switch */
-.matchday-lineups, .matchday-stats-view, .live-timeline, .motm-spotlight { animation: m-rise 360ms ease-out both; }
+.matchday-lineups, .matchday-stats-view, .live-timeline { animation: m-rise 360ms ease-out both; }
 
 /* Confetti and floating emoji (see utils/celebrate.ts) */
 .celebrate-layer { position: fixed; inset: 0; z-index: 9999; pointer-events: none; overflow: hidden; }
@@ -2273,7 +2256,7 @@ select.auth-input { appearance: auto; }
 @media (prefers-reduced-motion: reduce) {
   .page-transition > *, .fz-board li, .player-log li, .menu-item, .minutes-played li, .lineup-subs li, .gps-list li, .fz-players .fz-player, .sq-list .sq-row,
   .standings-table tbody tr, .standings-table tr.standings-ekhaya, .pitch-player, .pitch-sub-off, .pitch-goals, .pitch-assists, .pitch-card, .fz-bar-fill, .fan-level-bar i, .gps-bar i, .match-stat-bars i,
-  .score-pop, .fan-level-badge, .matchday-reactions button.selected span, .matchday-lineups, .matchday-stats-view, .live-timeline, .motm-spotlight { animation: none !important; }
+  .score-pop, .fan-level-badge, .matchday-reactions button.selected span, .matchday-lineups, .matchday-stats-view, .live-timeline { animation: none !important; }
   .home-hero::after, .home-live-banner::after, .digital-membership-card::after, .fan-level-card::after { display: none; }
 }
 
@@ -2349,14 +2332,6 @@ select.auth-input { appearance: auto; }
 .report-card { padding: 16px; border-radius: 20px; background: rgba(255,255,255,.72); border: 1px solid rgba(201,162,39,.25); backdrop-filter: blur(10px); }
 .report-card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 1.05rem; }
 .report-card h2 small { margin-left: auto; font-size: .78rem; color: #7a5d00; font-weight: 700; }
-.report-label { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: #7a5d00; font-weight: 800; }
-.report-motm { display: flex; align-items: center; gap: 14px; background: linear-gradient(135deg, #fff8dc, #f6e3a1); }
-.report-motm div { display: grid; }
-.report-motm strong { font-size: 1.25rem; }
-.report-motm small { color: #6b6b6b; }
-.report-vote { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
-.report-vote span { display: grid; }
-.report-vote small { color: #6b6b6b; }
 .report-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; position: relative; }
 .report-timeline li { display: grid; grid-template-columns: 38px 24px 1fr; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 12px; background: #fff; }
 .report-timeline li.kind-goal { background: linear-gradient(90deg, #fff3c4, #fff); }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import GoalSplash from '../components/GoalSplash'
-import MotmCard from '../components/MotmCard'
 import ShareBar from '../components/ShareBar'
 import MatchMedia from '../components/MatchMedia'
 import VideoPlayer from '../components/VideoPlayer'
@@ -20,7 +19,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { db } from '../firebase'
 import type { Fixture, MatchEvent, MatchEventKind, MatchStats, Player, PlayerStats, Standing } from '../types'
-import { isPlayed, sortByDate } from '../utils/football'
+import { sortByDate } from '../utils/football'
 import { activePeriod, currentEventMinute, elapsedMatchSeconds, matchMinute } from '../utils/matchClock'
 import TeamLogo from '../components/TeamLogo'
 import MatchChat from '../components/MatchChat'
@@ -35,7 +34,7 @@ const EMPTY_STATS: PlayerStats = {
 }
 const EMPTY_MATCH_STATS: MatchStats = { shots: 0, shotsOnTarget: 0, corners: 0, fouls: 0, offsides: 0 }
 type QuickAction = 'goal' | 'opponent-goal' | 'yellow' | 'red' | 'substitution' | 'commentary'
-const TAB_LABELS = { preview: 'Preview', timeline: 'Commentary', lineups: 'Lineups', stats: 'Stats', chat: 'Fan chat', vote: 'MOTM vote' } as const
+const TAB_LABELS = { preview: 'Preview', timeline: 'Commentary', lineups: 'Lineups', stats: 'Stats', chat: 'Fan chat' } as const
 const QUICK_ACTIONS: Array<{ action: QuickAction; label: string; icon: typeof Goal }> = [
   { action: 'goal', label: 'Goal', icon: Goal },
   { action: 'opponent-goal', label: 'Opponent goal', icon: Goal },
@@ -140,7 +139,7 @@ export default function LiveMatch() {
   const fixturesResult = useFirestoreCollection<Fixture>('fixtures')
   const playersResult = useFirestoreCollection<Player>('players')
   const standingsResult = useFirestoreCollection<Standing>('standings')
-  // Alerts and Home link straight to a match and tab: /live?match=<id>&tab=vote
+  // Alerts and Home link straight to a match and tab: /live?match=<id>&tab=lineups
   const [params] = useSearchParams()
   const [selectedId, setSelectedId] = useState(() => params.get('match') ?? '')
   const [lineupDraft, setLineupDraft] = useState<{ fixtureId: string; playerIds: string[] } | null>(null)
@@ -149,7 +148,7 @@ export default function LiveMatch() {
   const [eventState, setEventState] = useState<{ fixtureId: string; items: MatchEvent[]; error: string | null } | null>(null)
   const [reactionState, setReactionState] = useState<{ fixtureId: string; items: Array<{ uid: string; emoji: string }> } | null>(null)
   const [quickAction, setQuickAction] = useState<QuickAction | null>(null)
-  const [activeTab, setActiveTab] = useState<'preview' | 'timeline' | 'lineups' | 'stats' | 'chat' | 'vote' | null>(() => { const tab = params.get('tab'); return tab === 'vote' || tab === 'lineups' || tab === 'stats' || tab === 'chat' || tab === 'preview' || tab === 'timeline' ? tab : null })
+  const [activeTab, setActiveTab] = useState<'preview' | 'timeline' | 'lineups' | 'stats' | 'chat' | null>(() => { const tab = params.get('tab'); return tab === 'lineups' || tab === 'stats' || tab === 'chat' || tab === 'preview' || tab === 'timeline' ? tab : null })
   // Big-club style GOAL! moment: only for Ekhaya goals that arrive while you watch.
   const [goalMoment, setGoalMoment] = useState<MatchEvent | null>(null)
   const seenGoals = useRef<{ fixtureId: string; ids: Set<string> } | null>(null)
@@ -1004,7 +1003,6 @@ export default function LiveMatch() {
         } else transaction.update(fixtureRef, {
           status: 'upcoming', homeScore: deleteField(), awayScore: deleteField(), minute: deleteField(), goals: deleteField(),
           eventCount: deleteField(), startingPlayerIds: deleteField(), liveStartedAt: deleteField(), finishedAt: deleteField(),
-          motmClosed: deleteField(), motmTally: deleteField(), motmWinnerId: deleteField(), motmWinnerVotes: deleteField(), motmTotalVotes: deleteField(),
           benchPlayerIds: deleteField(), lineupConfirmed: deleteField(), kickoffAt: deleteField(), periodStartedAt: deleteField(),
           period: deleteField(), clockElapsedSeconds: deleteField(), firstHalfSeconds: deleteField(), addedTime: deleteField(), matchStats: deleteField(),
           statsApplied: false, statsAppliedChanges: deleteField(), statsSkipped: deleteField(), updatedAt: serverTimestamp(),
@@ -1080,9 +1078,8 @@ export default function LiveMatch() {
   const homeLineup = (selectedFixture.startingPlayerIds ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
   const benchLineup = (selectedFixture.benchPlayerIds ?? []).map((id) => players.find((player) => player.id === id)).filter((player): player is Player => Boolean(player))
   const countdownSeconds = Math.max(0, Math.floor((new Date(selectedFixture.date).getTime() - clockNow) / 1000))
-  const canVote = isPlayed(selectedFixture) && !selectedFixture.isTest && hasClubTeam
   const canChat = chatFlag && hasClubTeam && !selectedFixture.isTest && (selectedFixture.status !== 'upcoming' || selectedFixture.lineupConfirmed === true)
-  const tabs = (['preview', 'timeline', 'lineups', 'stats', 'chat', 'vote'] as const).filter((tab) => (tab !== 'vote' || canVote) && (tab !== 'chat' || canChat))
+  const tabs = (['preview', 'timeline', 'lineups', 'stats', 'chat'] as const).filter((tab) => tab !== 'chat' || canChat)
   // Before kick-off the match centre opens on the preview; during and after, on the commentary.
   const currentTab = activeTab && tabs.includes(activeTab as typeof tabs[number]) ? activeTab : selectedFixture.status === 'upcoming' ? 'preview' : 'timeline'
   const countdown = `${Math.floor(countdownSeconds / 86400)}d ${String(Math.floor(countdownSeconds % 86400 / 3600)).padStart(2, '0')}:${String(Math.floor(countdownSeconds % 3600 / 60)).padStart(2, '0')}:${String(countdownSeconds % 60).padStart(2, '0')}`
@@ -1165,7 +1162,6 @@ export default function LiveMatch() {
     {currentTab === 'stats' && <section className="matchday-stats-view"><div className="matchday-section-title"><h2>Match stats</h2><span>Live comparison</span></div>{(['shots', 'shotsOnTarget', 'shotsOffTarget', 'corners', 'fouls', 'offsides'] as const).map((key) => { const value = (stats: MatchStats) => key === 'shotsOffTarget' ? Math.max(0, stats.shots - stats.shotsOnTarget) : stats[key]; const home = value(homeStats); const away = value(awayStats); const total = Math.max(1, home, away); return <div className="match-stat-compare" key={key}><div><strong>{home}</strong><span>{key === 'shotsOnTarget' ? 'Shots on target' : key === 'shotsOffTarget' ? 'Shots off target' : key[0].toUpperCase() + key.slice(1)}</span><strong>{away}</strong></div><div className="match-stat-bars"><i style={{ width: `${home / total * 50}%` }} /><i style={{ width: `${away / total * 50}%` }} /></div></div> })}<div className="matchday-stat-legend"><span>{selectedFixture.home}</span><span>{selectedFixture.away}</span></div></section>}
     {currentTab === 'preview' && <MatchPreview key={`preview-${selectedFixture.id}`} fixture={selectedFixture} fixtures={fixturesResult.items} standings={standingsResult.items} />}
     {currentTab === 'chat' && <MatchChat key={`chat-${selectedFixture.id}`} fixture={selectedFixture} />}
-    {currentTab === 'vote' && <section className="matchday-vote"><MotmCard fixture={selectedFixture} players={clubPlayers} /></section>}
     {isFinished && <MatchSummary fixture={selectedFixture} onEdit={isAdmin ? () => void resetMatch('edit') : undefined} />}
     {!selectedFixture.isTest && selectedFixture.status !== 'upcoming' && <MatchMedia key={selectedFixture.id} fixture={selectedFixture} />}
     {clip && <VideoPlayer url={clip.url} title={clip.title} onClose={() => setClip(null)} />}

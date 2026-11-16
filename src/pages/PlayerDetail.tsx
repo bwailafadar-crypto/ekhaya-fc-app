@@ -98,7 +98,6 @@ export default function PlayerDetailPage() {
   const player = items.find((item) => item.id === id)
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   const real = fixtures.items.filter((fixture) => !fixture.isTest)
-  const awards = sortByDate(real.filter((fixture) => fixture.motmClosed && fixture.motmWinnerId === id), 'desc')
   // Matches he was named in (started or on the bench), newest first.
   const log = sortByDate(real.filter((fixture) => isPlayed(fixture) && ((fixture.startingPlayerIds ?? []).includes(id) || (fixture.benchPlayerIds ?? []).includes(id))), 'desc').slice(0, 6)
   const goals = useGoals(id, log.map((fixture) => fixture.id))
@@ -129,13 +128,7 @@ export default function PlayerDetailPage() {
         <div><strong className="number"><CountUp value={player.stats?.appearances ?? 0} /></strong><span>Apps</span></div>
         <div><strong className="number"><CountUp value={player.stats?.goals ?? 0} /></strong><span>Goals</span></div>
         <div><strong className="number"><CountUp value={player.stats?.assists ?? 0} /></strong><span>Assists</span></div>
-        <div><strong className="number"><CountUp value={awards.length} /></strong><span>MOTM</span></div>
       </section>
-
-      {awards.length > 0 && <section className="player-awards" aria-label="Man of the match awards">
-        <span className="player-awards-star" aria-hidden="true">★</span>
-        <div><strong>Fans' man of the match ×{awards.length}</strong><ul>{awards.slice(0, 5).map((fixture) => <li key={fixture.id}><Link to={`/live?match=${fixture.id}&tab=vote`}>{fixture.home} {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0} {fixture.away}</Link></li>)}</ul></div>
-      </section>}
 
       {log.length > 0 && <>
         <PageHeader eyebrow="Recent matches" title="Match log" />
@@ -148,7 +141,7 @@ export default function PlayerDetailPage() {
             return <li key={fixture.id}><Link to={`/live?match=${fixture.id}`}>
               {outcome && <span className={`player-log-result result-${outcome}`}>{outcome}</span>}
               <TeamLogo name={opponent} />
-              <span className="player-log-main"><strong>{/ekhaya/i.test(fixture.home) ? 'v' : '@'} {opponent} · {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0}</strong><small>{formatMalawiDate(fixture.date)} · {started ? 'Started' : 'Sub'}{fixture.officialMinutes?.[id] ? ` · ${fixture.officialMinutes[id]}′` : ''}{fixture.motmWinnerId === id && fixture.motmClosed ? ' · ★ MOTM' : ''}</small></span>
+              <span className="player-log-main"><strong>{/ekhaya/i.test(fixture.home) ? 'v' : '@'} {opponent} · {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0}</strong><small>{formatMalawiDate(fixture.date)} · {started ? 'Started' : 'Sub'}{fixture.officialMinutes?.[id] ? ` · ${fixture.officialMinutes[id]}′` : ''}</small></span>
               {scored.length > 0 && <span className="player-log-goals" aria-label={`${scored.length} goal${scored.length === 1 ? '' : 's'}`}>{scored.map((minute, index) => <i key={index}>⚽ {minute}′</i>)}</span>}
             </Link></li>
           })}

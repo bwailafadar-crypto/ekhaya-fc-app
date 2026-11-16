@@ -1,4 +1,4 @@
-// Share cards: club-styled images (result, starting XI, man of the match) drawn
+// Share cards: club-styled images (result, starting XI) drawn
 // on a canvas in the browser, then shared to WhatsApp/Facebook or downloaded.
 // No server needed, so it works on the free plan.
 
@@ -8,12 +8,10 @@ export type SharePlayer = { name: string; number: number | null; photo: string |
 export type ShareCard =
   | { kind: 'result'; home: ShareTeam; away: ShareTeam; homeScore: number; awayScore: number; status: string; competition: string; date: string; venue: string; homeScorers: string[]; awayScorers: string[] }
   | { kind: 'lineup'; opponent: ShareTeam; club: ShareTeam; competition: string; date: string; formation: string; lines: SharePlayer[][]; subs: string[] }
-  | { kind: 'motm'; club: ShareTeam; player: SharePlayer; votes: number | null; share: number | null; match: string; competition: string }
 
 const W = 1080
 const H = 1350
 const GOLD = '#C9A227'
-const GOLD_LIGHT = '#E8C95A'
 const INK = '#1C1C1C'
 const MUTED = '#6B6455'
 
@@ -214,32 +212,6 @@ async function drawLineup(ctx: CanvasRenderingContext2D, card: Extract<ShareCard
   ctx.fillText(card.date, W / 2, 1165)
 }
 
-async function drawMotm(ctx: CanvasRenderingContext2D, card: Extract<ShareCard, { kind: 'motm' }>) {
-  header(ctx, card.competition, "Fans' man of the match")
-  await avatar(ctx, card.player, W / 2, 560, 230)
-  ctx.textAlign = 'center'
-  ctx.fillStyle = INK
-  fitText(ctx, card.player.name.toUpperCase(), W - 180, 84, '700', 'Oswald, sans-serif')
-  ctx.fillText(card.player.name.toUpperCase(), W / 2, 905)
-  if (card.player.number != null) {
-    ctx.fillStyle = GOLD
-    ctx.font = '700 46px Oswald, sans-serif'
-    ctx.fillText(`#${card.player.number}`, W / 2, 970)
-  }
-  ctx.fillStyle = MUTED
-  ctx.font = '500 32px Inter, sans-serif'
-  ctx.fillText(card.match, W / 2, 1050)
-  if (card.share != null) {
-    ctx.fillStyle = GOLD
-    ctx.font = '600 32px Inter, sans-serif'
-    ctx.fillText(`${card.share}% of fan votes${card.votes ? ` · ${card.votes} vote${card.votes === 1 ? '' : 's'}` : ''}`, W / 2, 1105)
-  }
-  // Star burst
-  ctx.fillStyle = GOLD_LIGHT
-  ctx.font = '72px serif'
-  ctx.fillText('★', W / 2, 300)
-}
-
 /** Draws a share card and returns it as a PNG. */
 export async function renderShareCard(card: ShareCard): Promise<Blob> {
   try { await Promise.all(['700 80px Oswald', '600 30px Inter', '500 30px Inter'].map((font) => document.fonts.load(font))) } catch { /* system fonts are fine */ }
@@ -250,8 +222,7 @@ export async function renderShareCard(card: ShareCard): Promise<Blob> {
   if (!ctx) throw new Error('Images are not supported on this device.')
   background(ctx)
   if (card.kind === 'result') await drawResult(ctx, card)
-  else if (card.kind === 'lineup') await drawLineup(ctx, card)
-  else await drawMotm(ctx, card)
+  else await drawLineup(ctx, card)
   footer(ctx)
   return new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('The image could not be made.')), 'image/png'))
 }

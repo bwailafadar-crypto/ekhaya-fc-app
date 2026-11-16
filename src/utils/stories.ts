@@ -66,7 +66,7 @@ export function autoStories(fixtures: Fixture[], now: number): Story[] {
   }
   const last = sortByDate(real.filter((fixture) => isPlayed(fixture) && !fixture.editing), 'desc')[0]
   if (last && now - new Date(last.date).getTime() < 4 * DAY) {
-    stories.push({ id: `ft-${last.id}-${last.homeScore ?? 0}-${last.awayScore ?? 0}`, source: 'auto', label: 'Full time', tone: 'result', crest: opponentOf(last), title: `${last.home} ${last.homeScore ?? 0}–${last.awayScore ?? 0} ${last.away}`, text: last.motmClosed ? "See the fans' man of the match" : 'Vote for your man of the match', path: `/live?match=${last.id}${last.motmClosed ? '' : '&tab=vote'}`, createdAt: now - 3 })
+    stories.push({ id: `ft-${last.id}-${last.homeScore ?? 0}-${last.awayScore ?? 0}`, source: 'auto', label: 'Full time', tone: 'result', crest: opponentOf(last), title: `${last.home} ${last.homeScore ?? 0}–${last.awayScore ?? 0} ${last.away}`, text: 'Read the match report', path: `/report/${last.id}`, createdAt: now - 3 })
   }
   return stories
 }

@@ -5,7 +5,7 @@ import { ArrowRight, CalendarDays, Clapperboard, MapPin, Medal, Newspaper, Shopp
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { LatestGoal, MotmSpotlight, NextLineup } from '../components/HomeParts'
+import { LatestGoal, NextLineup } from '../components/HomeParts'
 import NewsCoverImage from '../components/NewsCoverImage'
 import StoriesBar from '../components/StoriesBar'
 import TeamLogo from '../components/TeamLogo'
@@ -100,7 +100,6 @@ export default function NewHome() {
         {last.goals && (scorerText(last.goals, 'home') || scorerText(last.goals, 'away')) && <div className="nh-result-scorers"><span>{scorerText(last.goals, 'home')}</span><i>⚽</i><span>{scorerText(last.goals, 'away')}</span></div>}
         <span className="nh-result-link">Match report <ArrowRight size={14} /></span>
       </Link>
-      <MotmSpotlight fixture={last} />
     </section>}
 
     <section className="nh-stats nh-stats-one" aria-label="Season">

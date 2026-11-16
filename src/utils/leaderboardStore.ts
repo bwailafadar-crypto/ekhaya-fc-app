@@ -83,8 +83,7 @@ async function recalculateFanPoints(allFixtures: Fixture[], predictionRows: Arra
   const real = allFixtures.filter((fixture) => !fixture.isTest)
   const played = real.filter((fixture) => isPlayed(fixture) || fixture.status === 'live')
   const safe = async <T,>(work: () => Promise<T>, fallback: T) => { try { return await work() } catch { return fallback } }
-  const [motmSets, checkinSets, polls, referrals, fanCards, users] = await Promise.all([
-    Promise.all(real.filter(isPlayed).map((fixture) => safe(() => getDocs(collection(db, 'fixtures', fixture.id, 'motm')), null))),
+  const [checkinSets, polls, referrals, fanCards, users] = await Promise.all([
     Promise.all(played.map((fixture) => safe(() => getDocs(collection(db, 'fixtures', fixture.id, 'checkins')), null))),
     safe(() => getDocs(collection(db, 'polls')), null),
     safe(() => getDocs(collection(db, 'referrals')), null),
@@ -99,7 +98,6 @@ async function recalculateFanPoints(allFixtures: Fixture[], predictionRows: Arra
   predictionRows.forEach((row) => { if (!names[row.uid] && row.name && row.name !== 'Fan') names[row.uid] = row.name })
   const table = fanPointsTable({
     predictionPoints: predictionRows,
-    motmVoters: motmSets.flatMap((set) => set?.docs.map((item) => item.id) ?? []),
     pollVoters: pollSets.flatMap((set) => set?.docs.map((item) => item.id) ?? []),
     checkIns: checkinSets.flatMap((set) => set?.docs.map((item) => ({ uid: item.id, name: typeof item.data().name === 'string' ? item.data().name : undefined })) ?? []),
     inviters: referrals?.docs.map((item) => String(item.data().by ?? '')).filter(Boolean) ?? [],

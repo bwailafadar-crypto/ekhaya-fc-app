@@ -1,9 +1,8 @@
 // Full match report after full time: score, goals, cards, subs, the Ekhaya
-// line-up with minutes, match stats, man of the match and fan numbers, with a
+// line-up with minutes, match stats and fan numbers, with a
 // share button for WhatsApp and Facebook. One page per match: /report/:id
 import { collection, query, where } from 'firebase/firestore'
-import { ArrowLeft, ArrowRightLeft, CalendarDays, Clock3, Goal, MapPin, MessageCircle, Share2, Square, Star, Target, Users } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, ArrowRightLeft, CalendarDays, Clock3, Goal, MapPin, MessageCircle, Share2, Square, Target, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import PlayerAvatar from '../components/PlayerAvatar'
 import TeamLogo from '../components/TeamLogo'
@@ -28,7 +27,6 @@ const surname = (name = '') => { const words = name.trim().split(/\s+/); const l
 export default function MatchReport() {
   const { id = '' } = useParams()
   const { showToast } = useToast()
-  const [openedAt] = useState(() => Date.now())
   const match = useMyDoc<Omit<Fixture, 'id'>>(id ? ['fixtures', id] : null)
   const fixture = match.data ? ({ ...match.data, id } as Fixture) : null
   const eventsResult = useLiveDocs<Omit<MatchEvent, 'id'>>(id ? ['fixtures', id, 'events'] : null)
@@ -37,7 +35,6 @@ export default function MatchReport() {
   const counts = useCounts(finished ? `report:${id}:${fixture?.homeScore}-${fixture?.awayScore}` : null, () => ({
     predictions: collection(db, 'fixtures', id, 'predictions'),
     exact: query(collection(db, 'fixtures', id, 'predictions'), where('home', '==', fixture?.homeScore ?? 0), where('away', '==', fixture?.awayScore ?? 0)),
-    motm: collection(db, 'fixtures', id, 'motm'),
     chat: collection(db, 'fixtures', id, 'chat'),
     reactions: collection(db, 'fixtures', id, 'reactions'),
   }))
@@ -70,10 +67,6 @@ export default function MatchReport() {
   const assistsBy = (playerId: string) => goals.filter((event) => event.assistPlayerId === playerId).length
   const cardOf = (playerId: string) => cards.filter((event) => event.playerId === playerId).map((event) => event.card)
 
-  // Recent matches only: old imported results have no vote to invite fans to.
-  const finishedAt = (fixture as Fixture & { finishedAt?: { toMillis?: () => number } }).finishedAt?.toMillis?.() ?? 0
-  const voteOpen = finishedAt > 0 && openedAt - finishedAt < 7 * 86400000
-  const motm = fixture.motmClosed && fixture.motmWinnerId ? byId(fixture.motmWinnerId) : undefined
   const stats = fixture.matchStats
   const showStats = Boolean(stats && STAT_ROWS.some(([key]) => (stats.home[key] ?? 0) + (stats.away[key] ?? 0) > 0))
   const c = counts.counts
@@ -84,7 +77,6 @@ export default function MatchReport() {
     `FT: ${fixture.home} ${home}–${away} ${fixture.away}`,
     scorerText(fixture.home) && `⚽ ${fixture.home}: ${scorerText(fixture.home)}`,
     scorerText(fixture.away) && `⚽ ${fixture.away}: ${scorerText(fixture.away)}`,
-    motm && `⭐ Fans' man of the match: ${motm.name}`,
     `Full report: ${url}`,
   ].filter(Boolean).join('\n')
 
@@ -121,12 +113,6 @@ export default function MatchReport() {
       <p className="report-meta"><CalendarDays size={13} aria-hidden="true" /> {formatMalawiDate(fixture.date)} · {formatMalawiTime(fixture.date)}{fixture.venue ? <><MapPin size={13} aria-hidden="true" /> {fixture.venue}</> : null}</p>
       <button type="button" className="report-share" onClick={() => void share()}><Share2 size={16} aria-hidden="true" /> Share the report</button>
     </header>
-
-    {motm && <section className="report-card report-motm">
-      <PlayerAvatar player={motm} large />
-      <div><span className="report-label"><Star size={13} aria-hidden="true" /> Fans' man of the match</span><strong>{motm.name}</strong>{fixture.motmWinnerVotes ? <small>{fixture.motmWinnerVotes} vote{fixture.motmWinnerVotes === 1 ? '' : 's'}</small> : null}</div>
-    </section>}
-    {!motm && !fixture.motmClosed && voteOpen && <Link className="report-card report-vote" to={`/live?match=${encodeURIComponent(id)}&tab=vote`}><Star size={18} aria-hidden="true" /><span><strong>Man of the match vote is open</strong><small>Tap to pick your player</small></span></Link>}
 
     <section className="report-card">
       <h2>Key moments</h2>
@@ -168,11 +154,10 @@ export default function MatchReport() {
       </div> })}
     </section>}
 
-    {!counts.loading && (c.predictions || c.chat || c.reactions || c.motm) ? <section className="report-card">
+    {!counts.loading && (c.predictions || c.chat || c.reactions) ? <section className="report-card">
       <h2>The fans</h2>
       <div className="report-fans">
         {c.predictions ? <div><Target size={18} aria-hidden="true" /><strong>{c.exact ?? 0}/{c.predictions}</strong><span>predicted {home}–{away}</span></div> : null}
-        {c.motm ? <div><Star size={18} aria-hidden="true" /><strong>{c.motm}</strong><span>man of the match vote{c.motm === 1 ? '' : 's'}</span></div> : null}
         {c.chat ? <div><MessageCircle size={18} aria-hidden="true" /><strong>{c.chat}</strong><span>chat message{c.chat === 1 ? '' : 's'}</span></div> : null}
         {c.reactions ? <div><span aria-hidden="true">🔥</span><strong>{c.reactions}</strong><span>{c.reactions === 1 ? 'fan' : 'fans'} reacted live</span></div> : null}
       </div>

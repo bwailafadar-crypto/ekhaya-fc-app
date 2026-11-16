@@ -63,15 +63,8 @@ export interface Fixture {
   /** Editing a result the app never counted (imported): saving leaves the table and stats alone. */
   editNoStats?: boolean
   statsApplied?: boolean
-  /** Fan Zone: admin closed man-of-the-match voting for this match. */
-  motmClosed?: boolean
   /** Fan Zone: predictions closed (set at kick-off; an admin can reopen). */
   predictionsLocked?: boolean
-  /** Fan Zone: man of the match result saved when voting closes. */
-  motmWinnerId?: string
-  motmWinnerVotes?: number
-  motmTotalVotes?: number
-  motmTally?: Record<string, number>
   /** Matchday Hero: set true once this match has been scored into the competition. */
   heroScored?: boolean
 }
@@ -254,7 +247,6 @@ export interface Poll {
 
 export interface PollVote { id: string; option: number; updatedAt?: Timestamp }
 export interface ScorePrediction { id: string; home: number; away: number; name: string; updatedAt?: Timestamp }
-export interface MotmVote { id: string; playerId: string; updatedAt?: Timestamp }
 
 /** Matchday Hero competition: a fan's one player pick for a match. */
 export interface HeroPick { id: string; playerId: string; name: string; updatedAt?: Timestamp }

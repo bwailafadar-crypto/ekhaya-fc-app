@@ -1,12 +1,12 @@
 import { addDoc, collection, deleteField, doc, serverTimestamp, updateDoc, writeBatch, type DocumentReference } from 'firebase/firestore'
-import { Eraser, Lock, LockOpen, Plus, RefreshCw, Star, Target, Trash2, Trophy, Vote } from 'lucide-react'
+import { Eraser, Lock, LockOpen, Plus, RefreshCw, Target, Trash2, Trophy, Vote } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useToast } from '../../components/ToastContext'
 import { Button, Card } from '../../components/UI'
 import { db } from '../../firebase'
 import { useFirestoreCollection } from '../../hooks/useFirestoreCollection'
 import { useLiveDocs } from '../../hooks/useLiveDocs'
-import type { Fixture, MotmVote, Player, Poll, PollVote, ScorePrediction } from '../../types'
+import type { Fixture, Player, Poll, PollVote, ScorePrediction } from '../../types'
 import { sortByDate } from '../../utils/football'
 import AlertsSetup from './AlertsSetup'
 import HeroCompAdmin from './HeroCompAdmin'
@@ -103,46 +103,6 @@ function PollRow({ poll }: { poll: Poll }) {
   </Card>
 }
 
-function MotmControl({ fixture, players }: { fixture: Fixture; players: Player[] }) {
-  const { showToast } = useToast()
-  const votes = useLiveDocs<Omit<MotmVote, 'id'>>(['fixtures', fixture.id, 'motm'])
-  const [busy, setBusy] = useState(false)
-  const counts = new Map<string, number>()
-  votes.items.forEach((item) => counts.set(item.playerId, (counts.get(item.playerId) ?? 0) + 1))
-  const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
-  const closed = fixture.motmClosed === true
-
-  async function resetVotes() {
-    if (!window.confirm(`Delete all ${votes.items.length} man-of-the-match votes for this match?`)) return
-    setBusy(true)
-    try { await deleteAll(votes.items.map((item) => doc(db, 'fixtures', fixture.id, 'motm', item.id))); await updateDoc(doc(db, 'fixtures', fixture.id), { motmTally: deleteField(), motmWinnerId: deleteField(), motmWinnerVotes: deleteField(), motmTotalVotes: deleteField() }); showToast('Man of the match votes cleared.') } catch { showToast('The votes were not cleared.', 'error') } finally { setBusy(false) }
-  }
-
-  async function toggle() {
-    setBusy(true)
-    try {
-      // Closing saves the final tally and winner on the match (fans read it for free).
-      const tally = Object.fromEntries(counts)
-      const [winnerId, winnerVotes] = top[0] ?? []
-      await updateDoc(doc(db, 'fixtures', fixture.id), closed
-        ? { motmClosed: false, motmTally: deleteField(), motmWinnerId: deleteField(), motmWinnerVotes: deleteField(), motmTotalVotes: deleteField() }
-        : { motmClosed: true, motmTally: tally, motmTotalVotes: votes.items.length, ...(winnerId ? { motmWinnerId: winnerId, motmWinnerVotes: winnerVotes } : {}) })
-      showToast(closed ? 'Man of the match voting reopened.' : 'Voting closed. Fans now see the winner.')
-      // Votes earn fan points: update the boards in the background.
-      if (!closed) void recalculateLeaderboard().catch(() => undefined)
-    } catch { showToast('Voting was not updated.', 'error') } finally { setBusy(false) }
-  }
-
-  return <Card className="admin-card">
-    <div className="fz-card-heading"><Star size={18} /><div><h2>Man of the match</h2><span>{fixture.home} {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0} {fixture.away} · {votes.items.length} votes</span></div></div>
-    {top.length ? <ul className="fz-admin-results">{top.map(([playerId, count]) => <li key={playerId}><span>{players.find((player) => player.id === playerId)?.name ?? 'Unknown player'}</span><strong>{count}</strong></li>)}</ul> : <p className="fz-note">No votes yet.</p>}
-    <div className="admin-actions">
-      <Button type="button" variant={closed ? 'secondary' : 'primary'} disabled={busy || votes.loading} onClick={() => void toggle()}>{closed ? <><LockOpen size={15} /> Reopen voting</> : <><Lock size={15} /> Close voting and announce winner</>}</Button>
-      {votes.items.length > 0 && <Button type="button" variant="danger" disabled={busy} onClick={() => void resetVotes()}><Eraser size={15} /> Clear votes</Button>}
-    </div>
-  </Card>
-}
-
 function LeaderboardTools() {
   const { showToast } = useToast()
   const [busy, setBusy] = useState(false)
@@ -215,7 +175,6 @@ export default function FanZoneManager() {
       </form>
     </Card>
     {nextMatch && <PredictionsAdmin fixture={nextMatch} title="Predictions: next match" />}
-    {lastMatch && <MotmControl fixture={lastMatch} players={players.items} />}
     {lastMatch && <PredictionsAdmin fixture={lastMatch} title="Predictions: last match" />}
     {sortedPolls.length > 0 && <h2 className="fz-section-title">Polls</h2>}
     {sortedPolls.map((poll) => <PollRow key={poll.id} poll={poll} />)}
