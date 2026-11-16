@@ -30,7 +30,8 @@ const floor = { 'john mchema': 3 } // user-stated totals that must not be reduce
   for (const f of fixtures) {
     const ids = new Set(f.startingPlayerIds ?? [])
     const evs = (await db.collection('fixtures').doc(f.id).collection('events').get()).docs.map((d) => d.data())
-    for (const e of evs) { if (e.playerId) ids.add(e.playerId); if (e.assistPlayerId) ids.add(e.assistPlayerId); if (e.inPlayerId) ids.add(e.inPlayerId) }
+    // Appearance = started, scored/assisted, or came on as a sub (subbedInPlayerId).
+    for (const e of evs) { if (e.playerId) ids.add(e.playerId); if (e.assistPlayerId) ids.add(e.assistPlayerId); if (e.subbedInPlayerId) ids.add(e.subbedInPlayerId) }
     for (const id of ids) newApps[id] = (newApps[id] || 0) + 1
   }
   note(`New matches counted (confirmed XI): ${fixtures.length} -> ${fixtures.map((f) => `${f.date?.slice(0,10)} ${f.home} v ${f.away}`).join('; ')}`)
