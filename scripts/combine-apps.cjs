@@ -16,7 +16,7 @@ const WRITE = process.env.WRITE === '1'
 // so this cleanly separates the two without date guessing or duplicate risk.
 
 const sheet = { 'chimwemwe chunga': 16, 'vincent salawira': 15, 'james lumbe': 15, 'clever mkungula': 14, 'samuel rukura': 14, 'isaiah nyirenda': 14, 'blessings malinda': 14, 'happy mphepo': 13, 'andrew lameck': 13, 'hermas masinja': 13, 'allen chihana': 13, 'levison mnyenyembe': 12, 'charles mafaiti': 11, 'wongani kaponya': 11, 'moses banda': 10, 'james stambuli': 9, 'aubrey simbi': 8, 'gift chunga': 6, 'josephy mcdonald': 5, 'lucky tizola': 2, 'alfred chizinga': 2, 'fanizo mwansambo': 1, 'gift magola': 1, 'george mateyo': 1, 'amos sande': 0, 'joshua waka': 0, 'mudrick salomu': 0, 'joseph saiwa': 0, 'alick lungu': 0, 'hadji james': 0, 'limbani kutambe': 0, 'davie juao': 0 }
-const floor = { 'john mchema': 3 } // user-stated totals that must not be reduced
+const floor = { 'john mchema': 3, 'alick lungu': 4 } // user-stated totals that must not be reduced
 
 ;(async () => {
   const players = (await db.collection('players').get()).docs
