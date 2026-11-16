@@ -126,8 +126,12 @@ export default function PlayerDetailPage() {
 
       <section className="player-headline-stats" aria-label="Season at a glance">
         <div><strong className="number"><CountUp value={player.stats?.appearances ?? 0} /></strong><span>Apps</span></div>
-        <div><strong className="number"><CountUp value={player.stats?.goals ?? 0} /></strong><span>Goals</span></div>
-        <div><strong className="number"><CountUp value={player.stats?.assists ?? 0} /></strong><span>Assists</span></div>
+        {player.position === 'GK'
+          ? <div><strong className="number"><CountUp value={player.stats?.cleanSheets ?? 0} /></strong><span>Clean sheets</span></div>
+          : <>
+            <div><strong className="number"><CountUp value={player.stats?.goals ?? 0} /></strong><span>Goals</span></div>
+            <div><strong className="number"><CountUp value={player.stats?.assists ?? 0} /></strong><span>Assists</span></div>
+          </>}
       </section>
 
       {log.length > 0 && <>
