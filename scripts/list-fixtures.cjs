@@ -1,0 +1,17 @@
+// READ-ONLY: list non-test fixtures with squad tag. node scripts/list-fixtures.cjs
+const os=require('node:os'),path=require('node:path'),fs=require('node:fs')
+const { initializeApp, cert } = require('firebase-admin/app')
+const { getFirestore } = require('firebase-admin/firestore')
+const kf = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(os.homedir(),'ekhaya-keys','firebase-sa.json')
+initializeApp({ credential: cert(JSON.parse(fs.readFileSync(kf,'utf8'))) })
+const db = getFirestore()
+const note=(t)=>console.log(process.env.GITHUB_ACTIONS?`::notice::${t}`:t)
+;(async()=>{
+  const fx=(await db.collection('fixtures').get()).docs.map(d=>({id:d.id,...d.data()})).filter(f=>!f.isTest)
+  const up=fx.filter(f=>f.status==='upcoming').sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+  const played=fx.filter(f=>f.status==='finished').sort((a,b)=>String(b.date).localeCompare(String(a.date)))
+  note(`UPCOMING (${up.length}):`)
+  for(const f of up.slice(0,8)) note(`  ${String(f.date).slice(0,10)} ${f.home} v ${f.away} | squad=${f.squad ?? '(UNSET)'} | status=${f.status} | id=${f.id}`)
+  note(`RECENT FINISHED (top 4):`)
+  for(const f of played.slice(0,4)) note(`  ${String(f.date).slice(0,10)} ${f.home} v ${f.away} | squad=${f.squad ?? '(UNSET)'} | id=${f.id}`)
+})().catch(e=>{console.log('::error::'+e.message);process.exit(1)})
