@@ -5,6 +5,7 @@ import PlayerAvatar from '../../components/PlayerAvatar'
 import { useToast } from '../../components/ToastContext'
 import { Card } from '../../components/UI'
 import { db } from '../../firebase'
+import { inSquad, type Squad } from '../../hooks/useSquad'
 import type { Player } from '../../types'
 import { compressImage, IMAGE_SIZES } from '../../utils/compressImage'
 
@@ -75,7 +76,8 @@ export default function SquadSheet({ players }: { players: Player[] }) {
   const [pasteText, setPasteText] = useState('')
   const [pasted, setPasted] = useState<PastedRow[] | null>(null)
   const [pasteBusy, setPasteBusy] = useState(false)
-  const squad = players.filter((player) => player.team === 'senior').sort((a, b) => (a.number ?? 999) - (b.number ?? 999) || a.name.localeCompare(b.name))
+  const [side, setSide] = useState<Squad>('men')
+  const squad = players.filter((player) => inSquad(player.squad, side)).sort((a, b) => (a.number ?? 999) - (b.number ?? 999) || a.name.localeCompare(b.name))
   const incomplete = squad.filter((player) => missing(player).length)
   const shown = onlyMissing ? incomplete : squad
   const count = (field: string) => squad.filter((player) => missing(player).includes(field)).length
@@ -123,7 +125,7 @@ export default function SquadSheet({ players }: { players: Player[] }) {
         let id = slug(row.name)
         for (let n = 2; taken.has(id); n += 1) id = `${slug(row.name)}-${n}`
         taken.add(id)
-        batch.set(doc(db, 'players', id), { name: row.name, number: null, team: 'senior', position: null, dob: row.dob, nationality: 'Malawian', preferredFoot: null, heightCm: null, photoDataUrl: null, stats: { ...EMPTY_STATS }, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
+        batch.set(doc(db, 'players', id), { name: row.name, number: null, team: side === 'men' ? 'senior' : 'women', squad: side, position: null, dob: row.dob, nationality: 'Malawian', preferredFoot: null, heightCm: null, photoDataUrl: null, stats: { ...EMPTY_STATS }, createdAt: serverTimestamp(), updatedAt: serverTimestamp() })
         added++
       }
       if (updates + added) await batch.commit()
@@ -141,6 +143,10 @@ export default function SquadSheet({ players }: { players: Player[] }) {
     <div className="sq-head">
       <ClipboardList size={18} aria-hidden="true" />
       <div><h2>Squad sheet</h2><span>{incomplete.length ? `${incomplete.length} of ${squad.length} players need details` : `All ${squad.length} players complete`}</span></div>
+    </div>
+    <div className="sq-side" role="group" aria-label="Which team">
+      <button type="button" className={side === 'men' ? 'active' : ''} aria-pressed={side === 'men'} onClick={() => { setSide('men'); setPasted(null) }}>Men</button>
+      <button type="button" className={side === 'women' ? 'active' : ''} aria-pressed={side === 'women'} onClick={() => { setSide('women'); setPasted(null) }}>Women</button>
     </div>
     <details className="sq-paste"><summary><ClipboardPaste size={15} aria-hidden="true" /> Paste a squad list (names and dates of birth)</summary>
       <textarea rows={6} value={pasteText} onChange={(event) => { setPasteText(event.target.value); setPasted(null) }} placeholder={'Andrew Lameck 25/12/2004\nClever Mkungula 13/02/2000\nLucky Tizitola 25/03/2003'} />

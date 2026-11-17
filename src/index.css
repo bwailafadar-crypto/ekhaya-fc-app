@@ -1702,6 +1702,9 @@ select.auth-input { appearance: auto; }
 .sq-head h2 { font-size: 20px; }
 .sq-head span { color: var(--muted); font-size: 12px; }
 .sq-missing { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
+.sq-side { margin: 10px 0 2px; display: flex; gap: 8px; }
+.sq-side button { flex: 1; min-height: 38px; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 10px; font: 800 13px 'Oswald', 'Inter', sans-serif; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
+.sq-side button.active { color: #1a1a1a; background: linear-gradient(120deg, var(--gold-light), var(--gold)); border-color: var(--gold); }
 .sq-filter { margin: 12px 0 6px; display: flex; gap: 8px; flex-wrap: wrap; }
 .sq-filter button { min-height: 34px; padding: 0 12px; color: var(--ink-2); background: #fff; border: 1px solid var(--line); border-radius: 999px; font: 700 12px 'Inter', sans-serif; cursor: pointer; }
 .sq-filter button.active { background: linear-gradient(120deg, var(--gold-light), var(--gold)); border-color: var(--gold); }
