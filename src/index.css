@@ -1,7 +1,7 @@
 :root {
   color-scheme: only light;
-  --gold: #C9A227;
-  --gold-light: #E8C95A;
+  --gold: #C29A3C;
+  --gold-light: #E4C66A;
   --gold-dark: #9E7C12;
   --ink: #0E0E0E;
   --ink-2: #1C1C1C;
@@ -136,8 +136,10 @@ h1, h2, h3, .number, .score { font-family: 'Oswald', sans-serif; }
 
 .skeleton { min-height: 14px; border-radius: 7px; background: linear-gradient(90deg, #ECEAE4 25%, #F6F5F1 50%, #ECEAE4 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.35s ease-in-out infinite; }
 @keyframes skeleton-shimmer { to { background-position: -200% 0; } }
-.empty-state { min-height: 210px; padding: 28px 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.empty-state-icon { width: 52px; height: 52px; margin-bottom: 13px; display: grid; place-items: center; color: var(--gold-dark); background: #F8EDC5; border-radius: 50%; }
+.empty-state { position: relative; min-height: 210px; padding: 28px 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.empty-state::before { content: ''; position: absolute; top: 14px; left: 50%; width: 150px; height: 150px; transform: translateX(-50%); background: url('/team-logos/ekhaya-fc.png') center / contain no-repeat; opacity: .05; pointer-events: none; }
+.empty-state > * { position: relative; }
+.empty-state-icon { width: 52px; height: 52px; margin-bottom: 13px; display: grid; place-items: center; color: var(--gold-dark); background: #F8EDC5; border: 1px solid rgb(194 154 60 / 22%); border-radius: 50%; }
 .empty-state h2 { font-size: 20px; font-weight: 600; }
 .empty-state p { max-width: 280px; margin-top: 5px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 
