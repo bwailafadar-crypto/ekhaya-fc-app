@@ -8,7 +8,7 @@ const zlib = require('node:zlib')
 const BUDGET_KB = {
   appEntry: 60,        // index-*.js, gzipped: the app's own start-up code
   firstLoadTotal: 380, // every JS file needed to show Home, gzipped
-  precacheTotal: 2700, // everything saved for offline use, raw (one-time per install)
+  precacheTotal: 2800, // everything saved for offline use, raw (one-time per install)
 }
 const dir = path.join(__dirname, '..', 'dist', 'assets')
 if (!fs.existsSync(dir)) { console.error('No dist/ folder. Run npm run build first.'); process.exit(1) }
