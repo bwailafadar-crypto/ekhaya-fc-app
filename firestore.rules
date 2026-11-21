@@ -529,6 +529,14 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    // Club content set by admins (e.g. the Home hero photo). Fans read it.
+    match /siteContent/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin()
+        && request.resource.data.keys().hasOnly(['heroPhotoDataUrl', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time;
+    }
+
     // Errors fans hit, for Admin -> App health. Write-only for fans.
     match /clientErrors/{errorId} {
       allow create: if signedIn()

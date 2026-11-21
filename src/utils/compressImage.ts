@@ -30,6 +30,8 @@ export const IMAGE_SIZES = {
   logo: { maxDimension: 192, maxBytes: 20 * 1024, keepTransparency: true },
   // Player photos: shown at 30–120 px (share cards up to ~460 px).
   player: { maxDimension: 360, maxBytes: 32 * 1024 },
+  // Hero/banner photos: full-width backdrop on Home and the match page.
+  hero: { maxDimension: 1280, maxBytes: 240 * 1024 },
 } satisfies Record<string, CompressOptions>
 
 function fromDataUrl(dataUrl: string): Promise<HTMLImageElement> {

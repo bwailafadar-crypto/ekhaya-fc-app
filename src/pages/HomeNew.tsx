@@ -1,11 +1,12 @@
 // The Home screen: next match with a live countdown, last result with its
 // scorers, Ekhaya's league place and top scorer, the trophy, then news.
 // Admin → App health → "New Home screen" switches back to the old Home.
-import { ArrowRight, CalendarDays, Clapperboard, MapPin, Medal, Newspaper, ShoppingBag, Target, Trophy, Users, UsersRound } from 'lucide-react'
+import { ArrowRight, CalendarDays, Clapperboard, Goal, MapPin, Medal, Newspaper, ShoppingBag, Target, Trophy, Users, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { LatestGoal, NextLineup } from '../components/HomeParts'
+import { useMyDoc } from '../hooks/useCounts'
 import NewsCoverImage from '../components/NewsCoverImage'
 import StoriesBar from '../components/StoriesBar'
 import TeamLogo from '../components/TeamLogo'
@@ -38,6 +39,7 @@ export default function NewHome() {
   const shopOpen = useFlag('clubShop') || profile?.role === 'admin' || profile?.role === 'superadmin'
   const tvOpen = useFlag('ekhayaTv')
   const newsResult = usePublishedNews()
+  const heroPhoto = useMyDoc<{ heroPhotoDataUrl?: string }>(['siteContent', 'home']).data?.heroPhotoDataUrl
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer) }, [])
 
@@ -70,8 +72,8 @@ export default function NewHome() {
     <p className="nh-greeting">Welcome home, <b>{firstName}</b></p>
     <StoriesBar fixtures={fixturesResult.items} />
 
-    {fixturesResult.loading ? <Skeleton className="nh-skeleton" /> : next && !live ? <section className="nh-hero" aria-label="Next match">
-      <img className="nh-hero-crest" src="./team-logos/ekhaya-fc.png" alt="" aria-hidden="true" />
+    {fixturesResult.loading ? <Skeleton className="nh-skeleton" /> : next && !live ? <section className={`nh-hero${heroPhoto ? ' has-photo' : ''}`} aria-label="Next match">
+      {heroPhoto ? <img className="nh-hero-photo" src={heroPhoto} alt="" aria-hidden="true" /> : <img className="nh-hero-crest" src="./team-logos/ekhaya-fc.png" alt="" aria-hidden="true" />}
       <div className="nh-hero-top"><span>{new Date(next.date).getTime() - now < 36 * 3600000 ? 'Match day' : 'Next match'}</span><em>{competitionLabel(next.competition)}{next.round ? ` · ${next.round}` : ''}</em></div>
       <div className="nh-teams">
         <div><TeamLogo name={next.home} crest /><span>{next.home}</span></div>
@@ -97,7 +99,7 @@ export default function NewHome() {
           <strong>{last.homeScore ?? 0}<i>–</i>{last.awayScore ?? 0}</strong>
           <div><TeamLogo name={last.away} /><span>{last.away}</span></div>
         </div>
-        {last.goals && (scorerText(last.goals, 'home') || scorerText(last.goals, 'away')) && <div className="nh-result-scorers"><span>{scorerText(last.goals, 'home')}</span><i>⚽</i><span>{scorerText(last.goals, 'away')}</span></div>}
+        {last.goals && (scorerText(last.goals, 'home') || scorerText(last.goals, 'away')) && <div className="nh-result-scorers"><span>{scorerText(last.goals, 'home')}</span><Goal size={13} aria-hidden="true" /><span>{scorerText(last.goals, 'away')}</span></div>}
         <span className="nh-result-link">Match report <ArrowRight size={14} /></span>
       </Link>
     </section>}

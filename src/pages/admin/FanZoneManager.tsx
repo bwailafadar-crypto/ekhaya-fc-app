@@ -1,9 +1,11 @@
-import { addDoc, collection, deleteField, doc, serverTimestamp, updateDoc, writeBatch, type DocumentReference } from 'firebase/firestore'
-import { Eraser, Lock, LockOpen, Plus, RefreshCw, Target, Trash2, Trophy, Vote } from 'lucide-react'
+import { addDoc, collection, deleteField, doc, serverTimestamp, setDoc, updateDoc, writeBatch, type DocumentReference } from 'firebase/firestore'
+import { Eraser, ImagePlus, Lock, LockOpen, Plus, RefreshCw, Target, Trash2, Trophy, Vote } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useToast } from '../../components/ToastContext'
 import { Button, Card } from '../../components/UI'
 import { db } from '../../firebase'
+import { useMyDoc } from '../../hooks/useCounts'
+import { compressImage, IMAGE_SIZES } from '../../utils/compressImage'
 import { useFirestoreCollection } from '../../hooks/useFirestoreCollection'
 import { useLiveDocs } from '../../hooks/useLiveDocs'
 import type { Fixture, Player, Poll, PollVote, ScorePrediction } from '../../types'
@@ -116,6 +118,36 @@ function LeaderboardTools() {
   </Card>
 }
 
+function HomeHeroCard() {
+  const { showToast } = useToast()
+  const current = useMyDoc<{ heroPhotoDataUrl?: string }>(['siteContent', 'home']).data?.heroPhotoDataUrl
+  const [busy, setBusy] = useState(false)
+  async function upload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setBusy(true)
+    try {
+      const dataUrl = await compressImage(file, IMAGE_SIZES.hero)
+      await setDoc(doc(db, 'siteContent', 'home'), { heroPhotoDataUrl: dataUrl, updatedAt: serverTimestamp() }, { merge: true })
+      showToast('Home hero photo updated.')
+    } catch { showToast('That photo could not be saved.', 'error') } finally { setBusy(false) }
+  }
+  async function remove() {
+    setBusy(true)
+    try { await setDoc(doc(db, 'siteContent', 'home'), { heroPhotoDataUrl: deleteField(), updatedAt: serverTimestamp() }, { merge: true }); showToast('Home hero photo removed.') }
+    catch { showToast('That did not work.', 'error') } finally { setBusy(false) }
+  }
+  return <Card className="admin-card">
+    <div className="fz-card-heading"><ImagePlus size={18} /><div><h2>Home hero photo</h2><span>A full-width photo behind the next-match card on Home. Use a wide match, team or stadium shot.</span></div></div>
+    {current && <img src={current} alt="Current home hero" style={{ width: '100%', borderRadius: 12, aspectRatio: '16 / 9', objectFit: 'cover', margin: '6px 0' }} />}
+    <div className="admin-actions">
+      <label className="button button-secondary" style={{ cursor: 'pointer' }}>{current ? 'Change photo' : 'Upload photo'}<input type="file" accept="image/*" hidden disabled={busy} onChange={(event) => void upload(event)} /></label>
+      {current && <Button type="button" variant="danger" disabled={busy} onClick={() => void remove()}><Trash2 size={15} /> Remove</Button>}
+    </div>
+  </Card>
+}
+
 export default function FanZoneManager() {
   const { showToast } = useToast()
   const polls = useFirestoreCollection<Poll>('polls')
@@ -162,6 +194,7 @@ export default function FanZoneManager() {
   }
 
   return <section className="fz-admin">
+    <HomeHeroCard />
     <AlertsSetup />
     <HeroCompAdmin />
     <LeaderboardTools />
