@@ -1,0 +1,7 @@
+const os=require('node:os'),path=require('node:path'),fs=require('node:fs')
+const { initializeApp, cert } = require('firebase-admin/app'); const { getFirestore } = require('firebase-admin/firestore')
+initializeApp({ credential: cert(JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS||path.join(os.homedir(),'ekhaya-keys','firebase-sa.json'),'utf8'))) })
+const db=getFirestore(); const note=(t)=>console.log(process.env.GITHUB_ACTIONS?`::notice::${t}`:t)
+;(async()=>{const rows=(await db.collection('standings').get()).docs.filter(d=>(d.data().squad??'men')==='men').sort((a,b)=>(a.data().position??99)-(b.data().position??99))
+note(`Men's standings rows: ${rows.length}`)
+for(const d of rows){const x=d.data();note(`${x.position}. "${x.team}" P${x.played} ${x.won}-${x.drawn}-${x.lost} ${x.goalsFor}:${x.goalsAgainst} ${x.points}pts [id=${d.id}]`)}})().catch(e=>{console.log('::error::'+e.message);process.exit(1)})
