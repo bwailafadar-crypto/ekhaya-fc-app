@@ -76,7 +76,7 @@ function LegacyHome() {
         <span className="home-live-clock">{matchMinute(liveMatch, clockNow)} <ArrowRight size={15} /></span>
         <LatestGoal fixtureId={liveMatch.id} />
       </Link>}
-      <StoriesBar fixtures={mens} />
+      <StoriesBar fixtures={fixturesResult.items} />
       {phase === 'pre' && nextSection}
       {phase === 'post' && lastSection}
       <section className="home-hero">

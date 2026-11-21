@@ -31,7 +31,11 @@ export default function StoriesBar({ fixtures }: { fixtures: Fixture[] }) {
   const isAdmin = role === 'admin' || role === 'superadmin'
   const [now] = useState(() => Date.now())
   const posted = usePostedStories(now)
-  const stories = [...[...posted].sort((a, b) => b.createdAt - a.createdAt), ...autoStories(fixtures, now)]
+  // Automatic stories (next match, full time) follow the men's team only; admins
+  // can still post a women's story by hand from the composer below, which keeps
+  // the full fixture list.
+  const mensFixtures = fixtures.filter((fixture) => (fixture.squad ?? 'men') === 'men')
+  const stories = [...[...posted].sort((a, b) => b.createdAt - a.createdAt), ...autoStories(mensFixtures, now)]
   const [seen, setSeen] = useState(seenStories)
   // The list is frozen while watching, so stories don't reorder as they become "seen".
   const [open, setOpen] = useState<{ list: Story[]; index: number } | null>(null)

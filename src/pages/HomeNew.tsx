@@ -68,7 +68,7 @@ export default function NewHome() {
     </Link>}
 
     <p className="nh-greeting">Welcome home, <b>{firstName}</b> 💛</p>
-    <StoriesBar fixtures={mens} />
+    <StoriesBar fixtures={fixturesResult.items} />
 
     {fixturesResult.loading ? <Skeleton className="nh-skeleton" /> : next && !live ? <section className="nh-hero" aria-label="Next match">
       <img className="nh-hero-crest" src="./team-logos/ekhaya-fc.png" alt="" aria-hidden="true" />
