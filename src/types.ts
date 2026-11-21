@@ -63,6 +63,8 @@ export interface Fixture {
   /** Editing a result the app never counted (imported): saving leaves the table and stats alone. */
   editNoStats?: boolean
   statsApplied?: boolean
+  /** Match centre: optional wide photo shown behind the scoreboard. */
+  heroPhotoDataUrl?: string | null
   /** Fan Zone: predictions closed (set at kick-off; an admin can reopen). */
   predictionsLocked?: boolean
   /** Matchday Hero: set true once this match has been scored into the competition. */

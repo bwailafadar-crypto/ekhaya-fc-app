@@ -697,7 +697,12 @@ html:has(.install-page), body:has(.install-page) { min-width: 0; }
 .home-live-clock { display: inline-flex; align-items: center; gap: 5px; color: var(--gold-light); font-size: 11px; font-weight: 800; white-space: nowrap; }
 .admin-live-banner { grid-template-columns: auto minmax(0, 1fr) auto auto; }
 .admin-live-manage { min-height: 36px; padding: 0 10px; gap: 5px; font-size: 10px; white-space: nowrap; }
-.matchday-scoreboard { margin-bottom: 14px; padding: 14px 15px 12px; color: #fff; background: linear-gradient(135deg, #11120F, #242116); border: 1px solid #4A3D18; border-bottom: 3px solid var(--gold); border-radius: 12px; box-shadow: 0 7px 19px rgb(14 14 14 / 11%); }
+.matchday-scoreboard { position: relative; overflow: hidden; margin-bottom: 14px; padding: 14px 15px 12px; color: #fff; background: linear-gradient(135deg, #11120F, #242116); border: 1px solid #4A3D18; border-bottom: 3px solid var(--gold); border-radius: 12px; box-shadow: 0 7px 19px rgb(14 14 14 / 11%); }
+.ms-hero-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+.matchday-scoreboard.has-photo::after { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(135deg, rgb(10 10 8 / 86%), rgb(18 16 10 / 72%) 55%, rgb(10 10 8 / 88%)); }
+.matchday-scoreboard.has-photo > * { position: relative; z-index: 2; }
+.match-photo-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.match-photo-upload { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
 .matchday-scoreboard-top, .matchday-scoreboard-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .matchday-scoreboard-top { color: rgb(255 255 255 / 62%); font-size: 9px; font-weight: 700; text-transform: uppercase; }
 .matchday-scoreboard-top > div { display: flex; align-items: center; gap: 6px; }

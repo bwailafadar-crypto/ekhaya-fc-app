@@ -5,6 +5,7 @@ import ShareBar from '../components/ShareBar'
 import MatchMedia from '../components/MatchMedia'
 import VideoPlayer from '../components/VideoPlayer'
 import { parseVideo } from '../utils/video'
+import { compressImage, IMAGE_SIZES } from '../utils/compressImage'
 import PlayerAvatar from '../components/PlayerAvatar'
 import { DEFAULT_FORMATION, FORMATIONS, isFormation, slotRoles, type Formation } from '../utils/formations'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
@@ -14,7 +15,7 @@ import MatchSummary from '../components/MatchSummary'
 import MinutesEditor from './admin/MinutesEditor'
 import { floatUp } from '../utils/celebrate'
 import { collection, deleteField, deleteDoc, doc, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
-import { Activity, Clock3, CornerUpLeft, FlaskConical, Goal, MessageSquareText, Play, Radio, ShieldAlert, Square, SquareArrowOutUpRight, Trash2, Users, Zap } from 'lucide-react'
+import { Activity, Clock3, CornerUpLeft, FlaskConical, Goal, ImagePlus, MessageSquareText, Play, Radio, ShieldAlert, Square, SquareArrowOutUpRight, Trash2, Users, Zap } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useAuth } from '../auth/AuthContext'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
@@ -310,6 +311,22 @@ export default function LiveMatch() {
     if (!same || order.length !== 11) throw new Error('The starting XI changed. Reload and try again.')
     await updateDoc(doc(db, 'fixtures', selectedFixture.id), { startingPlayerIds: order, formation: shape, updatedAt: serverTimestamp() })
     setMessage('Positions saved. Fans see the new line-up now.')
+  }
+
+  /** Admin: set or clear the photo shown behind this match's scoreboard. */
+  async function saveMatchPhoto(file: File | null) {
+    if (!selectedFixture) return
+    setBusy(true)
+    setProblem('')
+    try {
+      const value = file ? await compressImage(file, IMAGE_SIZES.hero) : deleteField()
+      await updateDoc(doc(db, 'fixtures', selectedFixture.id), { heroPhotoDataUrl: value, updatedAt: serverTimestamp() })
+      setMessage(file ? 'Match photo updated.' : 'Match photo removed.')
+    } catch {
+      setProblem('That photo could not be saved. Try a smaller image.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   /** A private rehearsal: admins only, no alerts, never touches the table, stats or leaderboard. */
@@ -1100,7 +1117,8 @@ export default function LiveMatch() {
         : <><span><FlaskConical size={15} aria-hidden="true" /> Rehearse match day safely</span><Button type="button" variant="secondary" disabled={busy} onClick={() => void createPracticeMatch()} icon={<FlaskConical size={15} />}>Start practice match</Button></>}
     </div>}
     {pickerFixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab(null); setQuickAction(null) }}>{pickerFixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.isTest ? '🧪 Practice: ' : ''}{fixture.home} v {fixture.away} · {fixture.editing ? 'FT · editing' : fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
-    <section className={`matchday-scoreboard${isLive ? ' matchday-scoreboard-live' : ''}`} aria-label="Match scoreboard">
+    <section className={`matchday-scoreboard${isLive ? ' matchday-scoreboard-live' : ''}${selectedFixture.heroPhotoDataUrl ? ' has-photo' : ''}`} aria-label="Match scoreboard">
+      {selectedFixture.heroPhotoDataUrl && <img className="ms-hero-photo" src={selectedFixture.heroPhotoDataUrl} alt="" aria-hidden="true" />}
       <div className="matchday-scoreboard-top"><span>{selectedFixture.isTest ? <span className="practice-badge"><FlaskConical size={12} aria-hidden="true" /> PRACTICE · only admins see this</span> : competitionLabel(selectedFixture.competition)}</span><div>{isLive && selectedFixture.editing ? <Badge variant="gold">EDITING</Badge> : isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
       <div className="matchday-teams">
         <div className="matchday-team"><TeamLogo name={selectedFixture.home} crest /><strong>{selectedFixture.home}</strong></div>
@@ -1124,8 +1142,17 @@ export default function LiveMatch() {
       <Button type="button" disabled={busy || (hasClubTeam && (startingPlayers.length !== 11 || playersResult.loading))} onClick={() => void startMatch()} icon={<Zap size={17} />}>Kick off</Button>
     </Card>}
 
+    {isAdmin && <Card className="admin-card match-photo-card">
+      <div className="matchday-admin-heading"><h2>Match photo</h2><span>Shown behind the scoreboard</span></div>
+      <p className="live-help">A wide action shot sets the scene for this fixture. Fans see it behind the score, with a dark overlay so the numbers stay clear.</p>
+      <div className="match-photo-actions">
+        <label className="button button-secondary match-photo-upload"><ImagePlus size={16} aria-hidden="true" />{selectedFixture.heroPhotoDataUrl ? 'Replace photo' : 'Add photo'}<input type="file" accept="image/*" hidden disabled={busy} onChange={(event) => { const file = event.target.files?.[0] ?? null; event.target.value = ''; if (file) void saveMatchPhoto(file) }} /></label>
+        {selectedFixture.heroPhotoDataUrl && <Button type="button" variant="ghost" disabled={busy} onClick={() => void saveMatchPhoto(null)}>Remove</Button>}
+      </div>
+    </Card>}
+
     {isAdmin && <datalist id="squad-names">{clubPlayers.map((player) => <option key={player.id} value={player.name} />)}</datalist>}
-    {isAdmin && isLive && selectedFixture.editing && <p className="editing-banner">✏️ Editing a finished match. Fans see this as full time (score updates as you fix it) and get no alerts. When you are done, tap <strong>Save changes</strong>.</p>}
+    {isAdmin && isLive && selectedFixture.editing && <p className="editing-banner">Editing a finished match. Fans see this as full time (score updates as you fix it) and get no alerts. When you are done, tap <strong>Save changes</strong>.</p>}
     {isAdmin && isLive && <section className="matchday-console">
       <div className="matchday-period-controls"><div><span className="matchday-period-label">{selectedFixture.period === 'first-half' ? 'FIRST HALF' : selectedFixture.period === 'half-time' ? 'HALF-TIME' : 'SECOND HALF'}</span><strong>{matchMinute(selectedFixture, clockNow)}</strong></div>
         {selectedFixture.period === 'first-half' && <Button type="button" variant="secondary" disabled={busy} onClick={() => void setMatchPeriod('half-time')}>Half-time</Button>}
