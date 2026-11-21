@@ -1,0 +1,6 @@
+const os=require('node:os'),path=require('node:path'),fs=require('node:fs')
+const { initializeApp, cert } = require('firebase-admin/app'); const { getFirestore } = require('firebase-admin/firestore')
+initializeApp({ credential: cert(JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS||path.join(os.homedir(),'ekhaya-keys','firebase-sa.json'),'utf8'))) })
+const db=getFirestore(); const note=(t)=>console.log(process.env.GITHUB_ACTIONS?`::notice::${t}`:t)
+;(async()=>{const f=(await db.doc('fixtures/2026-11-21-ekhaya-fc-v-civo-united').get()).data(); note(`status=${f.status} period=${f.period} score=${f.homeScore}-${f.awayScore} statsApplied=${f.statsApplied} home=${f.home} away=${f.away}`)
+const evs=(await db.collection('fixtures').doc('2026-11-21-ekhaya-fc-v-civo-united').collection('events').get()).docs.map(d=>d.data()); const g=evs.filter(e=>e.kind==='goal'); note(`events=${evs.length} goals=${g.length}: ${g.map(e=>`${e.minute}' ${e.team} ${e.playerName||''}`).join('; ')}`)})().catch(e=>{console.log('::error::'+e.message);process.exit(1)})
