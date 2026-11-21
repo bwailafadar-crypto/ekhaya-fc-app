@@ -31,8 +31,14 @@ const FORMATION='4-3-3'
   const missS=S.filter(r=>!r.id), missB=B.filter(r=>!r.id)
   note(`Matched XI: ${S.filter(r=>r.id).length}/11 | subs: ${B.filter(r=>r.id).length}/${subs.length}`)
   if(missS.length){note(`Cannot set XI: unmatched starters -> ${missS.map(r=>r.name).join(', ')}`); return}
-  if(missB.length) note(`Unmatched subs (left out): ${missB.map(r=>r.name).join(', ')}`)
-  if(!WRITE){note('DRY RUN (set WRITE=1 to save).'); return}
+  if(!WRITE){ if(missB.length) note(`Will create new sub players: ${missB.map(r=>r.name).join(', ')}`); note('DRY RUN (set WRITE=1 to save).'); return }
+  // Create any sub not yet in the squad (minimal profile; number/position added later).
+  const EMPTY={appearances:0,goals:0,assists:0,cleanSheets:0,yellowCards:0,redCards:0,minutes:0}
+  for(const r of missB){
+    const id='men-'+norm(r.name).replace(/\s+/g,'-')+'-'+Math.random().toString(36).slice(2,6)
+    await db.doc(`players/${id}`).set({ name:r.name, number:null, team:'senior', squad:'men', position:null, nationality:'Malawian', photoDataUrl:null, stats:{...EMPTY}, createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp() })
+    r.id=id; note(`Created new player: ${r.name} (${id})`)
+  }
   const ref=db.doc(`fixtures/${FIXTURE}`)
   const snap=await ref.get()
   if(!snap.exists){note(`Fixture ${FIXTURE} not found`); return}
