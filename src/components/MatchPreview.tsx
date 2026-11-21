@@ -54,6 +54,17 @@ export default function MatchPreview({ fixture, fixtures, standings }: { fixture
   const ph = picked(homeLines, pickHome); const pa = picked(awayLines, pickAway)
   const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '–')
 
+  // A practice match is a private rehearsal — the opponent has no record, so the
+  // full statistical preview would just be rows of zeros. Show a simple note.
+  if (fixture.isTest) {
+    return <section className="match-preview" aria-label="Practice match">
+      <div className="pv-card pv-practice">
+        <h3>Practice match</h3>
+        <p>This is a rehearsal for the matchday tools. It is not a competitive fixture, so there is no form guide, head-to-head or season comparison — and nothing here counts towards the league table or player stats.</p>
+      </div>
+    </section>
+  }
+
   return <section className="match-preview" aria-label="Match preview">
     <div className="pv-head">
       <div><TeamLogo name={home} crest /><strong>{short(home)}</strong><small>{homeRow ? `${ordinal(homeRow.position)} · ${homeRow.points} pts` : '–'}</small></div>
