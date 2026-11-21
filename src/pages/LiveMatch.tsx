@@ -170,9 +170,14 @@ export default function LiveMatch() {
     ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'upcoming' && !fixture.isTest), 'asc'),
     ...sortByDate(availableFixtures.filter((fixture) => fixture.status === 'finished'), 'desc'),
   ]
+  // The live match centre is the men's team's by default; a women's match only
+  // shows here when it is opened directly (its id is in the link). So the match
+  // picker and the default pick are men's only.
+  const menFixtures = fixtures.filter((fixture) => (fixture.squad ?? 'men') === 'men')
   const listedFixture = fixtures.find((fixture) => fixture.id === selectedId)
-    ?? fixtures.find((fixture) => fixture.status === 'live')
-    ?? fixtures.find((fixture) => fixture.status === 'upcoming')
+    ?? menFixtures.find((fixture) => fixture.status === 'live')
+    ?? menFixtures.find((fixture) => fixture.status === 'upcoming')
+    ?? menFixtures[0]
     ?? fixtures[0]
   // Fans normally get matches from the shared copy; the match they are looking
   // at is also read directly, so stats, line-ups and edits show within seconds.
@@ -185,6 +190,8 @@ export default function LiveMatch() {
     }, () => setDirectFixture(null))
   }, [watchId])
   const selectedFixture = listedFixture && directFixture?.id === listedFixture.id ? { ...listedFixture, ...directFixture } : listedFixture
+  // Match picker: men's matches, plus the current one if a women's match was opened directly.
+  const pickerFixtures = selectedFixture && (selectedFixture.squad ?? 'men') !== 'men' ? [selectedFixture, ...menFixtures] : menFixtures
   const players = [...playersResult.items].sort((a, b) => a.name.localeCompare(b.name))
   // The Starting XI is 11 fixed places (GK, defence, midfield, attack); '' = empty place.
   const startingSlots: string[] = (() => {
@@ -1091,7 +1098,7 @@ export default function LiveMatch() {
         ? <><span><FlaskConical size={15} aria-hidden="true" /> You are in a practice match</span><Button type="button" variant="ghost" disabled={busy} onClick={() => void deletePracticeMatch()} icon={<Trash2 size={15} />}>Delete practice</Button></>
         : <><span><FlaskConical size={15} aria-hidden="true" /> Rehearse match day safely</span><Button type="button" variant="secondary" disabled={busy} onClick={() => void createPracticeMatch()} icon={<FlaskConical size={15} />}>Start practice match</Button></>}
     </div>}
-    {fixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab(null); setQuickAction(null) }}>{fixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.isTest ? '🧪 Practice: ' : ''}{fixture.home} v {fixture.away} · {fixture.editing ? 'FT · editing' : fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
+    {pickerFixtures.length > 1 && <label className="live-fixture-select"><span>Choose match</span><select value={selectedFixture.id} onChange={(event) => { setSelectedId(event.target.value); setActiveTab(null); setQuickAction(null) }}>{pickerFixtures.map((fixture) => <option key={fixture.id} value={fixture.id}>{fixture.isTest ? '🧪 Practice: ' : ''}{fixture.home} v {fixture.away} · {fixture.editing ? 'FT · editing' : fixture.status === 'live' ? 'LIVE' : fixture.status === 'finished' ? 'FT' : fixture.date.slice(0, 10)}</option>)}</select></label>}
     <section className={`matchday-scoreboard${isLive ? ' matchday-scoreboard-live' : ''}`} aria-label="Match scoreboard">
       <div className="matchday-scoreboard-top"><span>{selectedFixture.isTest ? <span className="practice-badge"><FlaskConical size={12} aria-hidden="true" /> PRACTICE · only admins see this</span> : competitionLabel(selectedFixture.competition)}</span><div>{isLive && selectedFixture.editing ? <Badge variant="gold">EDITING</Badge> : isLive ? <Badge variant="live"><span className="live-pulse-dot" />LIVE</Badge> : <Badge variant={isFinished ? 'default' : 'gold'}>{isFinished ? 'FULL TIME' : 'UPCOMING'}</Badge>}</div></div>
       <div className="matchday-teams">
