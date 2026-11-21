@@ -37,7 +37,7 @@ export default function AppLock({ children }: { children: ReactNode }) {
       <div className="app-lock-body">
         <h1>We'll be right back</h1>
         <p>The Ekhaya FC app is getting a quick update. Please check back again shortly — we won't be long.</p>
-        <p className="app-lock-note">Thanks for your patience. Together, we are home. 💛🖤</p>
+        <p className="app-lock-note">Thanks for your patience. Together, we are home.</p>
 
         <div className="app-lock-actions">
           <Link className="app-lock-signin" to="/login">Club staff sign in</Link>

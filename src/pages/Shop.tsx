@@ -3,7 +3,7 @@
 // player or your own name), wishlist, a cart and an order that goes to the
 // club on WhatsApp. /shop and /shop/:id
 import { collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore'
-import { ArrowLeft, Heart, Minus, Package, Plus, Ruler, ShieldCheck, Shirt, ShoppingBag, Truck, X } from 'lucide-react'
+import { ArrowLeft, Check, Heart, Minus, Package, Plus, Ruler, ShieldCheck, Shirt, ShoppingBag, Truck, X } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
@@ -125,7 +125,7 @@ export default function Shop() {
     </section>}
 
     <div className="shop-chips" role="tablist" aria-label="Categories">
-      {[{ key: 'all' as const, label: 'All' }, ...CATEGORIES.filter((c) => products.some((p) => p.category === c.key)), ...(wish.length ? [{ key: 'wish' as const, label: `♥ Saved (${wish.length})` }] : [])].map((c) =>
+      {[{ key: 'all' as const, label: 'All' }, ...CATEGORIES.filter((c) => products.some((p) => p.category === c.key)), ...(wish.length ? [{ key: 'wish' as const, label: <><Heart size={13} aria-hidden="true" /> Saved ({wish.length})</> }] : [])].map((c) =>
         <button key={c.key} type="button" role="tab" aria-selected={category === c.key} className={category === c.key ? 'active' : ''} onClick={() => setCategory(c.key)}>{c.label}</button>)}
     </div>
     <div className="shop-sort"><span>{shown.length} item{shown.length === 1 ? '' : 's'}</span>
@@ -441,7 +441,7 @@ function CartPanel({ settings, products, startStep, onClose, onOrders }: { setti
     {(lines.length > 0 || step === 'done') && <Steps step={step} />}
 
     {step === 'done' && placed ? <div className="shop-done">
-      <div className="shop-done-check">✓</div>
+      <div className="shop-done-check"><Check size={30} strokeWidth={3} aria-hidden="true" /></div>
       <h3>{placed.paid ? 'Paid' : 'Order placed'}</h3>
       <p>Your order number is <b>{placed.ref}</b> · {mwk(placed.total)}</p>
       <ol className="shop-next">

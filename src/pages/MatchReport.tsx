@@ -90,7 +90,7 @@ export default function MatchReport() {
   const eventIcon = (event: MatchEvent) => event.kind === 'goal' ? <Goal size={15} aria-label="Goal" />
     : event.kind === 'card' ? <Square size={13} className={event.card === 'red' ? 'card-red' : 'card-yellow'} aria-label={`${event.card === 'red' ? 'Red' : 'Yellow'} card`} />
       : <ArrowRightLeft size={14} aria-label="Substitution" />
-  const eventText = (event: MatchEvent) => event.kind === 'goal' ? <><strong>{event.playerName || 'Goal'}{event.penalty ? ' (pen)' : ''}</strong>{event.assistPlayerName && <small>👟 assist {event.assistPlayerName}</small>}</>
+  const eventText = (event: MatchEvent) => event.kind === 'goal' ? <><strong>{event.playerName || 'Goal'}{event.penalty ? ' (pen)' : ''}</strong>{event.assistPlayerName && <small><Footprints size={11} aria-hidden="true" /> assist {event.assistPlayerName}</small>}</>
     : event.kind === 'card' ? <><strong>{event.playerName || event.team}</strong><small>{event.card === 'red' ? 'Red card' : 'Yellow card'}</small></>
       : <><strong>{event.subbedInPlayerName || 'Sub'}</strong><small>on for {event.subbedOutPlayerName || '—'}</small></>
   const keyEvents = events.filter((event) => event.kind === 'goal' || event.kind === 'card' || event.kind === 'substitution')

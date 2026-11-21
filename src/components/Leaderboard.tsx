@@ -5,7 +5,6 @@ import { useAuth } from '../auth/AuthContext'
 import { POINTS_EXACT, POINTS_RESULT, useLeaderboard, useMyLeaderboardEntry } from '../hooks/useLeaderboard'
 import { Card, Skeleton } from './UI'
 
-const medals = ['🥇', '🥈', '🥉']
 
 export default function Leaderboard() {
   const { user } = useAuth()
@@ -24,7 +23,7 @@ export default function Leaderboard() {
             {mine && <p className="fz-result fz-result-win">You're #{mine.rank} of {totalFans || rows.length} with {mine.points} pt{mine.points === 1 ? '' : 's'}</p>}
             <ol className="fz-board">
               {visible.map((row) => <li key={row.uid} className={row.uid === user?.uid ? 'mine' : undefined}>
-                <span className="fz-board-rank">{row.rank <= 3 ? medals[row.rank - 1] : row.rank}</span>
+                <span className={`fz-board-rank${row.rank <= 3 ? ` fz-rank-${row.rank}` : ''}`}>{row.rank}</span>
                 <span className="fz-board-name">{row.name}{row.uid === user?.uid && <em> (you)</em>}<small>{row.exact} exact · {row.results} result{row.results === 1 ? '' : 's'} · {row.played} played</small></span>
                 <strong className="fz-board-points">{row.points}</strong>
               </li>)}

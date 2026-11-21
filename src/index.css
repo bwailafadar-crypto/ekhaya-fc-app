@@ -1315,7 +1315,11 @@ body::after { bottom: 60px; left: -90px; width: 280px; height: 280px; background
 .fz-board { margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; list-style: none; }
 .fz-board li { min-height: 50px; padding: 7px 11px; display: flex; align-items: center; gap: 10px; background: rgb(255 255 255 / 65%); border: 1px solid var(--glass-line); border-radius: 11px; }
 .fz-board li.mine { border-color: var(--gold); background: linear-gradient(120deg, #FFF8E1, rgb(248 228 160 / 55%)); }
-.fz-board-rank { width: 28px; flex: 0 0 28px; color: var(--gold-dark); font-family: 'Oswald', sans-serif; font-size: 16px; font-weight: 600; text-align: center; }
+.fz-board-rank { width: 28px; flex: 0 0 28px; color: var(--muted); font-family: 'Oswald', sans-serif; font-size: 16px; font-weight: 600; text-align: center; }
+.fz-board-rank.fz-rank-1, .fz-board-rank.fz-rank-2, .fz-board-rank.fz-rank-3 { display: grid; place-items: center; width: 26px; height: 26px; margin: 0 1px; border-radius: 50%; color: #3A2E05; font-size: 13px; }
+.fz-board-rank.fz-rank-1 { background: linear-gradient(145deg, #F4D876, #C29A3C); }
+.fz-board-rank.fz-rank-2 { background: linear-gradient(145deg, #E6E8EC, #B9BEC7); }
+.fz-board-rank.fz-rank-3 { background: linear-gradient(145deg, #E6B98A, #C08A52); }
 .fz-board-name { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; font-size: 13px; font-weight: 700; }
 .fz-board-name em { color: var(--muted); font-style: normal; font-weight: 500; }
 .fz-board-name small { color: var(--muted); font-size: 10px; font-weight: 600; }

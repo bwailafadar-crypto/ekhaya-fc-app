@@ -1,4 +1,4 @@
-import { Goal, Pencil, Square, Target } from 'lucide-react'
+import { Footprints, Goal, Pencil, Square, Target } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { competitionLabel } from '../utils/competitions'
@@ -31,7 +31,7 @@ export default function MatchSummary({ fixture, compact = false, onEdit }: { fix
   const totalPredictions = predictionCounts.counts.total ?? 0
   const exact = predictionCounts.counts.exact ?? 0
 
-  const goalLine = (event: Omit<MatchEvent, 'id'> & { id: string }) => <li key={event.id}><strong>{minuteLabel(event)}</strong> {event.playerName || 'Goal'}{event.penalty ? ' (pen)' : ''}{event.assistPlayerName && !compact ? <small> (👟 {event.assistPlayerName})</small> : null}</li>
+  const goalLine = (event: Omit<MatchEvent, 'id'> & { id: string }) => <li key={event.id}><strong>{minuteLabel(event)}</strong> {event.playerName || 'Goal'}{event.penalty ? ' (pen)' : ''}{event.assistPlayerName && !compact ? <small className="ms-assist"> (<Footprints size={11} aria-hidden="true" /> {event.assistPlayerName})</small> : null}</li>
 
   return (
     <section className={`match-summary${compact ? ' match-summary-compact' : ''}`} aria-label="Full-time summary">
