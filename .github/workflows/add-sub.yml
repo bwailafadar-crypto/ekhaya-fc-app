@@ -1,0 +1,26 @@
+name: Add sub
+on:
+  workflow_dispatch:
+    inputs:
+      off_player: { required: true }
+      on_player: { required: true }
+      minute: { required: true }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: scripts/add-sub.cjs, sparse-checkout-cone-mode: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i firebase-admin@12 --no-save --no-audit --no-fund
+      - name: Write key
+        env: { FIREBASE_SA: "${{ secrets.FIREBASE_SA }}" }
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - run: node scripts/add-sub.cjs
+        env: { OFF: "${{ github.event.inputs.off_player }}", ON: "${{ github.event.inputs.on_player }}", MIN: "${{ github.event.inputs.minute }}" }
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
