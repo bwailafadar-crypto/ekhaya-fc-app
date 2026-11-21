@@ -147,7 +147,7 @@ function ErrorsCard() {
     <Card className="fz-card">
       <div className="fz-card-heading"><AlertTriangle size={18} aria-hidden="true" /><div><h2>Errors fans hit</h2><span>Last 40 reports, newest first</span></div></div>
       {rows === null ? <p className="fz-note">Loading…</p>
-        : !groups.size ? <p className="fz-result fz-result-win">No errors reported. 🎉</p>
+        : !groups.size ? <p className="fz-result fz-result-win">No errors reported.</p>
         : <ul className="health-errors">{[...groups.values()].map(({ row, count }) => <li key={row.id}>
             <div><Badge variant={count > 2 ? 'danger' : 'default'}>{count}×</Badge> <strong>{row.context}</strong> <small>{when(row.createdAt?.toMillis?.())}</small></div>
             <p>{row.message}{row.code ? ` (${row.code})` : ''}</p>

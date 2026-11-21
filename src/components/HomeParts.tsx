@@ -1,4 +1,5 @@
 // Pieces shared by the Home screens: latest live goal and the confirmed XI.
+import { Goal } from 'lucide-react'
 import LineupPitch from './LineupPitch'
 import PlayerAvatar from './PlayerAvatar'
 import { useMyDoc } from '../hooks/useCounts'
@@ -14,7 +15,7 @@ export function LatestGoal({ fixtureId }: { fixtureId: string }) {
   if (!goal) return null
   const isClubGoal = /ekhaya/i.test(goal.team)
   return <span className={`home-live-goal${isClubGoal ? ' home-live-goal-club' : ''}`}>
-    {scorer ? <PlayerAvatar player={{ ...scorer, id: goal.playerId ?? '' }} /> : <span className="home-live-goal-ball" aria-hidden="true">⚽</span>}
+    {scorer ? <PlayerAvatar player={{ ...scorer, id: goal.playerId ?? '' }} /> : <span className="home-live-goal-ball" aria-hidden="true"><Goal size={20} /></span>}
     <span><b>{isClubGoal ? 'GOAL!' : 'Goal'} {goal.minute}'</b> {goal.playerName || goal.team}</span>
   </span>
 }

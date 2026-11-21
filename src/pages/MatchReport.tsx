@@ -2,7 +2,7 @@
 // line-up with minutes, match stats and fan numbers, with a
 // share button for WhatsApp and Facebook. One page per match: /report/:id
 import { collection, query, where } from 'firebase/firestore'
-import { ArrowLeft, ArrowRightLeft, CalendarDays, Clock3, Goal, MapPin, MessageCircle, Share2, Square, Target, Users } from 'lucide-react'
+import { ArrowLeft, ArrowRightLeft, CalendarDays, Clock3, Footprints, Goal, MapPin, MessageCircle, Share2, Square, Target, Users } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import PlayerAvatar from '../components/PlayerAvatar'
 import TeamLogo from '../components/TeamLogo'
@@ -133,8 +133,8 @@ export default function MatchReport() {
             <PlayerAvatar player={player} />
             <Link to={`/squad/${player.id}`} className="report-player">{player.number != null && <b>{player.number}</b>}{player.name}</Link>
             <span className="report-player-marks">
-              {Array.from({ length: goalsBy(player.id) }, (_, index) => <span key={`g${index}`} aria-label="Goal">⚽</span>)}
-              {Array.from({ length: assistsBy(player.id) }, (_, index) => <span key={`a${index}`} title="Assist" aria-label="Assist">👟</span>)}
+              {Array.from({ length: goalsBy(player.id) }, (_, index) => <span key={`g${index}`} aria-label="Goal"><Goal size={13} /></span>)}
+              {Array.from({ length: assistsBy(player.id) }, (_, index) => <span key={`a${index}`} title="Assist" aria-label="Assist"><Footprints size={13} /></span>)}
               {cardOf(player.id).map((card, index) => <i key={`c${index}`} className={`report-card-mark ${card === 'red' ? 'red' : 'yellow'}`} aria-label={`${card} card`} />)}
               {sub && <ArrowRightLeft size={12} aria-label="Came on" />}
             </span>

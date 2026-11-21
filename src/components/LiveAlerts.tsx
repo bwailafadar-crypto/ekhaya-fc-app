@@ -3,7 +3,7 @@
 // news, kick-off, goals (with the scorer), yellow and red cards, half-time and
 // full time, with a short sound and a vibration on Android.
 import { collection, onSnapshot } from 'firebase/firestore'
-import { X } from 'lucide-react'
+import { Goal, Megaphone, Newspaper, Square, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -136,7 +136,7 @@ export default function LiveAlerts() {
   if (!current) return null
   return <div className={`live-alert live-alert-${current.tone}`} role="status" aria-live="assertive" key={current.key}>
     <button type="button" className="live-alert-main" onClick={() => { setQueue((list) => list.slice(1)); navigate(current.path) }}>
-      <span className="live-alert-icon" aria-hidden="true">{current.tone === 'goal' ? '⚽' : current.tone === 'yellow' ? '🟨' : current.tone === 'red' ? '🟥' : current.tone === 'whistle' ? '📣' : '📋'}</span>
+      <span className="live-alert-icon" aria-hidden="true">{current.tone === 'goal' ? <Goal size={18} /> : current.tone === 'yellow' ? <Square size={16} className="la-yellow" /> : current.tone === 'red' ? <Square size={16} className="la-red" /> : current.tone === 'whistle' ? <Megaphone size={16} /> : <Newspaper size={16} />}</span>
       <span className="live-alert-text"><strong>{current.title}</strong><small>{current.body}</small></span>
     </button>
     <button type="button" className="live-alert-close" aria-label="Close" onClick={() => setQueue((list) => list.slice(1))}><X size={16} /></button>

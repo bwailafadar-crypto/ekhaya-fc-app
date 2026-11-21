@@ -624,6 +624,8 @@ html:has(.install-page), body:has(.install-page) { min-width: 0; }
 .live-fan-note { margin: 0 0 13px; display: flex; align-items: center; gap: 7px; color: #A41F1F; font-size: 11px; font-weight: 700; }
 .live-fan-note .live-pulse-dot { color: var(--live); }
 .live-timeline { margin-top: 19px; }
+.live-alert-icon .la-yellow { color: #F6C915; fill: #F6C915; }
+.live-alert-icon .la-red { color: #E4322B; fill: #E4322B; }
 
 /* Flashscore-style match summary: events by half, aligned to each team */
 .match-timeline { margin-top: 8px; }

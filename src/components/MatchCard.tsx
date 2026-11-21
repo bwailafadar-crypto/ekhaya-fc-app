@@ -1,4 +1,4 @@
-import { MapPin, Pencil, Trophy } from 'lucide-react'
+import { Goal, MapPin, Pencil, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { competitionLabel, isCupCompetition } from '../utils/competitions'
@@ -44,7 +44,7 @@ export default function MatchCard({ fixture, previousMeeting }: { fixture: Fixtu
       </div>
       {fixture.goals && played && (scorerText(fixture.goals, 'home') || scorerText(fixture.goals, 'away')) && <div className="match-card-scorers" aria-label="Goalscorers">
         <span>{scorerText(fixture.goals, 'home')}</span>
-        <i aria-hidden="true">⚽</i>
+        <Goal size={13} aria-hidden="true" />
         <span>{scorerText(fixture.goals, 'away')}</span>
       </div>}
       {fixture.note && <p className="match-card-note">{fixture.note}</p>}

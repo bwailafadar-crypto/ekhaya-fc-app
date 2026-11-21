@@ -91,7 +91,7 @@ export default function Club() {
     {trophies.length + honours.length === 0 ? <Card><p className="live-help">Trophies will appear here.</p></Card>
       : <div className="trophy-cabinet">
         {trophies.map((trophy) => <article key={`${trophy.title}-${trophy.year}`} className="trophy-item won">
-          {trophy.photo ? <img src={trophy.photo.src} alt={trophy.photo.caption} loading="lazy" /> : <span className="trophy-icon">🏆</span>}
+          {trophy.photo ? <img src={trophy.photo.src} alt={trophy.photo.caption} loading="lazy" /> : <span className="trophy-icon"><Trophy size={22} aria-hidden="true" /></span>}
           <div><strong>{trophy.title}</strong><b>{trophy.year}</b>{trophy.note && <small>{trophy.note}</small>}</div>
         </article>)}
         {honours.map((honour, index) => <article key={index} className="trophy-item"><span className="trophy-icon">🏅</span><div><strong>{honour.title}</strong>{honour.year && <b>{honour.year}</b>}{honour.note && <small>{honour.note}</small>}</div></article>)}

@@ -1,3 +1,4 @@
+import { Goal } from 'lucide-react'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { MatchEvent, Player } from '../types'
@@ -18,7 +19,7 @@ export default function GoalSplash({ event, player, score, onClose }: { event: M
   return createPortal(<div className="goal-splash" role="alert" onClick={onClose}>
     <div className="goal-splash-card">
       <span className="goal-splash-word" aria-hidden="true">GOAL!</span>
-      {player ? <PlayerAvatar player={player} large /> : <span className="goal-splash-ball" aria-hidden="true">⚽</span>}
+      {player ? <PlayerAvatar player={player} large /> : <span className="goal-splash-ball" aria-hidden="true"><Goal size={44} /></span>}
       <strong>{name}{player?.number != null ? <em> #{player.number}</em> : null}</strong>
       <span>{event.minute}′{event.assistPlayerName ? ` · assist ${event.assistPlayerName}` : ''}</span>
       <b>{score}</b>

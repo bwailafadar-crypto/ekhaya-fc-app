@@ -67,12 +67,12 @@ export default function NewHome() {
       <LatestGoal fixtureId={live.id} />
     </Link>}
 
-    <p className="nh-greeting">Welcome home, <b>{firstName}</b> 💛</p>
+    <p className="nh-greeting">Welcome home, <b>{firstName}</b></p>
     <StoriesBar fixtures={fixturesResult.items} />
 
     {fixturesResult.loading ? <Skeleton className="nh-skeleton" /> : next && !live ? <section className="nh-hero" aria-label="Next match">
       <img className="nh-hero-crest" src="./team-logos/ekhaya-fc.png" alt="" aria-hidden="true" />
-      <div className="nh-hero-top"><span>{new Date(next.date).getTime() - now < 36 * 3600000 ? '🔥 Match day' : 'Next match'}</span><em>{competitionLabel(next.competition)}{next.round ? ` · ${next.round}` : ''}</em></div>
+      <div className="nh-hero-top"><span>{new Date(next.date).getTime() - now < 36 * 3600000 ? 'Match day' : 'Next match'}</span><em>{competitionLabel(next.competition)}{next.round ? ` · ${next.round}` : ''}</em></div>
       <div className="nh-teams">
         <div><TeamLogo name={next.home} crest /><span>{next.home}</span></div>
         <strong>VS</strong>
@@ -80,7 +80,7 @@ export default function NewHome() {
       </div>
       <Countdown to={new Date(next.date).getTime()} now={now} />
       <p className="nh-when"><CalendarDays size={14} aria-hidden="true" /> {formatMalawiDate(next.date)} · {formatMalawiTime(next.date)}{next.venue ? <><MapPin size={14} aria-hidden="true" /> {next.venue}</> : null}</p>
-      {next.lineupConfirmed && <Link className="nh-chip" to={`/live?match=${next.id}&tab=lineups`}>📋 Team news is in: see the starting XI</Link>}
+      {next.lineupConfirmed && <Link className="nh-chip" to={`/live?match=${next.id}&tab=lineups`}><Newspaper size={14} aria-hidden="true" /> Team news is in: see the starting XI</Link>}
       <div className="nh-actions">
         <Link className="nh-btn nh-btn-gold" to={`/live?match=${next.id}`}>Match centre</Link>
         <Link className="nh-btn" to="/fanzone"><Target size={15} aria-hidden="true" /> Predict the score</Link>
@@ -112,7 +112,7 @@ export default function NewHome() {
     </section>
 
     {trophy && <Link className="nh-trophy" to="/competitions?tab=cups">
-      <span className="nh-trophy-cup" aria-hidden="true">🏆</span>
+      <span className="nh-trophy-cup" aria-hidden="true"><Trophy size={20} /></span>
       <span><small>Champions</small><strong>{competitionLabel(trophy.competition)} {new Date(trophy.date).getFullYear()}</strong><em>{trophy.home} {trophy.homeScore}–{trophy.awayScore} {trophy.away}{trophy.goals ? ` · ${scorerText(trophy.goals, isClub(trophy.home) ? 'home' : 'away')}` : ''}</em></span>
       <ArrowRight size={16} aria-hidden="true" />
     </Link>}

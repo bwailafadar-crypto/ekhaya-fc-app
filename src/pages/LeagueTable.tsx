@@ -1,4 +1,4 @@
-import { Table2 } from 'lucide-react'
+import { ArrowRight, Goal, Table2 } from 'lucide-react'
 import { useState } from 'react'
 import { useFlag } from '../hooks/useFlag'
 import TeamLogo from '../components/TeamLogo'
@@ -85,7 +85,7 @@ export default function LeagueTable({ squad = 'men' }: { squad?: Squad }) {
       <li><i className="zone-key zone-key-top8" aria-hidden="true" />Top 2</li>
       <li><i className="zone-key zone-key-relegation" aria-hidden="true" />Last 2: relegated</li>
     </ul>}
-    {squad === 'men' && scorersOpen && <Link className="table-scorers-link" to="/scorers">⚽ Top scorers & Golden Boot race →</Link>}
+    {squad === 'men' && scorersOpen && <Link className="table-scorers-link" to="/scorers"><Goal size={15} aria-hidden="true" /> Top scorers &amp; Golden Boot race <ArrowRight size={14} aria-hidden="true" /></Link>}
     <p className="table-scroll-hint">{full ? 'Swipe sideways to see all columns. ' : ''}Form: next match (?), then the last 5 results, latest first.</p>
   </>
 }

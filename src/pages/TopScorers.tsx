@@ -76,7 +76,7 @@ export default function TopScorers() {
         <button type="button" className={scope === 'league' ? 'active' : ''} onClick={() => setScope('league')}>League</button>
         <button type="button" className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>All matches (with cups)</button>
       </div>
-      {scorers.length > 0 && <div className="scorers-ga-head" aria-hidden="true"><span>⚽ Goals</span><span>👟 Assists</span></div>}
+      {scorers.length > 0 && <div className="scorers-ga-head" aria-hidden="true"><span><Goal size={14} /> Goals</span><span><Footprints size={14} /> Assists</span></div>}
       {fixtures.loading ? <Skeleton /> : scorers.length ? <ol className="scorers-list">
         {scorers.map((item, index) => { const player = playerOf(item); const rank = scorers.findIndex((other) => other.goals === item.goals) + 1; return <li key={item.key} style={{ animationDelay: `${index * 40}ms` }}>
           <b>{rank}</b>{player ? <PlayerAvatar player={player} /> : <span className="scorers-blank" />}
@@ -87,7 +87,7 @@ export default function TopScorers() {
     </Card>
 
     {assisters.length > 0 && <Card className="scorers-card">
-      <div className="scorers-head"><Footprints size={18} aria-hidden="true" /><div><h2>Ekhaya FC assists 👟</h2><span>{scope === 'league' ? 'League' : 'All matches'}</span></div></div>
+      <div className="scorers-head"><Footprints size={18} aria-hidden="true" /><div><h2>Ekhaya FC assists</h2><span>{scope === 'league' ? 'League' : 'All matches'}</span></div></div>
       <ol className="scorers-list">{assisters.map((item) => { const player = playerOf(item); return <li key={item.key}>
         <b>{assisters.findIndex((other) => other.assists === item.assists) + 1}</b>{player ? <PlayerAvatar player={player} /> : <span className="scorers-blank" />}
         <span>{player ? <Link to={`/squad/${player.id}`}><strong>{player.name}</strong></Link> : <strong>{item.name}</strong>}<small>{item.goals ? `${item.goals} goal${item.goals === 1 ? '' : 's'} too` : ''}</small></span>

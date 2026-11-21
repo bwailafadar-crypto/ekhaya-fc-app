@@ -1,5 +1,5 @@
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
-import { Lock, Shirt, Trophy } from 'lucide-react'
+import { Footprints, Goal, Lock, Shirt, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { db } from '../firebase'
@@ -72,7 +72,7 @@ export default function MatchdayHero({ nextMatch, players }: { nextMatch?: Fixtu
 
       {prevRound.data?.winnerName && <p className="mh-winner"><Trophy size={14} aria-hidden="true" /> Round {prevRound.data.roundNumber}: <strong>{prevRound.data.winnerName}</strong> won the jersey with {prevRound.data.winnerPoints} pts.</p>}
 
-      <div className="mh-scoring"><span>⚽ Goal <b>+5</b></span><span>👟 Assist <b>+3</b></span></div>
+      <div className="mh-scoring"><span><Goal size={14} /> Goal <b>+5</b></span><span><Footprints size={14} /> Assist <b>+3</b></span></div>
 
       {isMensNext
         ? <>

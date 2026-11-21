@@ -165,7 +165,7 @@ export default function SquadSheet({ players }: { players: Player[] }) {
       <button type="button" className={onlyMissing ? 'active' : ''} onClick={() => setOnlyMissing(true)}>Needs details ({incomplete.length})</button>
       <button type="button" className={!onlyMissing ? 'active' : ''} onClick={() => setOnlyMissing(false)}>Whole squad ({squad.length})</button>
     </div>
-    {!shown.length && <p className="sq-done">Every player has a photo, number, position and date of birth. 🎉</p>}
+    {!shown.length && <p className="sq-done">Every player has a photo, number, position and date of birth.</p>}
     <ul className="sq-list">
       {shown.map((player) => <li key={player.id} className="sq-row">
         <label className="sq-photo" title="Take or choose a photo" aria-label={`Photo for ${player.name}`}>

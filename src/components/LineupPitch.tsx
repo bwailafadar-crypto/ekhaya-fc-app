@@ -1,3 +1,4 @@
+import { Footprints, Goal } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Player } from '../types'
@@ -30,8 +31,8 @@ function PitchPlayer({ player, marks }: { player: Player; marks?: PlayerMarks })
         {player.photoDataUrl ? <img src={player.photoDataUrl} alt="" /> : <span className="pitch-initials">{initials(player.name)}</span>}
         {player.number != null && <span className="pitch-number">{player.number}</span>}
         {marks?.off != null && <span className="pitch-sub-off" title={`Off ${marks.off}′${marks.replacedBy ? ` for ${marks.replacedBy}` : ''}`}>↓{marks.off}′</span>}
-        {(marks?.goals ?? 0) > 0 && <span className="pitch-goals" title={`${marks?.goals} goal${marks?.goals === 1 ? '' : 's'}`}>⚽{(marks?.goals ?? 0) > 1 ? marks?.goals : ''}</span>}
-        {(marks?.assists ?? 0) > 0 && <span className="pitch-assists" title={`${marks?.assists} assist${marks?.assists === 1 ? '' : 's'}`} aria-label={`${marks?.assists} assist${marks?.assists === 1 ? '' : 's'}`}>👟{(marks?.assists ?? 0) > 1 ? marks?.assists : ''}</span>}
+        {(marks?.goals ?? 0) > 0 && <span className="pitch-goals" title={`${marks?.goals} goal${marks?.goals === 1 ? '' : 's'}`}><Goal size={11} />{(marks?.goals ?? 0) > 1 ? marks?.goals : ''}</span>}
+        {(marks?.assists ?? 0) > 0 && <span className="pitch-assists" title={`${marks?.assists} assist${marks?.assists === 1 ? '' : 's'}`} aria-label={`${marks?.assists} assist${marks?.assists === 1 ? '' : 's'}`}><Footprints size={11} />{(marks?.assists ?? 0) > 1 ? marks?.assists : ''}</span>}
         {(marks?.red || marks?.yellow) && <span className={`pitch-card ${marks?.red ? 'red' : 'yellow'}`} aria-label={marks?.red ? 'Red card' : 'Yellow card'} />}
       </span>
       <span className="pitch-name">{shortName(player.name)}</span>
