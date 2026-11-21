@@ -42,10 +42,10 @@ export default function NewHome() {
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(timer) }, [])
 
   const fixtures = fixturesResult.items.filter((fixture) => !fixture.isTest)
-  // Home is the men's team's page; women's team has its own section. A LIVE match
-  // can be either team, but next match, last result and the table are men's only.
+  // Home is the men's team's page; the women's team has its own section, so
+  // everything here — live match, next match, last result and the table — is men's only.
   const mens = fixtures.filter((fixture) => (fixture.squad ?? 'men') === 'men')
-  const live = fixtures.find(isLiveNow)
+  const live = mens.find(isLiveNow)
   // Matches still marked upcoming long after kick-off (not recorded yet) are skipped.
   // Next match is the men's team's soonest game (women's team has its own section).
   const next = sortByDate(mens.filter((fixture) => fixture.status === 'upcoming' && new Date(fixture.date).getTime() > now - 3 * 3600000), 'asc')[0]
