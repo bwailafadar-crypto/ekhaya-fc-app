@@ -21,7 +21,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { db } from '../firebase'
 import type { Fixture, MatchEvent, MatchEventKind, MatchStats, Player, PlayerStats, Standing } from '../types'
-import { sortByDate } from '../utils/football'
+import { isEkhayaTeam, sortByDate } from '../utils/football'
 import { activePeriod, currentEventMinute, elapsedMatchSeconds, matchMinute } from '../utils/matchClock'
 import TeamLogo from '../components/TeamLogo'
 import MatchChat from '../components/MatchChat'
@@ -29,7 +29,6 @@ import MatchPreview from '../components/MatchPreview'
 import { buildGoals, minuteLabel } from '../utils/goals'
 import { useFlag } from '../hooks/useFlag'
 
-const CLUB_NAME = 'ekhaya fc'
 const EMPTY_STATS: PlayerStats = {
   appearances: 0, starts: 0, minutes: 0, goals: 0, assists: 0,
   yellowCards: 0, redCards: 0, cleanSheets: 0,
@@ -60,7 +59,7 @@ function playersOnPitch(fixture: Fixture, events: MatchEvent[]) {
   const onPitch = new Set(fixture.startingPlayerIds ?? [])
   const used = new Set<string>()
   for (const matchEvent of [...events].sort((a, b) => a.minute - b.minute)) {
-    if (!sameTeam(matchEvent.team, CLUB_NAME)) continue
+    if (!isEkhayaTeam(matchEvent.team)) continue
     if (matchEvent.kind === 'substitution') {
       if (matchEvent.subbedOutPlayerId) { onPitch.delete(matchEvent.subbedOutPlayerId); used.add(matchEvent.subbedOutPlayerId) }
       if (matchEvent.subbedInPlayerId) { onPitch.add(matchEvent.subbedInPlayerId); used.add(matchEvent.subbedInPlayerId) }
@@ -96,7 +95,7 @@ function EventForm({
 }) {
   const [side, setSide] = useState<'home' | 'away'>(defaultSide)
   const teamName = side === 'home' ? fixture.home : fixture.away
-  const isClubSide = sameTeam(teamName, CLUB_NAME)
+  const isClubSide = isEkhayaTeam(teamName)
   const [scorerId, setScorerId] = useState('')
   const hasLineup = (fixture.startingPlayerIds ?? []).length > 0
   const { onPitch, used } = playersOnPitch(fixture, events)
@@ -224,7 +223,7 @@ export default function LiveMatch() {
   const eventsLoading = Boolean(selectedFixture && eventState?.fixtureId !== selectedFixture.id)
   const eventsError = selectedFixture && eventState?.fixtureId === selectedFixture.id ? eventState?.error ?? null : null
   const selectedFixtureId = selectedFixture?.id
-  const hasClubTeam = Boolean(selectedFixture && [selectedFixture.home, selectedFixture.away].some((team) => sameTeam(team, CLUB_NAME)))
+  const hasClubTeam = Boolean(selectedFixture && [selectedFixture.home, selectedFixture.away].some((team) => isEkhayaTeam(team)))
   const reactions = selectedFixtureId && reactionState?.fixtureId === selectedFixtureId ? (reactionState?.items ?? []) : []
 
   useEffect(() => {
@@ -236,7 +235,7 @@ export default function LiveMatch() {
         const bTime = b.createdAt?.toMillis?.() ?? 0
         return b.minute - a.minute || bTime - aTime
       })
-      const goals = nextEvents.filter((item) => item.kind === 'goal' && sameTeam(item.team, CLUB_NAME))
+      const goals = nextEvents.filter((item) => item.kind === 'goal' && isEkhayaTeam(item.team))
       const seen = seenGoals.current
       if (seen?.fixtureId === selectedFixtureId && !snapshot.metadata.hasPendingWrites) {
         const fresh = goals.find((item) => !seen.ids.has(item.id))
@@ -529,13 +528,13 @@ export default function LiveMatch() {
   async function setOpponentScore(nextScore: number) {
     if (!selectedFixture || selectedFixture.status !== 'live') return
     const targetScore = Math.max(0, Math.trunc(nextScore))
-    const currentScore = sameTeam(selectedFixture.home, CLUB_NAME)
+    const currentScore = isEkhayaTeam(selectedFixture.home)
       ? Number(selectedFixture.awayScore ?? 0)
       : Number(selectedFixture.homeScore ?? 0)
     if (targetScore < currentScore && !window.confirm('Lower the opponent score and remove the latest opponent goal events?')) return
 
-    const opponentTeam = sameTeam(selectedFixture.home, CLUB_NAME) ? selectedFixture.away : selectedFixture.home
-    const scoreField = sameTeam(selectedFixture.home, CLUB_NAME) ? 'awayScore' : 'homeScore'
+    const opponentTeam = isEkhayaTeam(selectedFixture.home) ? selectedFixture.away : selectedFixture.home
+    const scoreField = isEkhayaTeam(selectedFixture.home) ? 'awayScore' : 'homeScore'
     setBusy(true)
     setProblem('')
     try {
@@ -617,7 +616,7 @@ export default function LiveMatch() {
     const side = String(form.get('side'))
     const team = side === 'home' ? selectedFixture.home : selectedFixture.away
     const minute = Number(form.get('minute'))
-    const clubSide = sameTeam(team, CLUB_NAME)
+    const clubSide = isEkhayaTeam(team)
     const byId = new Map(players.map((player) => [player.id, player]))
     const playerId = clubSide && kind !== 'substitution' ? String(form.get('player') ?? '') : ''
     const assistPlayerId = clubSide && kind === 'goal' ? String(form.get('assist') ?? '') : ''
@@ -721,7 +720,7 @@ export default function LiveMatch() {
     const side = String(values.get('side')) as 'home' | 'away'
     const team = side === 'home' ? selectedFixture.home : selectedFixture.away
     const minute = Math.max(1, Number(values.get('minute')) || event.minute)
-    const isClubSide = sameTeam(team, CLUB_NAME)
+    const isClubSide = isEkhayaTeam(team)
     const findPlayer = (name: string) => players.find((player) => player.name.toLocaleLowerCase() === name.trim().toLocaleLowerCase())
     const next: Record<string, unknown> = {
       kind, team, minute, updatedAt: serverTimestamp(),
@@ -892,7 +891,7 @@ export default function LiveMatch() {
           if (matchEvent.kind === 'goal' && matchEvent.assistPlayerId) incrementStat(playerUpdates, playerData, matchEvent.assistPlayerId, 'assists')
           if (matchEvent.kind === 'card' && matchEvent.playerId) incrementStat(playerUpdates, playerData, matchEvent.playerId, matchEvent.card === 'red' ? 'redCards' : 'yellowCards')
         }
-        const clubConceded = sameTeam(fixture.home, CLUB_NAME) ? awayGoals : sameTeam(fixture.away, CLUB_NAME) ? homeGoals : -1
+        const clubConceded = isEkhayaTeam(fixture.home) ? awayGoals : isEkhayaTeam(fixture.away) ? homeGoals : -1
         for (const id of appearanceIds) {
           const player = playerData.get(id)
           if (!player) continue
@@ -1085,9 +1084,9 @@ export default function LiveMatch() {
   const isFinished = selectedFixture.status === 'finished' || (selectedFixture.status === 'live' && !isLive)
   const homeScore = selectedFixture.homeScore ?? 0
   const awayScore = selectedFixture.awayScore ?? 0
-  const opponentScore = sameTeam(selectedFixture.home, CLUB_NAME) ? awayScore : homeScore
+  const opponentScore = isEkhayaTeam(selectedFixture.home) ? awayScore : homeScore
   const clubPlayers = players.filter(inClubSquad)
-  const homeSide: 'home' | 'away' = sameTeam(selectedFixture.home, CLUB_NAME) ? 'home' : 'away'
+  const homeSide: 'home' | 'away' = isEkhayaTeam(selectedFixture.home) ? 'home' : 'away'
   const actionKind: MatchEventKind | null = quickAction === 'yellow' || quickAction === 'red' ? 'card'
     : quickAction === 'opponent-goal' ? 'goal' : quickAction
   const actionSide: 'home' | 'away' = quickAction === 'opponent-goal' ? (homeSide === 'home' ? 'away' : 'home') : homeSide
@@ -1099,7 +1098,7 @@ export default function LiveMatch() {
   const markFor = (id: string) => (lineupMarks[id] ??= {})
   const shortOf = (id?: string, fallback?: string) => { const name = players.find((p) => p.id === id)?.name ?? fallback ?? ''; const parts = name.trim().split(/\s+/); return parts.length > 1 ? parts.slice(1).join(' ') : name }
   for (const matchEvent of [...events].sort((a, b) => a.minute - b.minute)) {
-    if (!sameTeam(matchEvent.team, CLUB_NAME)) continue
+    if (!isEkhayaTeam(matchEvent.team)) continue
     if (matchEvent.kind === 'substitution') {
       if (matchEvent.subbedOutPlayerId) Object.assign(markFor(matchEvent.subbedOutPlayerId), { off: matchEvent.minute, replacedBy: shortOf(matchEvent.subbedInPlayerId, matchEvent.subbedInPlayerName) })
       if (matchEvent.subbedInPlayerId) Object.assign(markFor(matchEvent.subbedInPlayerId), { on: matchEvent.minute, replaced: shortOf(matchEvent.subbedOutPlayerId, matchEvent.subbedOutPlayerName) })
@@ -1176,7 +1175,7 @@ export default function LiveMatch() {
         {activePeriod(selectedFixture.period) && <div className="added-time-controls"><span>Added time <b>+{selectedFixture.addedTime ?? 0}</b></span>{[1, 2, 3].map((amount) => <button key={amount} type="button" className={selectedFixture.addedTime === amount ? 'selected' : ''} onClick={() => void setAddedTime(amount)}>+{amount}</button>)}</div>}
       </div>
       <div className="matchpad-actions">{QUICK_ACTIONS.map(({ action, label, icon: Icon }) => <button type="button" key={action} className={`matchpad-action${quickAction === action ? ' active' : ''} matchpad-${action}`} onClick={() => setQuickAction((current) => current === action ? null : action)}><Icon size={20} /><span>{label}</span></button>)}<button type="button" className="matchpad-action matchpad-undo" disabled={busy || !events.length} onClick={() => void undoLastEvent()}><CornerUpLeft size={20} /><span>Undo last</span></button></div>
-      {actionKind && <div className="matchpad-form"><EventForm fixture={selectedFixture} players={players} events={events} minute={currentEventMinute(selectedFixture, clockNow)} kind={actionKind} defaultSide={actionSide} defaultCard={cardColor} busy={busy} onSubmit={(event) => void addEvent(event)} />{quickAction === 'opponent-goal' && <p className="matchpad-hint">Adds a goal to {selectedFixture.home === CLUB_NAME ? selectedFixture.away : selectedFixture.home}.</p>}</div>}
+      {actionKind && <div className="matchpad-form"><EventForm fixture={selectedFixture} players={players} events={events} minute={currentEventMinute(selectedFixture, clockNow)} kind={actionKind} defaultSide={actionSide} defaultCard={cardColor} busy={busy} onSubmit={(event) => void addEvent(event)} />{quickAction === 'opponent-goal' && <p className="matchpad-hint">Adds a goal to {isEkhayaTeam(selectedFixture.home) ? selectedFixture.away : selectedFixture.home}.</p>}</div>}
       <section className="opponent-score-control" aria-label="Opponent score controls">
         <div className="opponent-score-value"><span>Opponent score</span><strong>{opponentScore}</strong></div>
         <div className="opponent-score-buttons" role="group" aria-label="Set opponent score">
@@ -1196,7 +1195,7 @@ export default function LiveMatch() {
 
     <div className="matchday-tabs" role="tablist" aria-label="Match details">{tabs.map((tab) => <button type="button" role="tab" aria-selected={currentTab === tab} className={currentTab === tab ? 'active' : ''} key={tab} onClick={() => setActiveTab(tab)}>{TAB_LABELS[tab]}</button>)}</div>
     {currentTab === 'timeline' && <>
-      {eventsLoading ? <Skeleton className="live-player-skeleton" /> : <section className="live-timeline"><div className="live-section-heading"><h2>Summary</h2><span>{events.length} events</span></div><MatchTimeline events={events} home={selectedFixture.home} away={selectedFixture.away} isClub={(team) => sameTeam(team, CLUB_NAME)} isHome={(team) => sameTeam(team, selectedFixture.home)} finished={isFinished} live={isLive} homeScore={homeScore} awayScore={awayScore} renderExtra={(matchEvent) => matchEvent.videoUrl ? <button type="button" className="mt-watch" onClick={() => setClip({ url: matchEvent.videoUrl ?? '', title: eventDescription(matchEvent) })} aria-label="Watch clip"><Play size={11} /></button> : null} />{!events.length && <div className="live-timeline-empty">{isLive ? 'No updates yet. The match is ready.' : 'No match events recorded.'}</div>}{isAdmin && events.length > 0 && <details className="mt-admin-manage"><summary>Manage events (admin)</summary>{events.map((matchEvent) => <article className={`live-event${matchEvent.kind === 'goal' ? ' live-event-big' : ''}${matchEvent.kind === 'card' ? ` live-event-big-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} key={matchEvent.id}><strong>{matchEvent.kind === 'goal' ? minuteLabel(matchEvent).replace("'", '') : matchEvent.minute}{matchEvent.kind === 'goal' && (matchEvent.minuteApprox) ? '' : "'"}</strong><span className={`live-event-mark live-event-${matchEvent.kind}${matchEvent.kind === 'card' ? ` live-event-card-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} aria-label={matchEvent.kind === 'card' ? `${matchEvent.card === 'red' ? 'Red' : 'Yellow'} card` : undefined}>{matchEvent.kind === 'goal' ? <Goal size={15} /> : matchEvent.kind === 'card' ? <i className="card-shape" /> : matchEvent.kind === 'commentary' ? <MessageSquareText size={14} /> : <Users size={14} />}</span><div>{matchEvent.kind === 'goal' && <span className="live-event-headline">{sameTeam(matchEvent.team, CLUB_NAME) ? 'GOAL!' : 'Goal'}</span>}<p>{(() => { const scorer = matchEvent.kind === 'goal' || matchEvent.kind === 'card' ? players.find((player) => player.id === matchEvent.playerId) : undefined; return scorer ? <span className="live-event-who"><PlayerAvatar player={scorer} />{eventDescription(matchEvent)}</span> : eventDescription(matchEvent) })()}</p><small>{matchEvent.team}</small>{matchEvent.videoUrl && <button type="button" className="live-event-watch" onClick={() => setClip({ url: matchEvent.videoUrl ?? '', title: eventDescription(matchEvent) })}>▶ Watch</button>}{isAdmin && !isLive && matchEvent.kind === 'goal' && <button type="button" className="live-event-watch add" onClick={() => void setEventClip(matchEvent)}>{matchEvent.videoUrl ? 'Change clip' : '+ Add clip'}</button>}{isAdmin && isLive && <details className="match-event-edit"><summary>Edit event</summary><form className="match-event-editor" onSubmit={(event) => void editMatchEvent(matchEvent, event)}>
+      {eventsLoading ? <Skeleton className="live-player-skeleton" /> : <section className="live-timeline"><div className="live-section-heading"><h2>Summary</h2><span>{events.length} events</span></div><MatchTimeline events={events} home={selectedFixture.home} away={selectedFixture.away} isClub={(team) => isEkhayaTeam(team)} isHome={(team) => sameTeam(team, selectedFixture.home)} finished={isFinished} live={isLive} homeScore={homeScore} awayScore={awayScore} renderExtra={(matchEvent) => matchEvent.videoUrl ? <button type="button" className="mt-watch" onClick={() => setClip({ url: matchEvent.videoUrl ?? '', title: eventDescription(matchEvent) })} aria-label="Watch clip"><Play size={11} /></button> : null} />{!events.length && <div className="live-timeline-empty">{isLive ? 'No updates yet. The match is ready.' : 'No match events recorded.'}</div>}{isAdmin && events.length > 0 && <details className="mt-admin-manage"><summary>Manage events (admin)</summary>{events.map((matchEvent) => <article className={`live-event${matchEvent.kind === 'goal' ? ' live-event-big' : ''}${matchEvent.kind === 'card' ? ` live-event-big-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} key={matchEvent.id}><strong>{matchEvent.kind === 'goal' ? minuteLabel(matchEvent).replace("'", '') : matchEvent.minute}{matchEvent.kind === 'goal' && (matchEvent.minuteApprox) ? '' : "'"}</strong><span className={`live-event-mark live-event-${matchEvent.kind}${matchEvent.kind === 'card' ? ` live-event-card-${matchEvent.card === 'red' ? 'red' : 'yellow'}` : ''}`} aria-label={matchEvent.kind === 'card' ? `${matchEvent.card === 'red' ? 'Red' : 'Yellow'} card` : undefined}>{matchEvent.kind === 'goal' ? <Goal size={15} /> : matchEvent.kind === 'card' ? <i className="card-shape" /> : matchEvent.kind === 'commentary' ? <MessageSquareText size={14} /> : <Users size={14} />}</span><div>{matchEvent.kind === 'goal' && <span className="live-event-headline">{isEkhayaTeam(matchEvent.team) ? 'GOAL!' : 'Goal'}</span>}<p>{(() => { const scorer = matchEvent.kind === 'goal' || matchEvent.kind === 'card' ? players.find((player) => player.id === matchEvent.playerId) : undefined; return scorer ? <span className="live-event-who"><PlayerAvatar player={scorer} />{eventDescription(matchEvent)}</span> : eventDescription(matchEvent) })()}</p><small>{matchEvent.team}</small>{matchEvent.videoUrl && <button type="button" className="live-event-watch" onClick={() => setClip({ url: matchEvent.videoUrl ?? '', title: eventDescription(matchEvent) })}>▶ Watch</button>}{isAdmin && !isLive && matchEvent.kind === 'goal' && <button type="button" className="live-event-watch add" onClick={() => void setEventClip(matchEvent)}>{matchEvent.videoUrl ? 'Change clip' : '+ Add clip'}</button>}{isAdmin && isLive && <details className="match-event-edit"><summary>Edit event</summary><form className="match-event-editor" onSubmit={(event) => void editMatchEvent(matchEvent, event)}>
         <div className="live-form-grid"><label className="admin-field"><span>Type</span><select name="kind" defaultValue={matchEvent.kind}><option value="goal">Goal</option><option value="card">Card</option><option value="substitution">Sub</option><option value="commentary">Commentary</option></select></label><label className="admin-field"><span>Team</span><select name="side" defaultValue={sameTeam(matchEvent.team, selectedFixture.home) ? 'home' : 'away'}><option value="home">{selectedFixture.home}</option><option value="away">{selectedFixture.away}</option></select></label><label className="admin-field"><span>Minute</span><input name="minute" type="number" min={1} max={130} defaultValue={matchEvent.minute} /></label></div>
         <input className="match-event-edit-input" name="playerName" list="squad-names" defaultValue={matchEvent.playerName ?? ''} placeholder="Scorer / player name" /><input className="match-event-edit-input" name="assistPlayerName" list="squad-names" defaultValue={matchEvent.assistPlayerName ?? ''} placeholder="Assist name" /><div className="live-form-grid"><input className="match-event-edit-input" name="subbedOutPlayerName" list="squad-names" defaultValue={matchEvent.subbedOutPlayerName ?? ''} placeholder="Player off" /><input className="match-event-edit-input" name="subbedInPlayerName" list="squad-names" defaultValue={matchEvent.subbedInPlayerName ?? ''} placeholder="Player on" /></div><label className="admin-field"><span>Commentary</span><input name="text" defaultValue={matchEvent.text ?? ''} maxLength={180} /></label><label className="admin-field"><span>Video clip (YouTube/Facebook link)</span><input name="videoUrl" inputMode="url" defaultValue={matchEvent.videoUrl ?? ''} placeholder="https://youtu.be/…" /></label><label className="admin-field"><span>Card</span><select name="card" defaultValue={matchEvent.card ?? 'yellow'}><option value="yellow">Yellow</option><option value="red">Red</option></select></label><div className="admin-actions"><Button type="submit" variant="secondary" disabled={busy}>Save event</Button><button type="button" className="match-event-delete" disabled={busy} onClick={() => void deleteMatchEvent(matchEvent.id)}><Trash2 size={15} />Delete</button></div></form></details>}</div></article>)}</details>}</section>}
       {isLive && <section className="matchday-reactions" aria-label="Match reactions">{['⚽', '🔥', '👏', '😱'].map((emoji) => <button type="button" key={emoji} aria-label={`React ${emoji}`} aria-pressed={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji)} className={reactions.some((reaction) => reaction.uid === user?.uid && reaction.emoji === emoji) ? 'selected' : ''} onClick={(event) => void reactToMatch(emoji, event.currentTarget)}><span>{emoji}</span><strong>{reactions.filter((reaction) => reaction.emoji === emoji).length}</strong></button>)}</section>}
