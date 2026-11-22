@@ -179,7 +179,9 @@ export default function LiveMatch() {
   // picker and the default pick are men's only.
   const menFixtures = fixtures.filter((fixture) => (fixture.squad ?? 'men') === 'men')
   const listedFixture = fixtures.find((fixture) => fixture.id === selectedId)
-    ?? menFixtures.find((fixture) => fixture.status === 'live')
+    // A live match is shown by default whichever squad is playing; otherwise the
+    // Live tab falls back to the men's schedule.
+    ?? fixtures.find((fixture) => fixture.status === 'live')
     ?? menFixtures.find((fixture) => fixture.status === 'upcoming')
     ?? menFixtures[0]
     ?? fixtures[0]

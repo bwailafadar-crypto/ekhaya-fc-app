@@ -47,7 +47,9 @@ export default function NewHome() {
   // Home is the men's team's page; the women's team has its own section, so
   // everything here — live match, next match, last result and the table — is men's only.
   const mens = fixtures.filter((fixture) => (fixture.squad ?? 'men') === 'men')
-  const live = mens.find(isLiveNow)
+  // A live match is always featured here, whichever squad is playing, so fans
+  // see the game that is actually on now. Next match, table and results stay men's.
+  const live = fixtures.find(isLiveNow) ?? mens.find(isLiveNow)
   // Matches still marked upcoming long after kick-off (not recorded yet) are skipped.
   // Next match is the men's team's soonest game (women's team has its own section).
   const next = sortByDate(mens.filter((fixture) => fixture.status === 'upcoming' && new Date(fixture.date).getTime() > now - 3 * 3600000), 'asc')[0]
