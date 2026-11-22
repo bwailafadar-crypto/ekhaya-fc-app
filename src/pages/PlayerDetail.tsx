@@ -1,5 +1,5 @@
 import { collection, getDocs, query, where } from 'firebase/firestore'
-import { ArrowLeft, Bandage, Bell, BellOff, UserRound } from 'lucide-react'
+import { ArrowLeft, Bandage, Bell, BellOff, Goal, UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
@@ -153,7 +153,7 @@ export default function PlayerDetailPage() {
               {outcome && <span className={`player-log-result result-${outcome}`}>{outcome}</span>}
               <TeamLogo name={opponent} />
               <span className="player-log-main"><strong>{/ekhaya/i.test(fixture.home) ? 'v' : '@'} {opponent} · {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0}</strong><small>{formatMalawiDate(fixture.date)} · {started ? 'Started' : 'Sub'}{fixture.officialMinutes?.[id] ? ` · ${fixture.officialMinutes[id]}′` : ''}</small></span>
-              {scored.length > 0 && <span className="player-log-goals" aria-label={`${scored.length} goal${scored.length === 1 ? '' : 's'}`}>{scored.map((minute, index) => <i key={index}>⚽ {minute}′</i>)}</span>}
+              {scored.length > 0 && <span className="player-log-goals" aria-label={`${scored.length} goal${scored.length === 1 ? '' : 's'}`}>{scored.map((minute, index) => <i key={index}><Goal size={11} aria-hidden="true" /> {minute}′</i>)}</span>}
             </Link></li>
           })}
         </ul>

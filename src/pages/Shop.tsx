@@ -558,7 +558,7 @@ function OrdersPanel({ onClose }: { onClose: () => void }) {
           <div className="shop-pass-qr"><QRCodeSVG value={o.ref} size={128} level="M" /></div>
           <div className="shop-pass-info"><span className="shop-pass-label">Collection pass</span><strong>{o.ref}</strong><small>Show this at {settings.pickupPlace} to collect. Staff scan it once — keep it safe.</small></div>
         </div>}
-        {o.status === 'collected' && <div className="shop-pass shop-pass-done"><span className="shop-pass-stamp">✓ Collected</span><small>This order has been collected{o.collectedAt?.seconds ? ` on ${new Date(o.collectedAt.seconds * 1000).toLocaleDateString()}` : ''}.</small></div>}
+        {o.status === 'collected' && <div className="shop-pass shop-pass-done"><span className="shop-pass-stamp"><Check size={14} aria-hidden="true" /> Collected</span><small>This order has been collected{o.collectedAt?.seconds ? ` on ${new Date(o.collectedAt.seconds * 1000).toLocaleDateString()}` : ''}.</small></div>}
         {settings.whatsapp && <a className="shop-link" href={waLink(settings.whatsapp, `Hello, about my Ekhaya FC shop order ${o.ref} (${mwk(o.total)}): `)} target="_blank" rel="noopener noreferrer">Ask the club on WhatsApp</a>}
       </li> })}</ul>}
   </Sheet>

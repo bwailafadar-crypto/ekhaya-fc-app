@@ -8,7 +8,6 @@ import { db } from '../firebase'
 import { useCounts, useMyDoc } from '../hooks/useCounts'
 import { BRANCHES, branchName, inviteLink, inviteMessage, refreshCommunityStats, saveBranch, type CommunityStats, type FanCard } from '../utils/community'
 
-const medals = ['🥇', '🥈', '🥉']
 
 function BranchCard() {
   const { user, profile } = useAuth()
@@ -81,7 +80,7 @@ function InviteCard() {
   return (
     <Card className="fz-card">
       <div className="fz-card-heading"><UserPlus size={18} aria-hidden="true" /><div><h2>Invite friends</h2><span>Grow the Ekhaya family</span></div></div>
-      {typeof count === 'number' && <p className="fz-result fz-result-win">You've brought {count} fan{count === 1 ? '' : 's'} into the family{count >= 5 ? ' 🔥' : ''}</p>}
+      {typeof count === 'number' && <p className="fz-result fz-result-win">You've brought {count} fan{count === 1 ? '' : 's'} into the family.</p>}
       <div className="community-invite-link"><span>{link}</span><button type="button" aria-label="Copy invite link" onClick={() => void copy()}><Copy size={16} /></button></div>
       <Button type="button" onClick={() => void share()}><Share2 size={15} /> Share on WhatsApp</Button>
       <p className="fz-note">A friend counts once they create an account with your link and confirm their email.{!emailVerified ? ' Confirm your own email too, so your invites appear on the board.' : ''}</p>
@@ -98,8 +97,8 @@ function BranchTable({ stats, myBranch }: { stats: CommunityStats | null; myBran
       {!rows.length ? <p className="fz-note">No branches yet. Be the first to join yours!</p> : <>
         <ol className="fz-board">
           {rows.slice(0, all ? rows.length : 10).map((row, index) => <li key={row.id} className={row.id === myBranch ? 'mine' : undefined}>
-            <span className="fz-board-rank">{index < 3 ? medals[index] : index + 1}</span>
-            <span className="fz-board-name">{branchName(row.id)}{row.id === myBranch && <em> (your branch)</em>}</span>
+            <span className={`fz-board-rank${index < 3 ? ` fz-rank-${index + 1}` : ''}`}>{index + 1}</span>
+  <span className="fz-board-name">{branchName(row.id)}{row.id === myBranch && <em> (your branch)</em>}</span>
             <strong className="fz-board-points">{row.fans}</strong>
           </li>)}
         </ol>
@@ -117,8 +116,8 @@ function Recruiters({ stats }: { stats: CommunityStats | null }) {
       <div className="fz-card-heading"><UserPlus size={18} aria-hidden="true" /><div><h2>Top recruiters</h2><span>{stats ? `${stats.totalInvites} fan${stats.totalInvites === 1 ? '' : 's'} joined through invites` : 'Fans who brought the most friends'}</span></div></div>
       {!rows.length ? <p className="fz-note">No invites yet. Share your link and top this table!</p>
         : <ol className="fz-board">{rows.map((row, index) => <li key={row.uid} className={row.uid === user?.uid ? 'mine' : undefined}>
-            <span className="fz-board-rank">{index < 3 ? medals[index] : index + 1}</span>
-            <span className="fz-board-name">{row.name}{row.uid === user?.uid && <em> (you)</em>}</span>
+            <span className={`fz-board-rank${index < 3 ? ` fz-rank-${index + 1}` : ''}`}>{index + 1}</span>
+  <span className="fz-board-name">{row.name}{row.uid === user?.uid && <em> (you)</em>}</span>
             <strong className="fz-board-points">{row.count}</strong>
           </li>)}</ol>}
     </Card>

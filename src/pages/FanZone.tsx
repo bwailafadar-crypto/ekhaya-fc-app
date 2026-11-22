@@ -129,7 +129,7 @@ function PredictCard({ fixture }: { fixture: Fixture }) {
       </div>
       {locked
         ? <p className="fz-note"><Lock size={14} aria-hidden="true" /> Predictions are closed.{mine.data ? ` You said ${mine.data.home}–${mine.data.away}.` : ''}</p>
-        : <Button type="button" disabled={saving || (!changed && Boolean(mine.data))} onClick={(event) => void save(event.currentTarget)}>{saving ? 'Saving...' : mine.data ? (changed ? 'Update prediction' : 'Prediction saved ✓') : 'Save prediction'}</Button>}
+        : <Button type="button" disabled={saving || (!changed && Boolean(mine.data))} onClick={(event) => void save(event.currentTarget)}>{saving ? 'Saving...' : mine.data ? (changed ? 'Update prediction' : 'Prediction saved') : 'Save prediction'}</Button>}
       {total > 0 && <div className="fz-popular">
         <span>{total} fan{total === 1 ? '' : 's'} predicted</span>
         {showPopular && popular.length > 0 && <div className="fz-chips">{popular.map(([score, count]) => <span className="fz-chip" key={score}>{score} <small>{percent(count, total)}%</small></span>)}</div>}
@@ -163,7 +163,7 @@ function LastPredictionsCard({ fixture }: { fixture: Fixture }) {
   return (
     <Card className="fz-card fz-card-compact">
       <div className="fz-card-heading"><Trophy size={18} aria-hidden="true" /><div><h2>Last match predictions</h2><span>{fixture.home} {homeScore}–{awayScore} {fixture.away}</span></div></div>
-      {mine.data && <p className={mineCorrect ? 'fz-result fz-result-win' : 'fz-result'}>{mineCorrect ? `You called it! ${mine.data.home}–${mine.data.away} 🎯` : `You said ${mine.data.home}–${mine.data.away}.`}</p>}
+      {mine.data && <p className={mineCorrect ? 'fz-result fz-result-win' : 'fz-result'}>{mineCorrect ? `You called it! ${mine.data.home}–${mine.data.away}` : `You said ${mine.data.home}–${mine.data.away}.`}</p>}
       <p className="fz-note">{exact ? `${exact} of ${total} fans got the exact score${nameList.length ? `: ${nameList.join(', ')}` : '.'}` : `None of the ${total} fans got the exact score.`}</p>
     </Card>
   )

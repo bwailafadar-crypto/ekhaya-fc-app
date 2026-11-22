@@ -45,7 +45,7 @@ export function FansBoard() {
     <div className="fz-card-heading"><Crown size={18} aria-hidden="true" /><div><h2>Fans of the season</h2><span>{data?.totalFans ? `${data.totalFans} fan${data.totalFans === 1 ? '' : 's'} with points` : 'Points for everything you do for the club'}</span></div></div>
     {loading ? <Skeleton className="fz-board-skeleton" /> : !rows.length ? <p className="fz-note">No points yet. Predict the next match or vote in a poll to start.</p>
       : <ol className="fz-board">{rows.slice(0, 10).map((row) => <li key={row.uid} className={row.uid === user?.uid ? 'mine' : undefined}>
-          <span className="fz-board-rank">{row.rank <= 3 ? ['🥇', '🥈', '🥉'][row.rank - 1] : row.rank}</span>
+          <span className={`fz-board-rank${row.rank <= 3 ? ` fz-rank-${row.rank}` : ''}`}>{row.rank}</span>
           <span className="fz-board-name">{row.name}{row.uid === user?.uid && <em> (you)</em>}<small>{row.level}</small></span>
           <strong className="fz-board-points">{row.points}</strong>
         </li>)}</ol>}

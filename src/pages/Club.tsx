@@ -1,5 +1,5 @@
 import { doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore'
-import { Landmark, Pencil, Star, Trophy } from 'lucide-react'
+import { Award, Landmark, Pencil, Star, Trophy } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import TeamLogo from '../components/TeamLogo'
@@ -94,7 +94,7 @@ export default function Club() {
           {trophy.photo ? <img src={trophy.photo.src} alt={trophy.photo.caption} loading="lazy" /> : <span className="trophy-icon"><Trophy size={22} aria-hidden="true" /></span>}
           <div><strong>{trophy.title}</strong><b>{trophy.year}</b>{trophy.note && <small>{trophy.note}</small>}</div>
         </article>)}
-        {honours.map((honour, index) => <article key={index} className="trophy-item"><span className="trophy-icon">🏅</span><div><strong>{honour.title}</strong>{honour.year && <b>{honour.year}</b>}{honour.note && <small>{honour.note}</small>}</div></article>)}
+        {honours.map((honour, index) => <article key={index} className="trophy-item"><span className="trophy-icon"><Award size={20} aria-hidden="true" /></span><div><strong>{honour.title}</strong>{honour.year && <b>{honour.year}</b>}{honour.note && <small>{honour.note}</small>}</div></article>)}
       </div>}
 
     <div className="matchday-section-title"><h2><Landmark size={18} aria-hidden="true" /> Our story</h2></div>
