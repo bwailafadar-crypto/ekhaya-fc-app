@@ -9,7 +9,7 @@ const note = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : 
 const WRITE = process.env.WRITE === '1'
 const FIX = 'w-2026-11-21-ekhaya-nsuwadzi'
 // Goals in minute order get these shirt numbers, in this order.
-const SCORER_NUMBERS = [66, 8, 15]
+const SCORER_NUMBERS = [66, 8, 15, 8]
 
 ;(async () => {
   const women = (await db.collection('players').get()).docs.filter((d) => d.data().squad === 'women')
