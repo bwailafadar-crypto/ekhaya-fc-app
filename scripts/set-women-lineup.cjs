@@ -47,11 +47,10 @@ const EMPTY = { appearances: 0, goals: 0, assists: 0, cleanSheets: 0, yellowCard
   const find = (name) => {
     const q = norm(name), qt = q.split(' ').filter((w) => w.length > 2)
     let hit = women.find((d) => norm(d.data().name) === q)
+    // Exact full-name match only, then "all team-sheet words present in the doc name".
+    // Names are already spelled to match the squad, so no looser fuzzy matching
+    // (which previously mis-matched new players onto existing ones).
     if (!hit) hit = women.find((d) => { const nt = norm(d.data().name).split(' '); return qt.every((w) => nt.includes(w)) })
-    if (!hit) { // fuzzy: first+last initial-ish (Kayila/Kayira, Nilza/Nirza)
-      const ql = qt[qt.length - 1], qf = qt[0]
-      hit = women.find((d) => { const nt = norm(d.data().name).split(' '); return nt[0]?.[0] === qf[0] && nt[nt.length - 1]?.[0] === ql[0] })
-    }
     return hit
   }
   const resolve = (list) => list.map((p) => { const h = find(p.name); return { ...p, id: h?.id || null, matched: h ? h.data().name : null } })
