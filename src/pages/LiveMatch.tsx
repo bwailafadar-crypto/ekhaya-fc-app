@@ -100,7 +100,9 @@ function EventForm({
   const [scorerId, setScorerId] = useState('')
   const hasLineup = (fixture.startingPlayerIds ?? []).length > 0
   const { onPitch, used } = playersOnPitch(fixture, events)
-  const senior = players.filter((player) => player.team === 'senior')
+  // The club squad for this fixture (men or women), by the current squad field
+  // rather than the legacy team==='senior' tag, so women's matches work too.
+  const senior = players.filter((player) => (player.squad ?? 'men') === (fixture.squad ?? 'men'))
   // With a confirmed line-up only the players on the pitch can score, assist or be taken off.
   const pitchPlayers = (hasLineup ? senior.filter((player) => onPitch.has(player.id)) : senior).sort(byNumber)
   const benchIds = fixture.benchPlayerIds ?? []
@@ -195,6 +197,10 @@ export default function LiveMatch() {
   // Match picker: men's matches, plus the current one if a women's match was opened directly.
   const pickerFixtures = selectedFixture && (selectedFixture.squad ?? 'men') !== 'men' ? [selectedFixture, ...menFixtures] : menFixtures
   const players = [...playersResult.items].sort((a, b) => a.name.localeCompare(b.name))
+  // The club squad for the selected fixture — men by default, women when a women's
+  // match is open. Uses the squad field, not the legacy team==='senior' tag.
+  const clubSquad = selectedFixture?.squad ?? 'men'
+  const inClubSquad = (player: Player) => (player.squad ?? 'men') === clubSquad
   // The Starting XI is 11 fixed places (GK, defence, midfield, attack); '' = empty place.
   const startingSlots: string[] = (() => {
     const saved = selectedFixture
@@ -205,7 +211,7 @@ export default function LiveMatch() {
   const startingPlayers = startingSlots.filter(Boolean)
   // Every senior player who does not start is a sub, unless an admin leaves them out
   // (injured, suspended). The draft stores who is left OUT, so new players join the bench.
-  const nonStarters = playersResult.items.filter((player) => player.team === 'senior' && !startingPlayers.includes(player.id)).map((player) => player.id)
+  const nonStarters = playersResult.items.filter((player) => inClubSquad(player) && !startingPlayers.includes(player.id)).map((player) => player.id)
   const savedBench = selectedFixture?.benchPlayerIds ?? []
   const leftOut = selectedFixture
     ? benchDraft && benchDraft.fixtureId === selectedFixture.id ? benchDraft.playerIds : savedBench.length ? nonStarters.filter((id) => !savedBench.includes(id)) : []
@@ -1078,7 +1084,7 @@ export default function LiveMatch() {
   const homeScore = selectedFixture.homeScore ?? 0
   const awayScore = selectedFixture.awayScore ?? 0
   const opponentScore = sameTeam(selectedFixture.home, CLUB_NAME) ? awayScore : homeScore
-  const clubPlayers = players.filter((player) => player.team === 'senior')
+  const clubPlayers = players.filter(inClubSquad)
   const homeSide: 'home' | 'away' = sameTeam(selectedFixture.home, CLUB_NAME) ? 'home' : 'away'
   const actionKind: MatchEventKind | null = quickAction === 'yellow' || quickAction === 'red' ? 'card'
     : quickAction === 'opponent-goal' ? 'goal' : quickAction
