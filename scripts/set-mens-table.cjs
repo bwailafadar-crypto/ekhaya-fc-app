@@ -8,21 +8,21 @@ const WRITE=process.env.WRITE==='1'
 const rev=(s)=>s.split('').reverse()
 // id: [pos, P, W, D, L, GF, GA, PTS, formLatestFirst]
 const T={
- 'big-bullets':[1,19,12,6,1,28,8,42,'WWWWW'],
- 'mighty-wanderers':[2,19,11,6,2,32,12,39,'WDWWL'],
+ 'big-bullets':[1,20,13,6,1,30,9,45,'WWWWW'],
+ 'mighty-wanderers':[2,20,11,6,3,33,14,39,'LWDWW'],
  'silver-strikers':[3,20,11,6,3,28,13,39,'WWDWL'],
  'blue-eagles':[4,20,11,2,7,31,24,35,'LDLWL'],
- 'chitipa-united':[5,20,8,4,8,14,20,28,'WLDLW'],
- 'ekhaya-fc':[6,20,6,8,6,19,16,26,'DLWDW'],
- 'masters-fc':[7,19,7,5,7,21,19,26,'LDWLD'],
- 'mitundu-baptist':[8,19,6,8,5,17,16,26,'DWDDD'],
+ 'mitundu-baptist':[5,20,7,8,5,19,17,29,'WDWDD'],
+ 'chitipa-united':[6,20,8,4,8,14,20,28,'WLDLW'],
+ 'ekhaya-fc':[7,20,6,8,6,19,16,26,'DLWDW'],
+ 'masters-fc':[8,20,7,5,8,22,21,26,'LLDWL'],
  'red-lions':[9,20,6,7,7,15,17,25,'WLLDD'],
  'moyale-barracks':[10,20,6,7,7,20,23,25,'LWDLL'],
  'civo-united':[11,20,6,5,9,11,17,23,'DDLDL'],
  'dedza-dynamos':[12,20,4,8,8,13,25,20,'LLDDW'],
  'mafco':[13,20,5,4,11,14,24,19,'WWLLL'],
- 'karonga-united':[14,19,4,6,9,17,29,18,'LDLWD'],
- 'kamuzu-barracks':[15,19,4,5,10,17,25,17,'WDDLL'],
+ 'karonga-united':[14,20,4,7,9,17,29,19,'DLDLW'],
+ 'kamuzu-barracks':[15,20,4,6,10,17,25,18,'DWDDL'],
  'creck-sporting':[16,20,4,5,11,14,23,17,'LDWLW'],
 }
 ;(async()=>{
