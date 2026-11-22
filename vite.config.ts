@@ -22,7 +22,7 @@ const appBuild = new Intl.DateTimeFormat('sv-SE', {
 export default defineConfig({
   define: { __APP_BUILD__: JSON.stringify(appBuild) },
   plugins: [react(), VitePWA({
-    registerType: 'autoUpdate',
+    registerType: 'prompt',
     injectRegister: false,
     includeAssets: ['apple-touch-icon.png'],
     manifest: {

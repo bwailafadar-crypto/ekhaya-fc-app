@@ -50,6 +50,11 @@ export default function NewHome() {
   // A live match is always featured here, whichever squad is playing, so fans
   // see the game that is actually on now. Next match, table and results stay men's.
   const live = fixtures.find(isLiveNow) ?? mens.find(isLiveNow)
+  // While a match is live, follow that one fixture in real time so the banner
+  // score and clock update for fans without reopening the app. No live match =
+  // null segments = no listener, so there is no extra cost between matches.
+  const liveDoc = useMyDoc<Fixture>(live ? ['fixtures', live.id] : null).data
+  const liveNow = live ? (liveDoc ? (isLiveNow({ ...liveDoc, id: live.id }) ? { ...liveDoc, id: live.id } : null) : live) : null
   // Matches still marked upcoming long after kick-off (not recorded yet) are skipped.
   // Next match is the men's team's soonest game (women's team has its own section).
   const next = sortByDate(mens.filter((fixture) => fixture.status === 'upcoming' && new Date(fixture.date).getTime() > now - 3 * 3600000), 'asc')[0]
@@ -64,17 +69,17 @@ export default function NewHome() {
   const outcome = last ? ekhayaOutcome(last) : null
 
   return <div className="nh">
-    {live && <Link className="home-live-banner" to={`/live?match=${live.id}`} aria-label={`Live match: ${live.home} ${live.homeScore ?? 0}, ${live.awayScore ?? 0} ${live.away}. Open match centre.`}>
+    {liveNow && <Link className="home-live-banner" to={`/live?match=${liveNow.id}`} aria-label={`Live match: ${liveNow.home} ${liveNow.homeScore ?? 0}, ${liveNow.awayScore ?? 0} ${liveNow.away}. Open match centre.`}>
       <span className="home-live-label"><i className="live-pulse-dot" />LIVE NOW</span>
-      <span className="home-live-teams"><span><TeamLogo name={live.home} />{live.home}</span><strong>{live.homeScore ?? 0} – {live.awayScore ?? 0}</strong><span><TeamLogo name={live.away} />{live.away}</span></span>
-      <span className="home-live-clock">{matchMinute(live, now)} <ArrowRight size={15} /></span>
-      <LatestGoal fixtureId={live.id} />
+      <span className="home-live-teams"><span><TeamLogo name={liveNow.home} />{liveNow.home}</span><strong>{liveNow.homeScore ?? 0} – {liveNow.awayScore ?? 0}</strong><span><TeamLogo name={liveNow.away} />{liveNow.away}</span></span>
+      <span className="home-live-clock">{matchMinute(liveNow, now)} <ArrowRight size={15} /></span>
+      <LatestGoal fixtureId={liveNow.id} />
     </Link>}
 
     <p className="nh-greeting">Welcome home, <b>{firstName}</b></p>
     <StoriesBar fixtures={fixturesResult.items} />
 
-    {fixturesResult.loading ? <Skeleton className="nh-skeleton" /> : next && !live ? <section className={`nh-hero${heroPhoto ? ' has-photo' : ''}`} aria-label="Next match">
+    {fixturesResult.loading ? <Skeleton className="nh-skeleton" /> : next && !liveNow ? <section className={`nh-hero${heroPhoto ? ' has-photo' : ''}`} aria-label="Next match">
       {heroPhoto ? <img className="nh-hero-photo" src={heroPhoto} alt="" aria-hidden="true" /> : <img className="nh-hero-crest" src="./team-logos/ekhaya-fc.png" alt="" aria-hidden="true" />}
       <div className="nh-hero-top"><span>{new Date(next.date).getTime() - now < 36 * 3600000 ? 'Match day' : 'Next match'}</span><em>{competitionLabel(next.competition)}{next.round ? ` · ${next.round}` : ''}</em></div>
       <div className="nh-teams">
@@ -90,7 +95,7 @@ export default function NewHome() {
         <Link className="nh-btn" to="/fanzone"><Target size={15} aria-hidden="true" /> Predict the score</Link>
       </div>
     </section> : null}
-    {next?.lineupConfirmed && !live && <NextLineup fixture={next} />}
+    {next?.lineupConfirmed && !liveNow && <NextLineup fixture={next} />}
 
     {last && <section className="nh-section">
       <div className="nh-head"><h2>Last result</h2><Link to="/results">All results <ArrowRight size={14} /></Link></div>
