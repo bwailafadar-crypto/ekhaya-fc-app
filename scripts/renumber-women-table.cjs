@@ -11,7 +11,7 @@ const WRITE=process.env.WRITE==='1'
 ;(async()=>{
   const rows=(await db.collection('standings').get()).docs.filter(d=>d.data().squad==='women')
   // Order by points, then goal difference, then current position (keeps existing tiebreaks).
-  rows.sort((a,b)=>{const x=a.data(),y=b.data(); return (y.pts??y.points??0)-(x.pts??x.points??0) || (y.gd??0)-(x.gd??0) || (x.position??999)-(y.position??999)})
+  rows.sort((a,b)=>{const x=a.data(),y=b.data(); return (y.points??y.pts??0)-(x.points??x.pts??0) || (y.goalDifference??y.gd??0)-(x.goalDifference??x.gd??0) || (y.goalsFor??0)-(x.goalsFor??0) || (x.position??999)-(y.position??999)})
   note(`Women's teams: ${rows.length}`)
   const batch=db.batch()
   rows.forEach((d,i)=>{const pos=i+1; const was=d.data().position; note(`${pos}. ${d.data().team} (${d.data().pts??d.data().points} pts, GD ${d.data().gd}) [was ${was}]`); if(WRITE)batch.set(d.ref,{position:pos,updatedAt:FieldValue.serverTimestamp()},{merge:true})})

@@ -25,7 +25,7 @@ const surname = (n) => { const p = String(n || '').trim().split(/\s+/); return p
   const goals = evs.filter((e) => e.kind === 'goal' && /ekhaya/i.test(e.team || ''))
   const tally = new Map()
   for (const g of goals) { const s = surname(g.playerName || ''); if (s) tally.set(s, (tally.get(s) || 0) + 1) }
-  const scorerText = [...tally.entries()].map(([s, n]) => (n > 1 ? `${s} ${n}` : s)).join(', ')
+  const scorerText = [...tally.entries()].sort((a, b) => b[1] - a[1]).map(([s, n]) => (n > 1 ? `${s} ${n}` : s)).join(', ')
   const caption = `Ekhaya Women ${us}–${them} ${opp}${scorerText ? ` — ${scorerText}` : ''}`.slice(0, 160)
   note(`Caption: ${caption}`)
 
