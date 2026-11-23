@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import GoalSplash from '../components/GoalSplash'
+import MatchPredictionsAdmin from '../components/MatchPredictionsAdmin'
 import ShareBar from '../components/ShareBar'
 import MatchMedia from '../components/MatchMedia'
 import VideoPlayer from '../components/VideoPlayer'
@@ -1181,6 +1182,8 @@ export default function LiveMatch() {
         {clubPlayers.map((player) => <option key={player.id} value={player.id}>{player.number != null ? `${player.number}. ` : ''}{player.name}</option>)}
       </select>
     </Card>}
+
+    {role === 'superadmin' && <MatchPredictionsAdmin fixtureId={selectedFixture.id} home={selectedFixture.home} away={selectedFixture.away} players={players} />}
 
     {isAdmin && <datalist id="squad-names">{clubPlayers.map((player) => <option key={player.id} value={player.name} />)}</datalist>}
     {isAdmin && isLive && selectedFixture.editing && <p className="editing-banner">Editing a finished match. Fans see this as full time (score updates as you fix it) and get no alerts. When you are done, tap <strong>Save changes</strong>.</p>}
