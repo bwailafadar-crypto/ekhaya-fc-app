@@ -1,0 +1,23 @@
+name: Check deployed app
+on: { workflow_dispatch: {} }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the live bundle for the new Predictor
+        run: |
+          set -e
+          curl -s "https://ekhaya-fc-app.web.app/index.html" -o index.html
+          echo "::notice::index bytes: $(wc -c < index.html)"
+          # Pull every hashed JS asset referenced, download and grep for a Predictor-only string.
+          grep -oE '/assets/[A-Za-z0-9_.-]+\.js' index.html | sort -u > assets.txt
+          echo "::notice::js assets referenced by index: $(wc -l < assets.txt)"
+          found=no
+          while read -r a; do
+            curl -s "https://ekhaya-fc-app.web.app$a" -o part.js || continue
+            if grep -q "Win an Ekhaya jersey" part.js || grep -q "Points table" part.js; then found=yes; echo "::notice::Predictor code FOUND in $a"; fi
+          done < assets.txt
+          # SPA lazy-loads pages, so also fetch the predictor chunk by scanning all assets dir is not possible; check main chunks only.
+          echo "::notice::Predictor string in index-referenced chunks: $found"
+          echo "::notice::(Pages are lazy-loaded, so also checking all /assets js is not done here.)"
