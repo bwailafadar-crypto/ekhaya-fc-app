@@ -336,6 +336,21 @@ export default function LiveMatch() {
     }
   }
 
+  /** Admin: name the Man of the Match at full-time (settles Predictor MOTM picks). */
+  async function saveMotm(playerId: string) {
+    if (!selectedFixture) return
+    setBusy(true)
+    setProblem('')
+    try {
+      await updateDoc(doc(db, 'fixtures', selectedFixture.id), { manOfTheMatchId: playerId || deleteField(), updatedAt: serverTimestamp() })
+      setMessage(playerId ? 'Man of the Match saved.' : 'Man of the Match cleared.')
+    } catch {
+      setProblem('That could not be saved. Check your connection.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   /** A private rehearsal: admins only, no alerts, never touches the table, stats or leaderboard. */
   async function createPracticeMatch() {
     setBusy(true)
@@ -1156,6 +1171,15 @@ export default function LiveMatch() {
         <label className="button button-secondary match-photo-upload"><ImagePlus size={16} aria-hidden="true" />{selectedFixture.heroPhotoDataUrl ? 'Replace photo' : 'Add photo'}<input type="file" accept="image/*" hidden disabled={busy} onChange={(event) => { const file = event.target.files?.[0] ?? null; event.target.value = ''; if (file) void saveMatchPhoto(file) }} /></label>
         {selectedFixture.heroPhotoDataUrl && <Button type="button" variant="ghost" disabled={busy} onClick={() => void saveMatchPhoto(null)}>Remove</Button>}
       </div>
+    </Card>}
+
+    {isAdmin && (isLive || selectedFixture.status === 'finished') && <Card className="admin-card">
+      <div className="matchday-admin-heading"><h2>Man of the Match</h2><span>Settles Predictor picks</span></div>
+      <p className="live-help">Name your Man of the Match once the game is decided. Fans who predicted this player in the Predictor win their entry.</p>
+      <select className="motm-select" value={selectedFixture.manOfTheMatchId ?? ''} disabled={busy} onChange={(event) => void saveMotm(event.target.value)}>
+        <option value="">No Man of the Match yet…</option>
+        {clubPlayers.map((player) => <option key={player.id} value={player.id}>{player.number != null ? `${player.number}. ` : ''}{player.name}</option>)}
+      </select>
     </Card>}
 
     {isAdmin && <datalist id="squad-names">{clubPlayers.map((player) => <option key={player.id} value={player.name} />)}</datalist>}

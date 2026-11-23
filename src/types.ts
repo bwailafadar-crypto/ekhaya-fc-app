@@ -69,6 +69,18 @@ export interface Fixture {
   predictionsLocked?: boolean
   /** Matchday Hero: set true once this match has been scored into the competition. */
   heroScored?: boolean
+  /** Predictor: the player an admin names Man of the Match at full-time (settles MOTM picks). */
+  manOfTheMatchId?: string | null
+}
+
+/** Predictor: a fan's single pick for one league match. One of three kinds. */
+export interface Pick {
+  type: 'score' | 'scorer' | 'motm'
+  home?: number
+  away?: number
+  playerId?: string
+  name: string
+  updatedAt?: Timestamp
 }
 
 export interface AppliedStandingChange {

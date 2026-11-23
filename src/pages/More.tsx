@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
-import { Activity, BarChart3, ScrollText, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, UsersRound, Vote } from 'lucide-react'
+import { Activity, BarChart3, ScrollText, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Gift, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, UsersRound, Vote } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { useFlag } from '../hooks/useFlag'
 import LogoutButton from '../components/LogoutButton'
 import InstallSharePanel from '../components/InstallSharePanel'
 
 const items = [
+  { to: '/predictor', label: 'Predictor · win a jersey or ticket', icon: Gift },
   { to: '/competitions', label: 'Competitions · league & cups', icon: Medal },
   { to: '/results', label: 'Results', icon: Trophy },
   { to: '/squad', label: 'Squad', icon: Users },

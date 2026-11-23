@@ -233,6 +233,32 @@ service cloud.firestore {
         allow delete: if isAdmin();
       }
 
+      // Predictor: one pick per fan per match (score, goalscorer or MOTM), only
+      // before kick-off. Settled by the server after the match.
+      match /picks/{uid} {
+        allow read: if signedIn();
+        allow create, update: if canPlay()
+          && request.auth.uid == uid
+          && fixtureDoc(fixtureId).status == 'upcoming'
+          && fixtureDoc(fixtureId).get('predictionsLocked', false) != true
+          && fixtureDoc(fixtureId).get('isTest', false) != true
+          && request.resource.data.keys().hasAll(['type', 'name', 'updatedAt'])
+          && request.resource.data.type in ['score', 'scorer', 'motm']
+          && request.resource.data.name == myName()
+          && request.resource.data.updatedAt == request.time
+          && (
+            (request.resource.data.type == 'score'
+              && request.resource.data.keys().hasOnly(['type', 'home', 'away', 'name', 'updatedAt'])
+              && request.resource.data.home is int && request.resource.data.home >= 0 && request.resource.data.home <= 20
+              && request.resource.data.away is int && request.resource.data.away >= 0 && request.resource.data.away <= 20)
+            || (request.resource.data.type in ['scorer', 'motm']
+              && request.resource.data.keys().hasOnly(['type', 'playerId', 'name', 'updatedAt'])
+              && request.resource.data.playerId is string
+              && request.resource.data.playerId.size() >= 1 && request.resource.data.playerId.size() <= 60)
+          );
+        allow delete: if isAdmin();
+      }
+
       // Matchday Hero competition: one player pick per fan, only before kick-off.
       // Points are scored by the server (service account) after the match.
       match /heroPicks/{uid} {
