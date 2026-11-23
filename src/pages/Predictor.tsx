@@ -1,7 +1,8 @@
 import { collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'
-import { CalendarDays, Check, Gift, Goal, Lock, Minus, Plus, Star, Target, Ticket, Trophy } from 'lucide-react'
+import { CalendarDays, Check, Gift, Goal, Lock, Minus, Plus, Star, Target, Ticket, Trophy, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import MatchPredictionsAdmin from '../components/MatchPredictionsAdmin'
 import PlayerAvatar from '../components/PlayerAvatar'
 import TeamLogo from '../components/TeamLogo'
 import { useToast } from '../components/ToastContext'
@@ -211,7 +212,8 @@ function PredictorBoard() {
 }
 
 export default function Predictor() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
+  const isSuperadmin = role === 'superadmin'
   const fixtures = useFirestoreCollection<Fixture>('fixtures')
   const players = useFirestoreCollection<Player>('players')
 
@@ -254,6 +256,15 @@ export default function Predictor() {
         <h2 className="pr-section-title"><Trophy size={17} aria-hidden="true" /> Points table</h2>
         <PredictorBoard />
       </section>
+
+      {isSuperadmin && (upcoming.length > 0 || lastPlayed) && (
+        <section className="pr-section">
+          <h2 className="pr-section-title"><Users size={17} aria-hidden="true" /> Fan predictions · superadmin</h2>
+          {[...upcoming, ...(lastPlayed ? [lastPlayed] : [])].map((f) => (
+            <MatchPredictionsAdmin key={f.id} fixtureId={f.id} home={f.home} away={f.away} players={menPlayers} />
+          ))}
+        </section>
+      )}
 
       <p className="pr-foot">Correct score = 5 points · Goalscorer = 3 points · Man of the Match = 3 points. Predictions lock at kick-off, and every point is an entry into the fortnightly prize draw for a jersey or a match ticket.</p>
     </div>
