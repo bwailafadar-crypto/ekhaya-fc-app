@@ -5,7 +5,7 @@ import { filterLabel, useCompetitionFilter } from '../hooks/useCompetitionFilter
 import CupCard from '../components/CupCard'
 import { CUPS, matchesFilter } from '../utils/competitions'
 import { cupMatches } from '../utils/cupSeason'
-import { EmptyState, PageHeader, Skeleton } from '../components/UI'
+import { Button, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
 import { inSquad, type Squad } from '../hooks/useSquad'
 import type { Fixture } from '../types'
@@ -48,7 +48,7 @@ export default function Fixtures({ squad = 'men' }: { squad?: Squad }) {
     <PageHeader eyebrow={squad === 'women' ? "The Cowgirls" : filterLabel(filter)} title={squad === 'women' ? "Women's fixtures" : 'Fixtures'} description="Upcoming matches · Malawi time (CAT)" />
     {squad === 'men' && <CompetitionTabs value={filter} onChange={setFilter} />}
     {loading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
-      : error ? <EmptyState icon={CalendarDays} title="Fixtures unavailable" description={error} />
+      : error ? <EmptyState icon={CalendarDays} title="Fixtures unavailable" description={error} action={<Button variant="secondary" onClick={() => window.location.reload()}>Try again</Button>} />
         : fixtures.length ? fixtures.map((fixture) => <MatchCard key={fixture.id} fixture={fixture} previousMeeting={previousMeeting(fixture)} />)
           : cupsShown.length ? <p className="cup-fixtures-empty">No upcoming {filterLabel(filter)} matches. Here is Ekhaya's {cupsShown.length > 1 ? 'cup season' : 'run'} so far:</p>
           : <EmptyState icon={CalendarDays} title="No upcoming fixtures" description={filter === 'all' ? 'New matches will appear here when the club adds them.' : `No ${filterLabel(filter)} matches scheduled yet.`} />}
