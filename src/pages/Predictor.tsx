@@ -2,13 +2,14 @@ import { collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/fire
 import { CalendarDays, Check, Gift, Goal, Lock, Minus, Plus, Star, Target, Ticket, Trophy } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import PlayerAvatar from '../components/PlayerAvatar'
 import TeamLogo from '../components/TeamLogo'
 import { useToast } from '../components/ToastContext'
 import { Button, Card, EmptyState, PageHeader, Skeleton } from '../components/UI'
 import { db } from '../firebase'
 import { useMyDoc } from '../hooks/useCounts'
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection'
-import type { Fixture, Pick, Player } from '../types'
+import type { Fixture, Pick, Player, PredictorScore } from '../types'
 import { competitionOf } from '../utils/competitions'
 import { formatMalawiDate, formatMalawiTime, isEkhayaTeam, isPlayed, sortByDate } from '../utils/football'
 import { burst } from '../utils/celebrate'
@@ -17,8 +18,10 @@ import { saveErrorText } from '../utils/fanZone'
 const MAX_GOALS = 20
 type Kind = 'score' | 'scorer' | 'motm'
 
+const PREDICTOR_POINTS: Record<Kind, number> = { score: 5, scorer: 3, motm: 3 }
+
 const KINDS: Array<{ id: Kind; label: string; icon: typeof Goal; hint: string }> = [
-  { id: 'score', label: 'Correct score', icon: Target, hint: 'Call the exact full-time score.' },
+  { id: 'score', label: 'Correct score', icon: Target, hint: 'Call the exact full-time score. Hardest to get, worth the most.' },
   { id: 'scorer', label: 'Goalscorer', icon: Goal, hint: 'Pick an Ekhaya player to score.' },
   { id: 'motm', label: 'Man of the Match', icon: Star, hint: 'Pick who will be named Man of the Match.' },
 ]
@@ -114,10 +117,10 @@ function PredictMatch({ fixture, squadPlayers }: { fixture: Fixture; squadPlayer
             {KINDS.map((k) => {
               const Icon = k.icon
               const on = activeKind === k.id
-              return <button key={k.id} type="button" role="tab" aria-selected={on} className={`pr-kind${on ? ' on' : ''}`} onClick={() => setKind(k.id)}><Icon size={16} aria-hidden="true" /><span>{k.label}</span></button>
+              return <button key={k.id} type="button" role="tab" aria-selected={on} className={`pr-kind${on ? ' on' : ''}`} onClick={() => setKind(k.id)}><Icon size={16} aria-hidden="true" /><span>{k.label}</span><em className="pr-kind-pts">{PREDICTOR_POINTS[k.id]} pts</em></button>
             })}
           </div>
-          <p className="pr-kind-hint">{KINDS.find((k) => k.id === activeKind)?.hint}</p>
+          <p className="pr-kind-hint">{KINDS.find((k) => k.id === activeKind)?.hint} <strong>Worth {PREDICTOR_POINTS[activeKind]} points if you get it right.</strong></p>
 
           {activeKind === 'score' ? (
             <div className="pr-score">
@@ -126,13 +129,20 @@ function PredictMatch({ fixture, squadPlayers }: { fixture: Fixture; squadPlayer
               <div className="pr-score-team"><TeamLogo name={fixture.away} /><Stepper label={fixture.away} value={away} disabled={saving} onChange={setAwayD} /></div>
             </div>
           ) : (
-            <label className="pr-player">
-              <span>{activeKind === 'scorer' ? `Which Ekhaya player scores v ${opponent}?` : 'Who will be Man of the Match?'}</span>
-              <select value={playerId} onChange={(e) => setPlayerD(e.target.value)} disabled={saving}>
-                <option value="">Choose a player…</option>
-                {squadPlayers.map((p) => <option key={p.id} value={p.id}>{p.number != null ? `${p.number}. ` : ''}{p.name}</option>)}
-              </select>
-            </label>
+            <div className="pr-pick">
+              <span className="pr-pick-q">{activeKind === 'scorer' ? `Which Ekhaya player scores v ${opponent}?` : 'Who will be Man of the Match?'}</span>
+              <div className="pr-players" role="radiogroup" aria-label="Choose a player">
+                {squadPlayers.map((p) => {
+                  const on = playerId === p.id
+                  return <button key={p.id} type="button" role="radio" aria-checked={on} className={`pr-player-card${on ? ' on' : ''}`} disabled={saving} onClick={() => setPlayerD(p.id)}>
+                    <PlayerAvatar player={p} />
+                    <span className="pr-player-name">{p.name}</span>
+                    {p.number != null && <em className="pr-player-no">{p.number}</em>}
+                    {on && <span className="pr-player-tick" aria-hidden="true"><Check size={13} /></span>}
+                  </button>
+                })}
+              </div>
+            </div>
           )}
 
           <Button type="button" disabled={saving} onClick={(e) => void save(e.currentTarget)}>{saving ? 'Saving…' : saved ? 'Update prediction' : 'Save prediction'}</Button>
@@ -171,6 +181,31 @@ function ResultCard({ fixture, squadPlayers }: { fixture: Fixture; squadPlayers:
     <Card className="pr-result">
       <div className="pr-result-head"><strong>{fixture.home} {fixture.homeScore ?? 0}–{fixture.awayScore ?? 0} {fixture.away}</strong><span>{competitionOf(fixture.competition).short}</span></div>
       <p className={`pr-result-line${won === true ? ' win' : won === false ? ' miss' : ''}`}>{line} {won === true ? '✓ You called it!' : won === false ? 'Not this time.' : 'Result being settled…'}</p>
+    </Card>
+  )
+}
+
+/** The Predictor points table — fans see their points and the other fans. */
+function PredictorBoard() {
+  const { user } = useAuth()
+  const scores = useFirestoreCollection<PredictorScore>('predictorScores')
+  if (scores.loading) return <Card className="pr-board"><Skeleton className="fz-board-skeleton" /></Card>
+  const rows = scores.items.filter((r) => (r.points ?? 0) > 0).sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
+  if (!rows.length) return <Card className="pr-board"><p className="pr-board-empty">No points yet — be the first to predict and climb the table. Correct score = 5 points, goalscorer and Man of the Match = 3 points each.</p></Card>
+  const myIndex = rows.findIndex((r) => r.id === user?.uid)
+  const top = rows.slice(0, 15)
+  return (
+    <Card className="pr-board">
+      <ol className="pr-board-list">
+        {top.map((r, i) => (
+          <li key={r.id} className={r.id === user?.uid ? 'me' : ''}>
+            <span className={`fz-board-rank${i < 3 ? ` fz-rank-${i + 1}` : ''}`}>{i + 1}</span>
+            <span className="pr-board-name">{r.name || 'Fan'}{r.id === user?.uid && <em> · you</em>}</span>
+            <strong>{r.points}<small> pts</small></strong>
+          </li>
+        ))}
+      </ol>
+      {myIndex >= 15 && <p className="pr-board-you">You are #{myIndex + 1} with {rows[myIndex].points} pts — keep predicting to climb.</p>}
     </Card>
   )
 }
@@ -215,7 +250,12 @@ export default function Predictor() {
         </section>
       )}
 
-      <p className="pr-foot">Predictions lock the moment a match kicks off. Winners are drawn every two weeks — keep an eye on the app.</p>
+      <section className="pr-section">
+        <h2 className="pr-section-title"><Trophy size={17} aria-hidden="true" /> Points table</h2>
+        <PredictorBoard />
+      </section>
+
+      <p className="pr-foot">Correct score = 5 points · Goalscorer = 3 points · Man of the Match = 3 points. Predictions lock at kick-off, and every point is an entry into the fortnightly prize draw for a jersey or a match ticket.</p>
     </div>
   )
 }

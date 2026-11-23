@@ -71,7 +71,12 @@ export interface Fixture {
   heroScored?: boolean
   /** Predictor: the player an admin names Man of the Match at full-time (settles MOTM picks). */
   manOfTheMatchId?: string | null
+  /** Predictor: true once this match's points have been awarded to the fan table. */
+  predictorSettled?: boolean
 }
+
+/** Predictor: a fan's running points total across settled league matches. */
+export interface PredictorScore { id: string; points: number; name: string; updatedAt?: Timestamp }
 
 /** Predictor: a fan's single pick for one league match. One of three kinds. */
 export interface Pick {

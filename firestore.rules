@@ -347,6 +347,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Predictor points table: fans read it; only the server (settle job) writes.
+    match /predictorScores/{uid} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     match /players/{playerId} {
       allow read: if signedIn();
       allow create, update: if isAdmin();

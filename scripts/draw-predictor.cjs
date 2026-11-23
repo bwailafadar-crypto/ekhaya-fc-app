@@ -10,6 +10,7 @@ initializeApp({ credential: cert(JSON.parse(fs.readFileSync(process.env.GOOGLE_A
 const db = getFirestore()
 const note = (t) => console.log(process.env.GITHUB_ACTIONS ? `::notice::${t}` : t)
 const DAYS = Number(process.env.DAYS || 14)
+const POINTS = { score: 5, scorer: 3, motm: 3 }
 const isLeague = (c) => !/airtel|castel|\bcup\b|top\s?8/i.test(String(c || ''))
 const isEkhaya = (n) => /^ekhaya/i.test(String(n || '')) && !/women/i.test(String(n || ''))
 
@@ -35,7 +36,9 @@ const isEkhaya = (n) => /^ekhaya/i.test(String(n || '')) && !/women/i.test(Strin
       if (p.type === 'score') ok = p.home === f.homeScore && p.away === f.awayScore
       else if (p.type === 'scorer') ok = scorers.has(p.playerId)
       else if (p.type === 'motm') ok = Boolean(f.manOfTheMatchId) && p.playerId === f.manOfTheMatchId
-      if (ok) { entries.push({ uid: p.uid, name: p.name || 'Fan', match: `${f.home} v ${f.away}`, type: p.type }); correct++ }
+      // Each point earned is one entry, so a correct score (5) weighs more than
+      // a goalscorer or MOTM (3) in the draw.
+      if (ok) { const n = POINTS[p.type] || 1; for (let i = 0; i < n; i++) entries.push({ uid: p.uid, name: p.name || 'Fan', match: `${f.home} v ${f.away}`, type: p.type }); correct++ }
     }
     const label = `${f.home} ${f.homeScore}-${f.awayScore} ${f.away}`
     note(`  ${label}: ${picks.length} picks, ${correct} correct${f.manOfTheMatchId ? '' : ' (MOTM not set)'}`)
