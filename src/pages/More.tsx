@@ -1,12 +1,11 @@
 import { Link } from 'react-router-dom'
-import { Activity, BarChart3, ScrollText, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Gift, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, UsersRound, Vote } from 'lucide-react'
+import { Activity, BarChart3, ScrollText, ChevronRight, CircleUserRound, Clapperboard, ClipboardList, Gift, Landmark, Newspaper, HeartHandshake, Medal, ShieldCheck, ShoppingBag, Trophy, Users, UsersRound } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { useFlag } from '../hooks/useFlag'
 import LogoutButton from '../components/LogoutButton'
 import InstallSharePanel from '../components/InstallSharePanel'
 
 const items = [
-  { to: '/predictor', label: 'Predictor · win a jersey or ticket', icon: Gift },
   { to: '/competitions', label: 'Competitions · league & cups', icon: Medal },
   { to: '/results', label: 'Results', icon: Trophy },
   { to: '/squad', label: 'Squad', icon: Users },
@@ -15,7 +14,7 @@ const items = [
   { to: '/tv', label: 'Ekhaya TV · videos & live', icon: Clapperboard },
   { to: '/club', label: 'Club & honours · trophy cabinet', icon: Landmark },
   { to: '/shop', label: 'Club Shop · kits & merchandise', icon: ShoppingBag },
-  { to: '/fanzone', label: 'Fan Zone', icon: Vote },
+  { to: '/fanzone', label: 'Fan Zone · Predictor — win a prize', icon: Gift },
   { to: '/community', label: 'Fan Family · branches & invites', icon: HeartHandshake },
   { to: '/membership', label: 'Membership', icon: ShieldCheck },
   { to: '/profile', label: 'Fan Profile', icon: CircleUserRound },

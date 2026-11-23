@@ -27,8 +27,8 @@ const LiveMatch = lazyPage(() => import('./pages/LiveMatch'))
 const Squad = lazyPage(() => import('./pages/Squad'))
 const WomenHub = lazyPage(() => import('./pages/WomenHub'))
 const News = lazyPage(() => import('./pages/News'))
-const FanZone = lazyPage(() => import('./pages/FanZone'))
-const Predictor = lazyPage(() => import('./pages/Predictor'))
+// The Fan Zone is now the Predictor game.
+const FanZone = lazyPage(() => import('./pages/Predictor'))
 const Membership = lazyPage(() => import('./pages/Membership'))
 const Profile = lazyPage(() => import('./pages/Profile'))
 const More = lazyPage(() => import('./pages/More'))
@@ -84,7 +84,7 @@ export default function App() {
                 <Route path="/news" element={<News />} />
                 <Route path="/news/:id" element={<News />} />
                 <Route path="/fanzone" element={<FanZone />} />
-                <Route path="/predictor" element={<Predictor />} />
+                <Route path="/predictor" element={<FanZone />} />
                 <Route path="/community" element={<Community />} />
                 <Route path="/competitions" element={<Competitions />} />
                 <Route path="/membership" element={<Membership />} />
