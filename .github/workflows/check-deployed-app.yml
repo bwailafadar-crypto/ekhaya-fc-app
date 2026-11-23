@@ -3,21 +3,28 @@ on: { workflow_dispatch: {} }
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
-      - name: Check the live bundle for the new Predictor
+      - name: Confirm the live bundle contains the new Predictor
         run: |
           set -e
-          curl -s "https://ekhaya-fc-app.web.app/index.html" -o index.html
-          echo "::notice::index bytes: $(wc -c < index.html)"
-          # Pull every hashed JS asset referenced, download and grep for a Predictor-only string.
-          grep -oE '/assets/[A-Za-z0-9_.-]+\.js' index.html | sort -u > assets.txt
-          echo "::notice::js assets referenced by index: $(wc -l < assets.txt)"
-          found=no
+          B="https://ekhaya-fc-app.web.app"
+          curl -s "$B/index.html" -o index.html
+          # Collect all JS asset names from index, then from each of those (one level deep),
+          # since pages are lazy-loaded chunks referenced inside the main bundle.
+          grep -oE '/assets/[A-Za-z0-9_.-]+\.js' index.html | sort -u > lvl1.txt
+          : > all.txt; cat lvl1.txt >> all.txt
           while read -r a; do
-            curl -s "https://ekhaya-fc-app.web.app$a" -o part.js || continue
-            if grep -q "Win an Ekhaya jersey" part.js || grep -q "Points table" part.js; then found=yes; echo "::notice::Predictor code FOUND in $a"; fi
+            curl -s "$B$a" -o part.js || continue
+            grep -oE 'assets/[A-Za-z0-9_.-]+\.js' part.js | sed 's#^#/#' >> all.txt || true
+          done < lvl1.txt
+          sort -u all.txt > assets.txt
+          echo "::notice::total JS chunks discovered: $(wc -l < assets.txt)"
+          found=no; where=""
+          while read -r a; do
+            curl -s "$B$a" -o c.js || continue
+            if grep -q "Win an Ekhaya jersey" c.js || grep -q "Points table" c.js; then found=yes; where="$a"; fi
           done < assets.txt
-          # SPA lazy-loads pages, so also fetch the predictor chunk by scanning all assets dir is not possible; check main chunks only.
-          echo "::notice::Predictor string in index-referenced chunks: $found"
-          echo "::notice::(Pages are lazy-loaded, so also checking all /assets js is not done here.)"
+          echo "::notice::NEW Predictor code live on server: $found ${where}"
+          # Also show the index's built timestamp hint (the main entry hash).
+          echo "::notice::entry chunk: $(grep -oE '/assets/index-[A-Za-z0-9_.-]+\.js' index.html | head -1)"
