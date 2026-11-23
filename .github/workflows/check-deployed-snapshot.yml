@@ -1,0 +1,26 @@
+name: Check deployed snapshot
+on: { workflow_dispatch: {} }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch and inspect the live snapshot.json
+        run: |
+          set -e
+          code=$(curl -s -o snap.json -w "%{http_code}" "https://ekhaya-fc-app.web.app/data/snapshot.json" || echo "curl-failed")
+          echo "::notice::HTTP status: $code"
+          echo "::notice::bytes: $(wc -c < snap.json)"
+          node -e '
+            const fs=require("fs");
+            let s=fs.readFileSync("snap.json","utf8");
+            try{
+              const j=JSON.parse(s);
+              console.log("::notice::top-level keys: "+Object.keys(j).join(", "));
+              const fx=j.fixtures||j.data&&j.data.fixtures;
+              console.log("::notice::fixtures is array: "+Array.isArray(fx)+" count: "+(Array.isArray(fx)?fx.length:"n/a"));
+              console.log("::notice::disabled flag: "+JSON.stringify(j.disabled));
+              const st=j.standings||j.data&&j.data.standings;
+              console.log("::notice::standings count: "+(Array.isArray(st)?st.length:"n/a"));
+            }catch(e){ console.log("::notice::NOT JSON. First 160 chars: "+s.slice(0,160).replace(/\n/g," ")); }
+          '
