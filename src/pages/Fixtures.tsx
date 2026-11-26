@@ -45,7 +45,7 @@ export default function Fixtures({ squad = 'men' }: { squad?: Squad }) {
   const cupsShown = squad === 'men' ? (filter === 'cups' ? CUPS : CUPS.filter((cup) => cup.id === filter)) : []
 
   return <>
-    <PageHeader eyebrow={squad === 'women' ? "The Cowgirls" : filterLabel(filter)} title={squad === 'women' ? "Women's fixtures" : 'Fixtures'} description="Upcoming matches · Malawi time (CAT)" />
+    <PageHeader eyebrow={squad === 'women' ? "The Cowgirls" : "The Cowboys"} title={squad === 'women' ? "Women's fixtures" : 'Fixtures'} description="Upcoming matches · Malawi time (CAT)" />
     {squad === 'men' && <CompetitionTabs value={filter} onChange={setFilter} />}
     {loading ? <div className="loading-list"><Skeleton /><Skeleton /><Skeleton /></div>
       : error ? <EmptyState icon={CalendarDays} title="Fixtures unavailable" description={error} action={<Button variant="secondary" onClick={() => window.location.reload()}>Try again</Button>} />

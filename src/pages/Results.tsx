@@ -30,7 +30,7 @@ export default function Results({ squad = 'men' }: { squad?: Squad }) {
   })
 
   return <>
-    <PageHeader eyebrow={squad === 'women' ? "The Cowgirls" : filterLabel(filter)} title={squad === 'women' ? "Women's results" : 'Results'} description="Latest completed matches" />
+    <PageHeader eyebrow={squad === 'women' ? "The Cowgirls" : "The Cowboys"} title={squad === 'women' ? "Women's results" : 'Results'} description="Latest completed matches" />
     {squad === 'men' && <CompetitionTabs value={filter} onChange={setFilter} />}
     {!loading && wonCups.map(({ cup, final }) => <ChampionsCelebration key={cup.id} cup={cup} final={final} />)}
     {!loading && !error && form.length > 0 && (

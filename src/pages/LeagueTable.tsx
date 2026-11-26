@@ -36,7 +36,7 @@ export default function LeagueTable({ squad = 'men' }: { squad?: Squad }) {
     .sort((a, b) => a.date.localeCompare(b.date))[0]
 
   return <>
-    <PageHeader eyebrow="2026 season" title={squad === 'women' ? "Women's league table" : 'League table'} description={squad === 'women' ? "The Cowgirls' league standings" : 'FDH Championship standings'} />
+    <PageHeader eyebrow="2026 season" title={squad === 'women' ? "Women's league table" : 'League table'} description={squad === 'women' ? "The Cowgirls' league standings" : "The Cowboys in the FDH Championship"} />
     {loading ? <div className="table-loading"><Skeleton /><Skeleton /><Skeleton /><Skeleton /></div>
       : error ? <EmptyState icon={Table2} title="Table unavailable" description={error} />
         : rows.length === 0 ? <EmptyState icon={Table2} title="Standings are not available" description="The club table will appear here when data is added." />
