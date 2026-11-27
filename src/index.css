@@ -3396,7 +3396,7 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .sponsor-ticker-viewport { position: relative; flex: 1; overflow: hidden; padding: 9px 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
 .sponsor-ticker-track { display: inline-flex; align-items: center; white-space: nowrap; will-change: transform; animation: sponsor-scroll 26s linear infinite; }
 .sponsor-ticker-item { display: inline-flex; align-items: center; padding: 0 9px; }
-.sponsor-ticker-logo { height: 34px; width: auto; display: block; border-radius: 6px; background: #fff; padding: 3px 7px; -webkit-user-select: none; user-select: none; }
+.sponsor-ticker-logo { height: 40px; width: auto; display: block; -webkit-user-select: none; user-select: none; }
 .sponsor-ticker-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 @keyframes sponsor-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .sponsor-ticker-track { animation: none; } }

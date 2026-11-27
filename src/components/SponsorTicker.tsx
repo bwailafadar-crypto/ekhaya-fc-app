@@ -2,11 +2,11 @@
 type Sponsor = { name: string; logo: string }
 
 const SPONSORS: Sponsor[] = [
-  { name: 'Union Building Contractors', logo: '/sponsors/union.png' },
-  { name: 'Stevensons', logo: '/sponsors/stevensons.png' },
-  { name: 'Enkosi', logo: '/sponsors/enkosi.png' },
-  { name: 'Khomarys Security Systems', logo: '/sponsors/khomarys.png' },
-  { name: 'Mkokomo', logo: '/sponsors/mkokomo.png' },
+  { name: 'Union Building Contractors', logo: '/sponsors/union.svg' },
+  { name: 'Stevensons', logo: '/sponsors/stevensons.svg' },
+  { name: 'Enkosi', logo: '/sponsors/enkosi.svg' },
+  { name: 'Khomarys Security Systems', logo: '/sponsors/khomarys.svg' },
+  { name: 'Mkokomo', logo: '/sponsors/mkokomo.svg' },
 ]
 
 export default function SponsorTicker() {

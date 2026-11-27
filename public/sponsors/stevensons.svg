@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" width="320" height="120">
+<rect x="0" y="0" width="320" height="120" rx="14" fill="#ffffff"/>
+<ellipse cx="160" cy="46" rx="150" ry="34" fill="#1f3fa8"/>
+<ellipse cx="160" cy="46" rx="150" ry="34" fill="none" stroke="#ffffff" stroke-width="3"/>
+<text x="160" y="58" text-anchor="middle" font-family="Liberation Sans, Arial" font-style="italic" font-weight="700" font-size="34" fill="#ffffff">Stevensons</text>
+<text x="300" y="30" font-family="Liberation Sans, Arial" font-size="12" fill="#ffffff">&#174;</text>
+<text x="160" y="104" text-anchor="middle" font-family="Liberation Sans, Arial" font-weight="700" font-size="13" fill="#8f8f8f" letter-spacing="4">FINEST QUALITY PAINTS</text>
+</svg>

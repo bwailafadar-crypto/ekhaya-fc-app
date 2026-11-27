@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 120" width="384" height="120"><rect width="384" height="120" rx="14" fill="#ffffff"/>
+<g transform="translate(26,24)">
+  <polygon points="0,36 20,0 56,0 36,36" fill="#3b3b3b"/>
+  <polygon points="6,52 26,16 62,16 42,52" fill="#58585a"/>
+  <polygon points="12,68 32,32 68,32 48,68" fill="#3b3b3b"/>
+</g>
+<text x="120" y="62" font-family="Liberation Sans, Arial" font-weight="700" font-size="42" fill="#333333" letter-spacing="1">UNION</text>
+<text x="121" y="86" font-family="Liberation Sans, Arial" font-weight="700" font-size="14" fill="#555" letter-spacing="2.2">BUILDING CONTRACTORS</text>
+</svg>
