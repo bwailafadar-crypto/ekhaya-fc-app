@@ -1,0 +1,24 @@
+name: Set women table
+on:
+  workflow_dispatch:
+    inputs:
+      write: { description: "1 to save", required: false, default: "0" }
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: scripts/set-women-table.cjs, sparse-checkout-cone-mode: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i firebase-admin@12 --no-save --no-audit --no-fund
+      - name: Write key
+        env: { FIREBASE_SA: "${{ secrets.FIREBASE_SA }}" }
+        run: |
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+      - run: node scripts/set-women-table.cjs
+        env: { WRITE: "${{ github.event.inputs.write }}" }
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
