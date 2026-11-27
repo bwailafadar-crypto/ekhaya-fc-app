@@ -53,6 +53,9 @@ export default defineConfig({
         'downloads/**',
         // The alerts worker is registered separately and must never be cached.
         'firebase-messaging-sw.js',
+        // Sponsor logos scroll in a decorative band; load from network, not
+        // the offline precache, to keep the first download small.
+        'sponsors/**',
         'assets/*-{cyrillic,cyrillic-ext,greek,greek-ext,vietnamese,latin-ext}-*',
       ],
       navigateFallback: 'index.html',
