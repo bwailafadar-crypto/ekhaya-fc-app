@@ -4,6 +4,7 @@
 import { ArrowRight, CalendarDays, Clapperboard, Goal, MapPin, Medal, Newspaper, ShoppingBag, Target, Trophy, Users, UsersRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import SponsorTicker from '../components/SponsorTicker'
 import { useAuth } from '../auth/AuthContext'
 import { LatestGoal, NextLineup } from '../components/HomeParts'
 import { useMyDoc } from '../hooks/useCounts'
@@ -144,5 +145,7 @@ export default function NewHome() {
           <h3>{item.title}</h3><p>{item.summary}</p>
         </Card></Link>) : <Card><EmptyState icon={Newspaper} title="No news yet" description="Club updates will appear here." /></Card>}
     </section>
+
+    <SponsorTicker />
   </div>
 }

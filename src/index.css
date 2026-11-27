@@ -3389,3 +3389,13 @@ button.form-box:focus-visible { outline: 2px solid var(--gold); outline-offset: 
 .pred-admin-name { grid-area: name; font-weight: 600; font-size: 13.5px; }
 .pred-admin-kind { grid-area: kind; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--gold-dark); background: #F8EDC5; padding: 1px 7px; border-radius: 999px; align-self: center; }
 .pred-admin-val { grid-area: val; font-size: 12.5px; color: var(--muted); }
+
+/* ---- Sponsor ticker (scrolling band, like a sports-news ticker) ---- */
+.sponsor-ticker { display: flex; align-items: stretch; margin: 18px 0 6px; border: 1px solid #4A3D18; border-radius: 12px; overflow: hidden; background: linear-gradient(135deg, #15150F, #23210F); }
+.sponsor-ticker-tag { flex: 0 0 auto; display: flex; align-items: center; padding: 0 12px; font-family: 'Oswald', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: #2A2203; background: var(--gold); }
+.sponsor-ticker-viewport { position: relative; flex: 1; overflow: hidden; padding: 9px 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent); }
+.sponsor-ticker-track { display: inline-flex; align-items: center; white-space: nowrap; will-change: transform; animation: sponsor-scroll 26s linear infinite; }
+.sponsor-ticker-item { display: inline-flex; align-items: center; gap: 12px; padding: 0 6px; font-size: 13px; font-weight: 600; letter-spacing: .3px; color: #F4EFE0; }
+.sponsor-ticker-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold-light); flex: 0 0 auto; }
+@keyframes sponsor-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .sponsor-ticker-track { animation: none; } }
