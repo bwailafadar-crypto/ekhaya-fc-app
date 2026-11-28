@@ -202,7 +202,14 @@ export default function LiveMatch() {
   // The club squad for the selected fixture — men by default, women when a women's
   // match is open. Uses the squad field, not the legacy team==='senior' tag.
   const clubSquad = selectedFixture?.squad ?? 'men'
-  const inClubSquad = (player: Player) => (player.squad ?? 'men') === clubSquad
+  // Optional per-match squad: when the fixture lists squadPlayerIds (the players who
+  // travelled / were named for this match), the Starting XI and subs pickers are
+  // limited to them. When it is absent or empty the whole club squad is selectable,
+  // exactly as before — so older fixtures are unaffected.
+  const matchdaySquad = selectedFixture?.squadPlayerIds ?? null
+  const inClubSquad = (player: Player) =>
+    (player.squad ?? 'men') === clubSquad &&
+    (!matchdaySquad || matchdaySquad.length === 0 || matchdaySquad.includes(player.id))
   // The Starting XI is 11 fixed places (GK, defence, midfield, attack); '' = empty place.
   const startingSlots: string[] = (() => {
     const saved = selectedFixture

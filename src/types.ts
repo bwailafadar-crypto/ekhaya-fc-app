@@ -50,6 +50,9 @@ export interface Fixture {
   statsAppliedChanges?: AppliedMatchChanges
   startingPlayerIds?: string[]
   benchPlayerIds?: string[]
+  /** Optional named match-day squad (player ids). When set, the admin XI/subs
+   *  pickers are limited to these players; when absent the whole club squad shows. */
+  squadPlayerIds?: string[]
   lineupConfirmed?: boolean
   chatClosed?: boolean
   /** Goal lines saved at full time (see utils/goals). */
